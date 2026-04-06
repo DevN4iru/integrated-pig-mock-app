@@ -30,6 +30,8 @@
                             <th>Name</th>
                             <th>Type</th>
                             <th>Capacity</th>
+                            <th>Occupied</th>
+                            <th>Available</th>
                             <th>Notes</th>
                         </tr>
                     </thead>
@@ -40,6 +42,8 @@
                                 <td>{{ $pen->name }}</td>
                                 <td>{{ $pen->type }}</td>
                                 <td>{{ $pen->capacity }}</td>
+                                <td>{{ $pen->pigs_count }}</td>
+                                <td>{{ max($pen->capacity - $pen->pigs_count, 0) }}</td>
                                 <td>{{ $pen->notes ?: '—' }}</td>
                             </tr>
                         @endforeach

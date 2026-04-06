@@ -41,8 +41,15 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="pen_location">Pen Location</label>
-                    <input id="pen_location" name="pen_location" type="text" value="{{ old('pen_location') }}" required>
+                    <label for="pen_id">Assigned Pen</label>
+                    <select id="pen_id" name="pen_id" required>
+                        <option value="">Select pen</option>
+                        @foreach ($pens as $pen)
+                            <option value="{{ $pen->id }}" {{ old('pen_id') == $pen->id ? 'selected' : '' }}>
+                                {{ $pen->name }} — {{ $pen->type }} (Cap: {{ $pen->capacity }})
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <div class="form-group">
