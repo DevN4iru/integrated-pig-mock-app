@@ -16,6 +16,11 @@
         $weight = is_numeric($pig->latest_weight) ? number_format((float) $pig->latest_weight, 2) : $pig->latest_weight;
         $assetValue = is_numeric($pig->asset_value) ? number_format((float) $pig->asset_value, 2) : $pig->asset_value;
         $penName = optional($pig->pen)->name ?: ($pig->pen_location ?? '—');
+
+        $isDead = $pig->mortalityLogs->isNotEmpty();
+        $isSold = $pig->sales->isNotEmpty();
+        $statusLabel = $isDead ? 'Dead' : ($isSold ? 'Sold' : 'Active');
+        $statusBadgeClass = $isDead ? 'red' : ($isSold ? 'orange' : 'green');
     @endphp
 
     <div class="panel-card">
@@ -24,6 +29,7 @@
                 <h3>Pig Overview</h3>
                 <p>Core information for this pig record.</p>
             </div>
+            <span class="badge {{ $statusBadgeClass }}">{{ $statusLabel }}</span>
         </div>
 
         <div class="form-grid">
@@ -79,9 +85,7 @@
         </div>
 
         @if($pig->healthLogs->isEmpty())
-            <div class="empty-state">
-                No health logs yet.
-            </div>
+            <div class="empty-state">No health logs yet.</div>
         @else
             <div class="table-wrap">
                 <table class="data-table">
@@ -116,9 +120,7 @@
         </div>
 
         @if($pig->medications->isEmpty())
-            <div class="empty-state">
-                No medication records yet.
-            </div>
+            <div class="empty-state">No medication records yet.</div>
         @else
             <div class="table-wrap">
                 <table class="data-table">
@@ -148,34 +150,127 @@
     <div class="panel-card" style="margin-top: 20px;">
         <div class="section-title">
             <div>
+                <h3>Vaccination</h3>
+                <p>Vaccination records and immunization history for this pig.</p>
+            </div>
+            <a href="{{ route('vaccinations.create', $pig) }}" class="btn primary">Add Vaccination</a>
+        </div>
+
+        @if($pig->vaccinations->isEmpty())
+            <div class="empty-state">No vaccination records yet.</div>
+        @else
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Vaccine</th>
+                            <th>Dose</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($pig->vaccinations as $vac)
+                            <tr>
+                                <td>{{ $vac->vaccinated_at }}</td>
+                                <td>{{ $vac->vaccine_name }}</td>
+                                <td>{{ $vac->dose }}</td>
+                                <td>{{ $vac->notes ?: '—' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </div>
+
+    <div class="panel-card" style="margin-top: 20px;">
+        <div class="section-title">
+            <div>
+                <h3>Mortality</h3>
+                <p>Mortality records for this pig.</p>
+            </div>
+            <a href="{{ route('mortality.create', $pig) }}" class="btn primary">Record Mortality</a>
+        </div>
+
+        @if($pig->mortalityLogs->isEmpty())
+            <div class="empty-state">No mortality records yet.</div>
+        @else
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Cause</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($pig->mortalityLogs as $mortality)
+                            <tr>
+                                <td>{{ $mortality->death_date }}</td>
+                                <td>{{ $mortality->cause }}</td>
+                                <td>{{ $mortality->notes ?: '—' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </div>
+
+    <div class="panel-card" style="margin-top: 20px;">
+        <div class="section-title">
+            <div>
+                <h3>Sold Records</h3>
+                <p>Sale records for this pig.</p>
+            </div>
+            <a href="{{ route('sales.create', $pig) }}" class="btn primary">Record Sale</a>
+        </div>
+
+        @if($pig->sales->isEmpty())
+            <div class="empty-state">No sale records yet.</div>
+        @else
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Price</th>
+                            <th>Buyer</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($pig->sales as $sale)
+                            <tr>
+                                <td>{{ $sale->sold_date }}</td>
+                                <td>₱ {{ number_format((float) $sale->price, 2) }}</td>
+                                <td>{{ $sale->buyer ?: '—' }}</td>
+                                <td>{{ $sale->notes ?: '—' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </div>
+
+    <div class="panel-card" style="margin-top: 20px;">
+        <div class="section-title">
+            <div>
                 <h3>Lifecycle Modules</h3>
-                <p>These sections will be connected next.</p>
+                <p>These sections are still queued next.</p>
             </div>
         </div>
 
         <div class="grid stats-grid">
             <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">Vaccination</span>
-                    <span class="badge orange">Soon</span>
-                </div>
-                <div class="stat-sub">Vaccine records and immunization history.</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-top">
                     <span class="label">Feed Logs</span>
                     <span class="badge blue">Soon</span>
                 </div>
                 <div class="stat-sub">Feed intake, schedule, and growth support tracking.</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-top">
-                    <span class="label">Mortality / Sold</span>
-                    <span class="badge red">Soon</span>
-                </div>
-                <div class="stat-sub">Lifecycle outcome, sold records, and mortality tracking.</div>
             </div>
         </div>
     </div>
