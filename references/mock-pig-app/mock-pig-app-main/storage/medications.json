@@ -1,0 +1,18 @@
+[
+    {
+        "pig_id": 2,
+        "drug_name": "Amoxicillin",
+        "dosage": "2 ml",
+        "start_date": "2026-04-02",
+        "end_date": "2026-04-03",
+        "notes": "After feeding"
+    },
+    {
+        "pig_id": 5,
+        "drug_name": "Vitamin B Complex",
+        "dosage": "3 ml",
+        "start_date": "2026-03-28",
+        "end_date": "2026-04-01",
+        "notes": "Support recovery"
+    }
+]

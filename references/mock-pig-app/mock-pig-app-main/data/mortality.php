@@ -1,0 +1,10 @@
+<?php
+
+return [
+    [
+        'pig_id' => 8,
+        'date' => '2026-04-02',
+        'cause' => 'Respiratory distress',
+        'notes' => 'Observed weak appetite before death.',
+    ],
+];

@@ -1,0 +1,39 @@
+services:
+  app:
+    build:
+        context: .
+        dockerfile: docker/php/Dockerfile
+    container_name: pigstep_app
+    working_dir: /var/www
+    volumes:
+      - ./src:/var/www
+    depends_on:
+      - db
+
+  web:
+    image: nginx:latest
+    container_name: pigstep_web
+    ports:
+      - "8000:80"
+    volumes:
+      - ./src:/var/www
+      - ./docker/nginx:/etc/nginx/conf.d
+    depends_on:
+      - app
+
+  db:
+    image: mariadb:10.6
+    container_name: pigstep_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: pigstep
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+
+volumes:
+  dbdata:
