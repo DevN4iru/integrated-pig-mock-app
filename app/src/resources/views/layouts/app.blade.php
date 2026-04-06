@@ -637,19 +637,23 @@
             </div>
 
             <nav class="nav">
-                <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                    <span>Dashboard</span>
-                    <small>Overview</small>
-                </a>
-                <a href="{{ route('pigs.index') }}" class="{{ request()->routeIs('pigs.index') ? 'active' : '' }}">
-                    <span>Pigs</span>
-                    <small>Ear tags</small>
-                </a>
-                <a href="{{ route('pigs.create') }}" class="{{ request()->routeIs('pigs.create') ? 'active' : '' }}">
-                    <span>Create Pig</span>
-                    <small>New record</small>
-                </a>
-            </nav>
+    <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
+        <span>Dashboard</span>
+        <small>Overview</small>
+    </a>
+    <a href="{{ route('pigs.index') }}" class="{{ request()->routeIs('pigs.*') ? 'active' : '' }}">
+        <span>Pigs</span>
+        <small>Ear tags</small>
+    </a>
+    <a href="{{ route('pens.index') }}" class="{{ request()->routeIs('pens.*') ? 'active' : '' }}">
+        <span>Pens</span>
+        <small>Housing</small>
+    </a>
+    <a href="{{ route('pigs.create') }}" class="{{ request()->routeIs('pigs.create') ? 'active' : '' }}">
+        <span>Add Pig</span>
+        <small>New record</small>
+    </a>
+</nav>
 
             <div class="sidebar-note">
                 <h3>System status</h3>
