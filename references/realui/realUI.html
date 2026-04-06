@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Draft Pig - Dashboard Wireframe</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --panel-2: #f9fafc;
+      --line: #e6eaf2;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --orange: #ea580c;
+      --orange-soft: #ffedd5;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Inter, Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: #111827;
+      color: #fff;
+      padding: 24px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .brand {
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .brand h1 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .brand p {
+      color: #cbd5e1;
+      font-size: 13px;
+    }
+
+    .nav {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .nav a {
+      text-decoration: none;
+      color: #d1d5db;
+      padding: 12px 14px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid transparent;
+      transition: 0.2s ease;
+      font-size: 14px;
+    }
+
+    .nav a:hover,
+    .nav a.active {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      border-color: rgba(255,255,255,0.08);
+    }
+
+    .nav small {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .sidebar-note {
+      margin-top: auto;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .sidebar-note h3 {
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .sidebar-note p {
+      color: #cbd5e1;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .content {
+      padding: 28px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .page-title h2 {
+      font-size: 28px;
+      margin-bottom: 6px;
+    }
+
+    .page-title p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .stats {
+      grid-template-columns: repeat(4, 1fr);
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .stat-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .badge {
+      font-size: 12px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+
+    .blue { background: var(--accent-soft); color: var(--accent); }
+    .green { background: var(--green-soft); color: var(--green); }
+    .orange { background: var(--orange-soft); color: var(--orange); }
+    .red { background: var(--red-soft); color: var(--red); }
+
+    .stat-value {
+      font-size: 30px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .stat-sub {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .main-layout {
+      grid-template-columns: 1.6fr 1fr;
+      align-items: start;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .section-title h3 {
+      font-size: 18px;
+    }
+
+    .section-title p,
+    .section-link {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .section-link {
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .overview-panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .pen-list,
+    .alert-list,
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .row-item {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .row-item h4 {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .row-item p {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .mini-stat {
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .alert-item {
+      border-left: 4px solid var(--orange);
+      background: #fffaf5;
+    }
+
+    .alert-item.red-left {
+      border-left-color: var(--red);
+      background: #fff7f7;
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .quick-btn {
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px dashed var(--line);
+      background: white;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .quick-btn h4 {
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .quick-btn p {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .sales-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .sales-box {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .sales-box span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .sales-box strong {
+      font-size: 22px;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+      padding: 12px 14px;
+      background: #f8fafc;
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+    }
+
+    @media (max-width: 1150px) {
+      .stats,
+      .overview-panels,
+      .sales-summary,
+      .quick-actions,
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        height: auto;
+      }
+
+      .content {
+        padding: 18px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .stats {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .stats {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>draft-pig</h1>
+        <p>Pig Health & Lifecycle Tracking System</p>
+      </div>
+
+      <nav class="nav">
+        <a href="#" class="active"><span>Dashboard</span><small>Overview</small></a>
+        <a href="#"><span>Pigs</span><small>Ear tags</small></a>
+        <a href="#"><span>Pens</span><small>Housing</small></a>
+        <a href="#"><span>Supplies</span><small>Stock</small></a>
+        <a href="#"><span>Sales</span><small>Transactions</small></a>
+      </nav>
+
+      <div class="sidebar-note">
+        <h3>Wireframe scope</h3>
+        <p>This screen is UI-only. Data is static and meant for layout planning before Laravel implementation.</p>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="topbar">
+        <div class="page-title">
+          <h2>Dashboard</h2>
+          <p>Overview, reminders, and daily visibility for pig farm operations.</p>
+        </div>
+        <div class="actions">
+          <button class="btn">Date Range</button>
+          <button class="btn">Export View</button>
+          <button class="btn primary">+ Add Record</button>
+        </div>
+      </div>
+
+      <section class="grid stats">
+        <div class="card">
+          <div class="stat-top">
+            <span class="label">Total Pigs</span>
+            <span class="badge blue">Live Count</span>
+          </div>
+          <div class="stat-value">128</div>
+          <div class="stat-sub">Across all pens, using hardcoded sample totals for wireframe preview.</div>
+        </div>
+
+        <div class="card">
+          <div class="stat-top">
+            <span class="label">Active Pens</span>
+            <span class="badge green">Occupied</span>
+          </div>
+          <div class="stat-value">9</div>
+          <div class="stat-sub">Includes grower, finisher, sow, quarantine, and nursery pen types.</div>
+        </div>
+
+        <div class="card">
+          <div class="stat-top">
+            <span class="label">Low Stock Items</span>
+            <span class="badge orange">Needs Restock</span>
+          </div>
+          <div class="stat-value">4</div>
+          <div class="stat-sub">Feeds, vitamins, and medical supplies that may need attention soon.</div>
+        </div>
+
+        <div class="card">
+          <div class="stat-top">
+            <span class="label">Pending Reminders</span>
+            <span class="badge red">Action Needed</span>
+          </div>
+          <div class="stat-value">7</div>
+          <div class="stat-sub">Vaccination, checkup, supply restock, and breeding follow-up placeholders.</div>
+        </div>
+      </section>
+
+      <section class="grid main-layout">
+        <div class="grid" style="gap: 18px;">
+          <div class="card">
+            <div class="section-title">
+              <div>
+                <h3>Pen Occupancy Snapshot</h3>
+                <p>Quick scan of current pen status</p>
+              </div>
+              <a class="section-link" href="#">View pens</a>
+            </div>
+
+            <div class="overview-panels">
+              <div class="pen-list">
+                <div class="row-item">
+                  <div>
+                    <h4>Pen A1 · Grower</h4>
+                    <p>18 pigs · 85% occupied</p>
+                  </div>
+                  <div class="mini-stat">Normal</div>
+                </div>
+                <div class="row-item">
+                  <div>
+                    <h4>Pen B2 · Finisher</h4>
+                    <p>22 pigs · near full capacity</p>
+                  </div>
+                  <div class="mini-stat">Monitor</div>
+                </div>
+                <div class="row-item">
+                  <div>
+                    <h4>Pen C1 · Nursery</h4>
+                    <p>14 piglets · stable</p>
+                  </div>
+                  <div class="mini-stat">Normal</div>
+                </div>
+              </div>
+
+              <div class="pen-list">
+                <div class="row-item">
+                  <div>
+                    <h4>Pen S1 · Sow Pen</h4>
+                    <p>6 sows · breeding UI to expand later</p>
+                  </div>
+                  <div class="mini-stat">Priority</div>
+                </div>
+                <div class="row-item">
+                  <div>
+                    <h4>Pen Q1 · Quarantine</h4>
+                    <p>3 pigs under observation</p>
+                  </div>
+                  <div class="mini-stat">Watch</div>
+                </div>
+                <div class="row-item">
+                  <div>
+                    <h4>Pen E1 · Empty</h4>
+                    <p>Available for transfer or cleaning cycle</p>
+                  </div>
+                  <div class="mini-stat">Open</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-title">
+              <div>
+                <h3>Recent Activity</h3>
+                <p>Placeholder timeline for latest encoded actions</p>
+              </div>
+              <a class="section-link" href="#">View all</a>
+            </div>
+
+            <div class="activity-list">
+              <div class="row-item">
+                <div>
+                  <h4>Ear tag 1048 transferred</h4>
+                  <p>Moved from Pen C1 to Pen A1 · Today, 9:15 AM</p>
+                </div>
+              </div>
+              <div class="row-item">
+                <div>
+                  <h4>Feed stock updated</h4>
+                  <p>Starter feed reduced by 5 sacks · Today, 8:40 AM</p>
+                </div>
+              </div>
+              <div class="row-item">
+                <div>
+                  <h4>Sale recorded</h4>
+                  <p>3 finishers marked sold · Yesterday, 4:20 PM</p>
+                </div>
+              </div>
+              <div class="row-item">
+                <div>
+                  <h4>Health note added</h4>
+                  <p>Ear tag 1022 flagged for follow-up check · Yesterday, 2:05 PM</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid" style="gap: 18px;">
+          <div class="card">
+            <div class="section-title">
+              <div>
+                <h3>Reminders & Alerts</h3>
+                <p>Dashboard should highlight action items first</p>
+              </div>
+            </div>
+
+            <div class="alert-list">
+              <div class="row-item alert-item">
+                <div>
+                  <h4>Vaccination due</h4>
+                  <p>5 pigs in Pen A1 scheduled for follow-up this week</p>
+                </div>
+              </div>
+              <div class="row-item alert-item">
+                <div>
+                  <h4>Low stock: grower feed</h4>
+                  <p>Only 3 sacks left in supply inventory</p>
+                </div>
+              </div>
+              <div class="row-item alert-item red-left">
+                <div>
+                  <h4>Quarantine check needed</h4>
+                  <p>Pen Q1 has 3 pigs requiring health status review</p>
+                </div>
+              </div>
+              <div class="row-item alert-item">
+                <div>
+                  <h4>Sow pen follow-up</h4>
+                  <p>Breeding and pregnancy UI cards can live here later</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="quick-actions">
+              <button class="quick-btn">
+                <h4>Add pig record</h4>
+                <p>Shortcut for future pig entry flow using ear tags.</p>
+              </button>
+              <button class="quick-btn">
+                <h4>Log supply usage</h4>
+                <p>Shortcut for feed, medicine, and material movement.</p>
+              </button>
+              <button class="quick-btn">
+                <h4>Record sale</h4>
+                <p>Shortcut to register sold pigs and totals.</p>
+              </button>
+              <button class="quick-btn">
+                <h4>Move pen</h4>
+                <p>Shortcut for pig transfer between pens.</p>
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-title">
+              <div>
+                <h3>Sales Snapshot</h3>
+                <p>Simple overview block for the dashboard</p>
+              </div>
+            </div>
+
+            <div class="sales-summary">
+              <div class="sales-box">
+                <span>This Week</span>
+                <strong>₱18,500</strong>
+              </div>
+              <div class="sales-box">
+                <span>This Month</span>
+                <strong>₱74,200</strong>
+              </div>
+              <div class="sales-box">
+                <span>Sold Heads</span>
+                <strong>11</strong>
+              </div>
+            </div>
+
+            <div class="footer-note">
+              Wireframe notes: pigs should be identified by ear tag, not names. Breed remains visible in pig-related screens. Pig source can later appear as purchased or bred. Sow pen features will expand in future pages.
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const navLinks = document.querySelectorAll('.nav a');
+    navLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        navLinks.forEach(item => item.classList.remove('active'));
+        link.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
+
