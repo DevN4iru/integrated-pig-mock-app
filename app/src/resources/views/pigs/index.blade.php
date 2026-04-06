@@ -35,6 +35,7 @@
                             <th>Date Added</th>
                             <th>Weight</th>
                             <th>Asset Value</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -53,6 +54,37 @@
                                 <td>{{ optional($pig->date_added)->format('Y-m-d') }}</td>
                                 <td>{{ $pig->latest_weight }}</td>
                                 <td>{{ $pig->asset_value }}</td>
+                                <td>
+                                    <div style="display:grid; gap:8px;">
+                                        <button
+                                            type="button"
+                                            class="btn"
+                                            onclick="openPigEditPrompt('{{ route('pigs.edit', $pig) }}')"
+                                        >
+                                            Edit
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            class="btn btn-danger"
+                                            onclick="togglePigDelete('pig-delete-{{ $pig->id }}')"
+                                        >
+                                            Delete
+                                        </button>
+
+                                        <form
+                                            id="pig-delete-{{ $pig->id }}"
+                                            method="POST"
+                                            action="{{ route('pigs.destroy', $pig) }}"
+                                            style="display:none; gap:8px;"
+                                        >
+                                            @csrf
+                                            @method('DELETE')
+                                            <input type="text" name="confirm_code" placeholder="type DELETE" required>
+                                            <button type="submit" class="btn btn-danger">Confirm Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -60,4 +92,22 @@
             </div>
         @endif
     </div>
+@endsection
+
+@section('scripts')
+function openPigEditPrompt(url) {
+    const code = prompt('Type the edit access code to continue:');
+    if (code === null) return;
+    if (code !== '12345') {
+        alert('Wrong access code.');
+        return;
+    }
+    window.location.href = url + '?code=' + encodeURIComponent(code);
+}
+
+function togglePigDelete(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? 'grid' : 'none';
+}
 @endsection
