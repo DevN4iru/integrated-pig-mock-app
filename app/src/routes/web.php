@@ -4,6 +4,9 @@ use App\Http\Controllers\PenController;
 use App\Http\Controllers\PigController;
 use App\Http\Controllers\HealthLogController;
 use App\Http\Controllers\MedicationController;
+use App\Http\Controllers\VaccinationController;
+use App\Http\Controllers\MortalityLogController;
+use App\Http\Controllers\SaleController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => view('dashboard'))->name('dashboard');
@@ -22,6 +25,15 @@ Route::post('/pigs/{pig}/health-logs', [HealthLogController::class, 'store'])->n
 
 Route::get('/pigs/{pig}/medications/create', [MedicationController::class, 'create'])->name('medications.create');
 Route::post('/pigs/{pig}/medications', [MedicationController::class, 'store'])->name('medications.store');
+
+Route::get('/pigs/{pig}/vaccinations/create', [VaccinationController::class, 'create'])->name('vaccinations.create');
+Route::post('/pigs/{pig}/vaccinations', [VaccinationController::class, 'store'])->name('vaccinations.store');
+
+Route::get('/pigs/{pig}/mortality/create', [MortalityLogController::class, 'create'])->name('mortality.create');
+Route::post('/pigs/{pig}/mortality', [MortalityLogController::class, 'store'])->name('mortality.store');
+
+Route::get('/pigs/{pig}/sales/create', [SaleController::class, 'create'])->name('sales.create');
+Route::post('/pigs/{pig}/sales', [SaleController::class, 'store'])->name('sales.store');
 
 Route::get('/pens', [PenController::class, 'index'])->name('pens.index');
 Route::get('/pens/create', [PenController::class, 'create'])->name('pens.create');

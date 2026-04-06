@@ -28,9 +28,23 @@ class Pig extends Model
         return $this->hasMany(HealthLog::class)->latest();
     }
 
-    // 🔥 NEW
     public function medications()
     {
         return $this->hasMany(Medication::class)->latest();
+    }
+
+    public function vaccinations()
+    {
+        return $this->hasMany(Vaccination::class)->latest();
+    }
+
+    public function mortalityLogs()
+    {
+        return $this->hasMany(MortalityLog::class)->latest();
+    }
+
+    public function sales()
+    {
+        return $this->hasMany(Sale::class)->latest();
     }
 }
