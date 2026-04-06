@@ -3,7 +3,7 @@ services:
     build:
         context: .
         dockerfile: docker/php/Dockerfile
-    container_name: pigstep_app
+    container_name: integrated_pig_app
     working_dir: /var/www
     volumes:
       - ./src:/var/www
@@ -12,7 +12,7 @@ services:
 
   web:
     image: nginx:latest
-    container_name: pigstep_web
+    container_name: integrated_pig_web
     ports:
       - "8000:80"
     volumes:
@@ -23,7 +23,7 @@ services:
 
   db:
     image: mariadb:10.6
-    container_name: pigstep_db
+    container_name: integrated_pig_db
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -31,7 +31,7 @@ services:
       MYSQL_USER: user
       MYSQL_PASSWORD: password
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - dbdata:/var/lib/mysql
 
