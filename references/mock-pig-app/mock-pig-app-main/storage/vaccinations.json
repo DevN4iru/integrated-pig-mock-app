@@ -1,0 +1,14 @@
+[
+    {
+        "pig_id": 1,
+        "vaccine_name": "ASF Vaccine",
+        "date_given": "2026-03-30",
+        "next_due": "2026-04-05"
+    },
+    {
+        "pig_id": 3,
+        "vaccine_name": "Swine Flu",
+        "date_given": "2026-03-20",
+        "next_due": "2026-03-25"
+    }
+]
