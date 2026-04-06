@@ -30,7 +30,7 @@
                             <th>Ear Tag</th>
                             <th>Breed</th>
                             <th>Sex</th>
-                            <th>Pen Location</th>
+                            <th>Assigned Pen</th>
                             <th>Source</th>
                             <th>Date Added</th>
                             <th>Weight</th>
@@ -44,7 +44,7 @@
                                 <td>{{ $pig->ear_tag }}</td>
                                 <td>{{ $pig->breed }}</td>
                                 <td>{{ ucfirst($pig->sex) }}</td>
-                                <td>{{ $pig->pen_location }}</td>
+                                <td>{{ $pig->pen?->name ?? '—' }}</td>
                                 <td>
                                     <span class="badge {{ $pig->pig_source === 'birthed' ? 'green' : 'blue' }}">
                                         {{ ucfirst($pig->pig_source) }}

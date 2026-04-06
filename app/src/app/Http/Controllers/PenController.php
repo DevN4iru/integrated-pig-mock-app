@@ -9,7 +9,7 @@ class PenController extends Controller
 {
     public function index()
     {
-        $pens = Pen::latest()->get();
+        $pens = Pen::withCount('pigs')->latest()->get();
 
         return view('pens.index', compact('pens'));
     }

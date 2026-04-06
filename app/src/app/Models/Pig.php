@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Pig extends Model
 {
@@ -15,6 +16,7 @@ class Pig extends Model
         'date_added',
         'latest_weight',
         'asset_value',
+        'pen_id',
     ];
 
     protected $casts = [
@@ -22,4 +24,9 @@ class Pig extends Model
         'latest_weight' => 'decimal:2',
         'asset_value' => 'decimal:2',
     ];
+
+    public function pen(): BelongsTo
+    {
+        return $this->belongsTo(Pen::class);
+    }
 }
