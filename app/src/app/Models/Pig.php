@@ -11,13 +11,15 @@ class Pig extends Model
         'breed',
         'sex',
         'pen_location',
-        'status',
-        'origin_date',
+        'pig_source',
+        'date_added',
         'latest_weight',
-        'weight_date_added',
         'asset_value',
-        'date_sold',
-        'weight_sold_kg',
-        'price_sold',
+    ];
+
+    protected $casts = [
+        'date_added' => 'date',
+        'latest_weight' => 'decimal:2',
+        'asset_value' => 'decimal:2',
     ];
 }

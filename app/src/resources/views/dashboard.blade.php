@@ -23,29 +23,29 @@
 
     <div class="stat-card">
         <div class="stat-top">
-            <span class="label">Active Pigs</span>
-            <span class="badge green">Healthy</span>
+            <span class="label">Birthed</span>
+            <span class="badge green">Source</span>
         </div>
-        <div class="stat-value">{{ \App\Models\Pig::where('status','active')->count() }}</div>
-        <div class="stat-sub">Currently active pigs</div>
+        <div class="stat-value">{{ \App\Models\Pig::where('pig_source', 'birthed')->count() }}</div>
+        <div class="stat-sub">Pigs recorded as birthed</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="label">Purchased</span>
+            <span class="badge orange">Source</span>
+        </div>
+        <div class="stat-value">{{ \App\Models\Pig::where('pig_source', 'purchased')->count() }}</div>
+        <div class="stat-sub">Pigs recorded as purchased</div>
     </div>
 
     <div class="stat-card">
         <div class="stat-top">
             <span class="label">Breeds</span>
-            <span class="badge orange">Variety</span>
+            <span class="badge red">Variety</span>
         </div>
         <div class="stat-value">{{ \App\Models\Pig::distinct('breed')->count('breed') }}</div>
         <div class="stat-sub">Different pig breeds</div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-top">
-            <span class="label">Records</span>
-            <span class="badge red">Tracking</span>
-        </div>
-        <div class="stat-value">{{ \App\Models\Pig::count() }}</div>
-        <div class="stat-sub">Total entries recorded</div>
     </div>
 </div>
 
@@ -61,18 +61,24 @@
                     <th>Ear Tag</th>
                     <th>Breed</th>
                     <th>Sex</th>
-                    <th>Status</th>
+                    <th>Pen Location</th>
+                    <th>Source</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach(\App\Models\Pig::latest()->take(5)->get() as $pig)
-                <tr>
-                    <td>{{ $pig->ear_tag }}</td>
-                    <td>{{ $pig->breed }}</td>
-                    <td>{{ $pig->sex }}</td>
-                    <td>{{ $pig->status }}</td>
-                </tr>
-                @endforeach
+                @forelse(\App\Models\Pig::latest()->take(5)->get() as $pig)
+                    <tr>
+                        <td>{{ $pig->ear_tag }}</td>
+                        <td>{{ $pig->breed }}</td>
+                        <td>{{ ucfirst($pig->sex) }}</td>
+                        <td>{{ $pig->pen_location }}</td>
+                        <td>{{ ucfirst($pig->pig_source) }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="5" class="text-muted">No pigs added yet.</td>
+                    </tr>
+                @endforelse
             </tbody>
         </table>
     </div>
