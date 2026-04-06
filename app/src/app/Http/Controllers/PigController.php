@@ -48,6 +48,12 @@ class PigController extends Controller
         return redirect()->route('pigs.index')->with('success', 'Pig added successfully.');
     }
 
+    // 🔥 NEW METHOD (Pig Profile)
+    public function show(Pig $pig)
+    {
+        return view('pigs.show', compact('pig'));
+    }
+
     public function edit(Request $request, Pig $pig)
     {
         if ($request->query('code') !== '12345') {

@@ -56,28 +56,21 @@
                                 <td>{{ $pig->asset_value }}</td>
                                 <td>
                                     <div style="display:grid; gap:8px;">
-                                        <button
-                                            type="button"
-                                            class="btn"
-                                            onclick="openPigEditPrompt('{{ route('pigs.edit', $pig) }}')"
-                                        >
+
+                                        <a href="{{ route('pigs.show', $pig) }}" class="btn">View</a>
+
+                                        <button type="button" class="btn"
+                                            onclick="openPigEditPrompt('{{ route('pigs.edit', $pig) }}')">
                                             Edit
                                         </button>
 
-                                        <button
-                                            type="button"
-                                            class="btn btn-danger"
-                                            onclick="togglePigDelete('pig-delete-{{ $pig->id }}')"
-                                        >
+                                        <button type="button" class="btn btn-danger"
+                                            onclick="togglePigDelete('pig-delete-{{ $pig->id }}')">
                                             Delete
                                         </button>
 
-                                        <form
-                                            id="pig-delete-{{ $pig->id }}"
-                                            method="POST"
-                                            action="{{ route('pigs.destroy', $pig) }}"
-                                            style="display:none; gap:8px;"
-                                        >
+                                        <form id="pig-delete-{{ $pig->id }}" method="POST"
+                                            action="{{ route('pigs.destroy', $pig) }}" style="display:none;">
                                             @csrf
                                             @method('DELETE')
                                             <input type="text" name="confirm_code" placeholder="type DELETE" required>
