@@ -7,6 +7,7 @@ use App\Http\Controllers\MedicationController;
 use App\Http\Controllers\VaccinationController;
 use App\Http\Controllers\MortalityLogController;
 use App\Http\Controllers\SaleController;
+use App\Http\Controllers\FeedLogController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => view('dashboard'))->name('dashboard');
@@ -34,6 +35,9 @@ Route::post('/pigs/{pig}/mortality', [MortalityLogController::class, 'store'])->
 
 Route::get('/pigs/{pig}/sales/create', [SaleController::class, 'create'])->name('sales.create');
 Route::post('/pigs/{pig}/sales', [SaleController::class, 'store'])->name('sales.store');
+
+Route::get('/pigs/{pig}/feed-logs/create', [FeedLogController::class, 'create'])->name('feed-logs.create');
+Route::post('/pigs/{pig}/feed-logs', [FeedLogController::class, 'store'])->name('feed-logs.store');
 
 Route::get('/pens', [PenController::class, 'index'])->name('pens.index');
 Route::get('/pens/create', [PenController::class, 'create'])->name('pens.create');
