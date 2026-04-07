@@ -47,4 +47,9 @@ class Pig extends Model
     {
         return $this->hasMany(Sale::class)->latest();
     }
+
+    public function feedLogs()
+    {
+        return $this->hasMany(FeedLog::class)->latest();
+    }
 }

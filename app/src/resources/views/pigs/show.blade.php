@@ -259,21 +259,46 @@
     <div class="panel-card" style="margin-top: 20px;">
         <div class="section-title">
             <div>
-                <h3>Lifecycle Modules</h3>
-                <p>These sections are still queued next.</p>
+                <h3>Feed Logs</h3>
+                <p>Feeding periods and diet tracking.</p>
             </div>
+            <a href="{{ route('feed-logs.create', $pig) }}" class="btn primary">Add Feed Log</a>
         </div>
 
-        <div class="grid stats-grid">
-            <div class="stat-card">
-                <div class="stat-top">
-                    <span class="label">Feed Logs</span>
-                    <span class="badge blue">Soon</span>
-                </div>
-                <div class="stat-sub">Feed intake, schedule, and growth support tracking.</div>
+        @if($pig->feedLogs->isEmpty())
+            <div class="empty-state">No feed logs yet.</div>
+        @else
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Feed Type</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Qty</th>
+                            <th>Unit</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($pig->feedLogs as $feed)
+                            <tr>
+                                <td>{{ $feed->feed_type }}</td>
+                                <td>{{ $feed->start_feed_date }}</td>
+                                <td>{{ $feed->end_feed_date ?? '—' }}</td>
+                                <td>{{ $feed->quantity }}</td>
+                                <td>{{ $feed->unit }}</td>
+                                <td>{{ $feed->feeding_time }}</td>
+                                <td>{{ ucfirst($feed->status) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
-        </div>
+        @endif
     </div>
+
 @endsection
 
 @section('scripts')
