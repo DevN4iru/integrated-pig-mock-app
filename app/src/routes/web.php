@@ -23,21 +23,39 @@ Route::delete('/pigs/{pig}', [PigController::class, 'destroy'])->name('pigs.dest
 
 Route::get('/pigs/{pig}/health-logs/create', [HealthLogController::class, 'create'])->name('health-logs.create');
 Route::post('/pigs/{pig}/health-logs', [HealthLogController::class, 'store'])->name('health-logs.store');
+Route::get('/pigs/{pig}/health-logs/{healthLog}/edit', [HealthLogController::class, 'edit'])->name('health-logs.edit');
+Route::put('/pigs/{pig}/health-logs/{healthLog}', [HealthLogController::class, 'update'])->name('health-logs.update');
+Route::delete('/pigs/{pig}/health-logs/{healthLog}', [HealthLogController::class, 'destroy'])->name('health-logs.destroy');
 
 Route::get('/pigs/{pig}/medications/create', [MedicationController::class, 'create'])->name('medications.create');
 Route::post('/pigs/{pig}/medications', [MedicationController::class, 'store'])->name('medications.store');
+Route::get('/pigs/{pig}/medications/{medication}/edit', [MedicationController::class, 'edit'])->name('medications.edit');
+Route::put('/pigs/{pig}/medications/{medication}', [MedicationController::class, 'update'])->name('medications.update');
+Route::delete('/pigs/{pig}/medications/{medication}', [MedicationController::class, 'destroy'])->name('medications.destroy');
 
 Route::get('/pigs/{pig}/vaccinations/create', [VaccinationController::class, 'create'])->name('vaccinations.create');
 Route::post('/pigs/{pig}/vaccinations', [VaccinationController::class, 'store'])->name('vaccinations.store');
+Route::get('/pigs/{pig}/vaccinations/{vaccination}/edit', [VaccinationController::class, 'edit'])->name('vaccinations.edit');
+Route::put('/pigs/{pig}/vaccinations/{vaccination}', [VaccinationController::class, 'update'])->name('vaccinations.update');
+Route::delete('/pigs/{pig}/vaccinations/{vaccination}', [VaccinationController::class, 'destroy'])->name('vaccinations.destroy');
 
 Route::get('/pigs/{pig}/mortality/create', [MortalityLogController::class, 'create'])->name('mortality.create');
 Route::post('/pigs/{pig}/mortality', [MortalityLogController::class, 'store'])->name('mortality.store');
+Route::get('/pigs/{pig}/mortality/{mortalityLog}/edit', [MortalityLogController::class, 'edit'])->name('mortality.edit');
+Route::put('/pigs/{pig}/mortality/{mortalityLog}', [MortalityLogController::class, 'update'])->name('mortality.update');
+Route::delete('/pigs/{pig}/mortality/{mortalityLog}', [MortalityLogController::class, 'destroy'])->name('mortality.destroy');
 
 Route::get('/pigs/{pig}/sales/create', [SaleController::class, 'create'])->name('sales.create');
 Route::post('/pigs/{pig}/sales', [SaleController::class, 'store'])->name('sales.store');
+Route::get('/pigs/{pig}/sales/{sale}/edit', [SaleController::class, 'edit'])->name('sales.edit');
+Route::put('/pigs/{pig}/sales/{sale}', [SaleController::class, 'update'])->name('sales.update');
+Route::delete('/pigs/{pig}/sales/{sale}', [SaleController::class, 'destroy'])->name('sales.destroy');
 
 Route::get('/pigs/{pig}/feed-logs/create', [FeedLogController::class, 'create'])->name('feed-logs.create');
 Route::post('/pigs/{pig}/feed-logs', [FeedLogController::class, 'store'])->name('feed-logs.store');
+Route::get('/pigs/{pig}/feed-logs/{feedLog}/edit', [FeedLogController::class, 'edit'])->name('feed-logs.edit');
+Route::put('/pigs/{pig}/feed-logs/{feedLog}', [FeedLogController::class, 'update'])->name('feed-logs.update');
+Route::delete('/pigs/{pig}/feed-logs/{feedLog}', [FeedLogController::class, 'destroy'])->name('feed-logs.destroy');
 
 Route::get('/pens', [PenController::class, 'index'])->name('pens.index');
 Route::get('/pens/create', [PenController::class, 'create'])->name('pens.create');
