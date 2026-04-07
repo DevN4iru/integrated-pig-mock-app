@@ -94,6 +94,7 @@
                             <th>Date</th>
                             <th>Condition</th>
                             <th>Notes</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -102,6 +103,16 @@
                                 <td>{{ $log->log_date }}</td>
                                 <td>{{ $log->condition }}</td>
                                 <td>{{ $log->notes ?: '—' }}</td>
+                                <td>
+                                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                        <a href="{{ route('health-logs.edit', [$pig, $log]) }}" class="btn">Edit</a>
+                                        <form method="POST" action="{{ route('health-logs.destroy', [$pig, $log]) }}" onsubmit="return confirm('Delete this health log?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -130,6 +141,7 @@
                             <th>Medication</th>
                             <th>Dosage</th>
                             <th>Notes</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -139,6 +151,16 @@
                                 <td>{{ $med->medication_name }}</td>
                                 <td>{{ $med->dosage }}</td>
                                 <td>{{ $med->notes ?: '—' }}</td>
+                                <td>
+                                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                        <a href="{{ route('medications.edit', [$pig, $med]) }}" class="btn">Edit</a>
+                                        <form method="POST" action="{{ route('medications.destroy', [$pig, $med]) }}" onsubmit="return confirm('Delete this medication record?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -167,6 +189,7 @@
                             <th>Vaccine</th>
                             <th>Dose</th>
                             <th>Notes</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -176,6 +199,16 @@
                                 <td>{{ $vac->vaccine_name }}</td>
                                 <td>{{ $vac->dose }}</td>
                                 <td>{{ $vac->notes ?: '—' }}</td>
+                                <td>
+                                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                        <a href="{{ route('vaccinations.edit', [$pig, $vac]) }}" class="btn">Edit</a>
+                                        <form method="POST" action="{{ route('vaccinations.destroy', [$pig, $vac]) }}" onsubmit="return confirm('Delete this vaccination record?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -190,8 +223,16 @@
                 <h3>Mortality</h3>
                 <p>Mortality records for this pig.</p>
             </div>
-            <a href="{{ route('mortality.create', $pig) }}" class="btn primary">Record Mortality</a>
+            @if($pig->sales->isEmpty())
+                <a href="{{ route('mortality.create', $pig) }}" class="btn primary">Record Mortality</a>
+            @endif
         </div>
+
+        @if($pig->sales->isNotEmpty())
+            <div class="flash error" style="margin-bottom: 16px;">
+                Mortality recording is locked because this pig already has a sale record.
+            </div>
+        @endif
 
         @if($pig->mortalityLogs->isEmpty())
             <div class="empty-state">No mortality records yet.</div>
@@ -203,6 +244,7 @@
                             <th>Date</th>
                             <th>Cause</th>
                             <th>Notes</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -211,6 +253,16 @@
                                 <td>{{ $mortality->death_date }}</td>
                                 <td>{{ $mortality->cause }}</td>
                                 <td>{{ $mortality->notes ?: '—' }}</td>
+                                <td>
+                                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                        <a href="{{ route('mortality.edit', [$pig, $mortality]) }}" class="btn">Edit</a>
+                                        <form method="POST" action="{{ route('mortality.destroy', [$pig, $mortality]) }}" onsubmit="return confirm('Delete this mortality record?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -225,8 +277,16 @@
                 <h3>Sold Records</h3>
                 <p>Sale records for this pig.</p>
             </div>
-            <a href="{{ route('sales.create', $pig) }}" class="btn primary">Record Sale</a>
+            @if($pig->mortalityLogs->isEmpty())
+                <a href="{{ route('sales.create', $pig) }}" class="btn primary">Record Sale</a>
+            @endif
         </div>
+
+        @if($pig->mortalityLogs->isNotEmpty())
+            <div class="flash error" style="margin-bottom: 16px;">
+                Sale recording is locked because this pig already has a mortality record.
+            </div>
+        @endif
 
         @if($pig->sales->isEmpty())
             <div class="empty-state">No sale records yet.</div>
@@ -239,6 +299,7 @@
                             <th>Price</th>
                             <th>Buyer</th>
                             <th>Notes</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -248,6 +309,16 @@
                                 <td>₱ {{ number_format((float) $sale->price, 2) }}</td>
                                 <td>{{ $sale->buyer ?: '—' }}</td>
                                 <td>{{ $sale->notes ?: '—' }}</td>
+                                <td>
+                                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                        <a href="{{ route('sales.edit', [$pig, $sale]) }}" class="btn">Edit</a>
+                                        <form method="POST" action="{{ route('sales.destroy', [$pig, $sale]) }}" onsubmit="return confirm('Delete this sale record?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -279,6 +350,8 @@
                             <th>Unit</th>
                             <th>Time</th>
                             <th>Status</th>
+                            <th>Notes</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -286,11 +359,26 @@
                             <tr>
                                 <td>{{ $feed->feed_type }}</td>
                                 <td>{{ $feed->start_feed_date }}</td>
-                                <td>{{ $feed->end_feed_date ?? '—' }}</td>
+                                <td>{{ $feed->end_feed_date ?: 'Pending' }}</td>
                                 <td>{{ $feed->quantity }}</td>
                                 <td>{{ $feed->unit }}</td>
                                 <td>{{ $feed->feeding_time }}</td>
-                                <td>{{ ucfirst($feed->status) }}</td>
+                                <td>
+                                    <span class="badge {{ $feed->status === 'completed' ? 'green' : 'orange' }}">
+                                        {{ ucfirst($feed->status) }}
+                                    </span>
+                                </td>
+                                <td>{{ $feed->notes ?: '—' }}</td>
+                                <td>
+                                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                        <a href="{{ route('feed-logs.edit', [$pig, $feed]) }}" class="btn">Edit</a>
+                                        <form method="POST" action="{{ route('feed-logs.destroy', [$pig, $feed]) }}" onsubmit="return confirm('Delete this feed log?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

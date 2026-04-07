@@ -16,10 +16,10 @@ class VaccinationController extends Controller
     public function store(Request $request, Pig $pig)
     {
         $validated = $request->validate([
-            'vaccine_name' => ['required'],
-            'dose' => ['required'],
+            'vaccine_name' => ['required', 'string', 'max:255'],
+            'dose' => ['required', 'string', 'max:255'],
             'vaccinated_at' => ['required', 'date'],
-            'notes' => ['nullable'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $validated['pig_id'] = $pig->id;
@@ -29,5 +29,41 @@ class VaccinationController extends Controller
         return redirect()
             ->route('pigs.show', $pig)
             ->with('success', 'Vaccination record added.');
+    }
+
+    public function edit(Pig $pig, Vaccination $vaccination)
+    {
+        abort_if($vaccination->pig_id !== $pig->id, 404);
+
+        return view('vaccinations.edit', compact('pig', 'vaccination'));
+    }
+
+    public function update(Request $request, Pig $pig, Vaccination $vaccination)
+    {
+        abort_if($vaccination->pig_id !== $pig->id, 404);
+
+        $validated = $request->validate([
+            'vaccine_name' => ['required', 'string', 'max:255'],
+            'dose' => ['required', 'string', 'max:255'],
+            'vaccinated_at' => ['required', 'date'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $vaccination->update($validated);
+
+        return redirect()
+            ->route('pigs.show', $pig)
+            ->with('success', 'Vaccination record updated.');
+    }
+
+    public function destroy(Pig $pig, Vaccination $vaccination)
+    {
+        abort_if($vaccination->pig_id !== $pig->id, 404);
+
+        $vaccination->delete();
+
+        return redirect()
+            ->route('pigs.show', $pig)
+            ->with('success', 'Vaccination record deleted.');
     }
 }

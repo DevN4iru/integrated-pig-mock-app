@@ -16,10 +16,10 @@ class MedicationController extends Controller
     public function store(Request $request, Pig $pig)
     {
         $validated = $request->validate([
-            'medication_name' => ['required'],
-            'dosage' => ['required'],
+            'medication_name' => ['required', 'string', 'max:255'],
+            'dosage' => ['required', 'string', 'max:255'],
             'administered_at' => ['required', 'date'],
-            'notes' => ['nullable'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $validated['pig_id'] = $pig->id;
@@ -29,5 +29,41 @@ class MedicationController extends Controller
         return redirect()
             ->route('pigs.show', $pig)
             ->with('success', 'Medication record added.');
+    }
+
+    public function edit(Pig $pig, Medication $medication)
+    {
+        abort_if($medication->pig_id !== $pig->id, 404);
+
+        return view('medications.edit', compact('pig', 'medication'));
+    }
+
+    public function update(Request $request, Pig $pig, Medication $medication)
+    {
+        abort_if($medication->pig_id !== $pig->id, 404);
+
+        $validated = $request->validate([
+            'medication_name' => ['required', 'string', 'max:255'],
+            'dosage' => ['required', 'string', 'max:255'],
+            'administered_at' => ['required', 'date'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $medication->update($validated);
+
+        return redirect()
+            ->route('pigs.show', $pig)
+            ->with('success', 'Medication record updated.');
+    }
+
+    public function destroy(Pig $pig, Medication $medication)
+    {
+        abort_if($medication->pig_id !== $pig->id, 404);
+
+        $medication->delete();
+
+        return redirect()
+            ->route('pigs.show', $pig)
+            ->with('success', 'Medication record deleted.');
     }
 }
