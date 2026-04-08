@@ -21,6 +21,15 @@
         $isSold = $pig->sales->isNotEmpty();
         $statusLabel = $isDead ? 'Dead' : ($isSold ? 'Sold' : 'Active');
         $statusBadgeClass = $isDead ? 'red' : ($isSold ? 'orange' : 'green');
+
+        $purposeLabels = [
+            'weight_update' => 'Weight Update',
+            'sick' => 'Sick',
+            'recovered' => 'Recovered',
+            'checkup' => 'Checkup',
+            'injury' => 'Injury',
+            'observation' => 'Observation',
+        ];
     @endphp
 
     <div class="panel-card">
@@ -81,27 +90,58 @@
                 <h3>Health Logs</h3>
                 <p>Recorded health conditions and notes for this pig.</p>
             </div>
-            <a href="{{ route('health-logs.create', $pig) }}" class="btn primary">Add Health Log</a>
+
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <select id="healthFilter">
+                    <option value="all">All Purposes</option>
+                    <option value="weight_update">Weight Update</option>
+                    <option value="sick">Sick</option>
+                    <option value="recovered">Recovered</option>
+                    <option value="checkup">Checkup</option>
+                    <option value="injury">Injury</option>
+                    <option value="observation">Observation</option>
+                </select>
+
+                <a href="{{ route('health-logs.create', $pig) }}" class="btn primary">Add Health Log</a>
+            </div>
         </div>
 
         @if($pig->healthLogs->isEmpty())
             <div class="empty-state">No health logs yet.</div>
         @else
             <div class="table-wrap">
-                <table class="data-table">
+                <table class="data-table" id="healthTable">
                     <thead>
                         <tr>
                             <th>Date</th>
-                            <th>Condition</th>
+                            <th>Purpose</th>
+                            <th>Condition / Summary</th>
+                            <th>Weight</th>
                             <th>Notes</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($pig->healthLogs as $log)
-                            <tr>
+                            @php
+                                $purposeBadgeClass = match($log->purpose) {
+                                    'weight_update' => 'blue',
+                                    'sick' => 'red',
+                                    'recovered' => 'green',
+                                    'checkup' => 'blue',
+                                    'injury' => 'orange',
+                                    default => 'orange',
+                                };
+                            @endphp
+                            <tr data-purpose="{{ $log->purpose }}">
                                 <td>{{ $log->log_date }}</td>
+                                <td>
+                                    <span class="badge {{ $purposeBadgeClass }}">
+                                        {{ $purposeLabels[$log->purpose] ?? ucfirst(str_replace('_', ' ', $log->purpose)) }}
+                                    </span>
+                                </td>
                                 <td>{{ $log->condition }}</td>
+                                <td>{{ $log->weight !== null ? number_format((float) $log->weight, 2) . ' kg' : '—' }}</td>
                                 <td>{{ $log->notes ?: '—' }}</td>
                                 <td>
                                     <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -399,4 +439,15 @@ function openPigEditPrompt(url) {
     }
     window.location.href = url + '?code=' + encodeURIComponent(code);
 }
+
+document.getElementById('healthFilter')?.addEventListener('change', function () {
+    const value = this.value;
+    document.querySelectorAll('#healthTable tbody tr').forEach(row => {
+        if (value === 'all') {
+            row.style.display = '';
+        } else {
+            row.style.display = row.dataset.purpose === value ? '' : 'none';
+        }
+    });
+});
 @endsection

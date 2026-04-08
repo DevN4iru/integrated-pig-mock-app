@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FarmSetting;
 use App\Models\Pen;
 use App\Models\Pig;
 use Illuminate\Http\Request;
@@ -18,8 +19,9 @@ class PigController extends Controller
     public function create()
     {
         $pens = Pen::orderBy('name')->get();
+        $pricePerKg = FarmSetting::currentPricePerKg();
 
-        return view('pigs.create', compact('pens'));
+        return view('pigs.create', compact('pens', 'pricePerKg'));
     }
 
     public function store(Request $request)
@@ -31,8 +33,7 @@ class PigController extends Controller
             'pen_id' => ['required', 'exists:pens,id'],
             'pig_source' => ['required'],
             'date_added' => ['required', 'date'],
-            'latest_weight' => ['required', 'numeric'],
-            'asset_value' => ['required', 'numeric'],
+            'latest_weight' => ['required', 'numeric', 'min:0'],
         ]);
 
         $pen = Pen::withCount('pigs')->findOrFail($validated['pen_id']);
@@ -42,13 +43,13 @@ class PigController extends Controller
         }
 
         $validated['pen_location'] = $pen->name;
+        $validated['asset_value'] = (float) $validated['latest_weight'] * FarmSetting::currentPricePerKg();
 
         Pig::create($validated);
 
         return redirect()->route('pigs.index')->with('success', 'Pig added successfully.');
     }
 
-    // 🔥 NEW METHOD (Pig Profile)
     public function show(Pig $pig)
     {
         return view('pigs.show', compact('pig'));
@@ -76,8 +77,7 @@ class PigController extends Controller
             'pen_id' => ['required', 'exists:pens,id'],
             'pig_source' => ['required'],
             'date_added' => ['required', 'date'],
-            'latest_weight' => ['required', 'numeric'],
-            'asset_value' => ['required', 'numeric'],
+            'latest_weight' => ['required', 'numeric', 'min:0'],
         ]);
 
         $newPen = Pen::withCount('pigs')->findOrFail($validated['pen_id']);
@@ -87,6 +87,7 @@ class PigController extends Controller
         }
 
         $validated['pen_location'] = $newPen->name;
+        $validated['asset_value'] = (float) $validated['latest_weight'] * FarmSetting::currentPricePerKg();
 
         $pig->update($validated);
 

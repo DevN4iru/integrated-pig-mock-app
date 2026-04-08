@@ -8,9 +8,13 @@ use App\Http\Controllers\VaccinationController;
 use App\Http\Controllers\MortalityLogController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\FeedLogController;
+use App\Http\Controllers\FarmSettingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => view('dashboard'))->name('dashboard');
+
+Route::get('/settings/farm', [FarmSettingController::class, 'edit'])->name('settings.farm.edit');
+Route::put('/settings/farm', [FarmSettingController::class, 'update'])->name('settings.farm.update');
 
 Route::get('/pigs', [PigController::class, 'index'])->name('pigs.index');
 Route::get('/pigs/create', [PigController::class, 'create'])->name('pigs.create');

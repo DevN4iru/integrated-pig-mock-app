@@ -656,6 +656,11 @@
                     <span>Add Pig</span>
                     <small>New record</small>
                 </a>
+
+                <a href="{{ route('settings.farm.edit') }}" class="{{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                    <span>Settings</span>
+                    <small>Farm config</small>
+                </a>
             </nav>
 
             <div class="sidebar-note">
