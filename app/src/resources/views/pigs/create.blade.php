@@ -14,6 +14,7 @@
             <div>
                 <h3>Add Pig Record</h3>
                 <p>Fill in the details below to add a pig into the system.</p>
+                <p>Current global price per kg: <strong>₱ {{ number_format((float) $pricePerKg, 2) }}</strong></p>
             </div>
         </div>
 
@@ -67,13 +68,14 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="latest_weight">Weight Upon Entry</label>
-                    <input id="latest_weight" name="latest_weight" type="number" step="0.01" value="{{ old('latest_weight') }}" required>
+                    <label for="latest_weight">Weight Upon Entry (kg)</label>
+                    <input id="latest_weight" name="latest_weight" type="number" step="0.01" min="0" value="{{ old('latest_weight') }}" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="asset_value">Asset Value</label>
-                    <input id="asset_value" name="asset_value" type="number" step="0.01" value="{{ old('asset_value') }}" required>
+                    <label for="asset_value_preview">Asset Value (Auto)</label>
+                    <input id="asset_value_preview" type="number" step="0.01" value="{{ old('asset_value') }}" readonly>
+                    <input id="asset_value" name="asset_value" type="hidden" value="{{ old('asset_value', 0) }}">
                 </div>
             </div>
 
@@ -83,4 +85,25 @@
             </div>
         </form>
     </div>
+@endsection
+
+@section('scripts')
+const PRICE_PER_KG = {{ json_encode((float) $pricePerKg) }};
+
+function updateAssetValue() {
+    const weightInput = document.getElementById('latest_weight');
+    const hiddenAssetInput = document.getElementById('asset_value');
+    const previewInput = document.getElementById('asset_value_preview');
+
+    if (!weightInput || !hiddenAssetInput || !previewInput) return;
+
+    const weight = parseFloat(weightInput.value || '0');
+    const asset = isNaN(weight) ? 0 : (weight * PRICE_PER_KG);
+
+    hiddenAssetInput.value = asset.toFixed(2);
+    previewInput.value = asset.toFixed(2);
+}
+
+document.getElementById('latest_weight')?.addEventListener('input', updateAssetValue);
+updateAssetValue();
 @endsection
