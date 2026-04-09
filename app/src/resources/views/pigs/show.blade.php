@@ -5,22 +5,61 @@
 @section('page_subtitle', 'Detailed view of selected pig.')
 
 @section('top_actions')
+    @php
+        $isArchivedTop = !is_null($pig->deleted_at);
+    @endphp
+
     <a href="{{ route('pigs.index') }}" class="btn">Back to Pig List</a>
-    <button type="button" class="btn" onclick="openPigEditPrompt('{{ route('pigs.edit', $pig) }}')">Edit Pig</button>
-    <a href="{{ route('health-logs.create', $pig) }}" class="btn primary">Add Health Log</a>
+
+    @if (!$isArchivedTop)
+        <button type="button" class="btn" onclick="openPigEditPrompt('{{ route('pigs.edit', $pig) }}')">Edit Pig</button>
+
+        <form method="POST" action="{{ route('pigs.destroy', $pig->id) }}" style="display:inline-block;"
+            onsubmit="return confirm('Archive this pig? It will be removed from the active list but can still be restored later.');">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-warning">Archive</button>
+        </form>
+
+        <a href="{{ route('health-logs.create', $pig) }}" class="btn primary">Add Health Log</a>
+    @else
+        <form method="POST" action="{{ route('pigs.restore', $pig->id) }}" style="display:inline-block;"
+            onsubmit="return confirm('Restore this pig back to the active list?');">
+            @csrf
+            <button type="submit" class="btn">Restore</button>
+        </form>
+
+        <button type="button" class="btn btn-danger"
+            onclick="confirmPigPermanentDelete('{{ route('pigs.force-delete', $pig->id) }}')">
+            Permanently Delete
+        </button>
+    @endif
 @endsection
 
 @section('content')
     @php
         $dateAdded = $pig->date_added ? substr((string) $pig->date_added, 0, 10) : '—';
-        $weight = is_numeric($pig->latest_weight) ? number_format((float) $pig->latest_weight, 2) : $pig->latest_weight;
-        $assetValue = is_numeric($pig->asset_value) ? number_format((float) $pig->asset_value, 2) : $pig->asset_value;
+        $weight = is_numeric($pig->computed_weight) ? number_format((float) $pig->computed_weight, 2) : $pig->computed_weight;
+        $assetValue = is_numeric($pig->computed_asset_value) ? number_format((float) $pig->computed_asset_value, 2) : $pig->computed_asset_value;
         $penName = optional($pig->pen)->name ?: ($pig->pen_location ?? '—');
 
-        $isDead = $pig->mortalityLogs->isNotEmpty();
-        $isSold = $pig->sales->isNotEmpty();
-        $statusLabel = $isDead ? 'Dead' : ($isSold ? 'Sold' : 'Active');
-        $statusBadgeClass = $isDead ? 'red' : ($isSold ? 'orange' : 'green');
+        $isArchived = !is_null($pig->deleted_at);
+        $isDead = !$isArchived && $pig->mortalityLogs->isNotEmpty();
+        $isSold = !$isArchived && $pig->sales->isNotEmpty();
+
+        if ($isArchived) {
+            $statusLabel = 'Archived';
+            $statusBadgeClass = 'blue';
+        } elseif ($isDead) {
+            $statusLabel = 'Dead';
+            $statusBadgeClass = 'red';
+        } elseif ($isSold) {
+            $statusLabel = 'Sold';
+            $statusBadgeClass = 'orange';
+        } else {
+            $statusLabel = 'Active';
+            $statusBadgeClass = 'green';
+        }
 
         $purposeLabels = [
             'weight_update' => 'Weight Update',
@@ -30,7 +69,47 @@
             'injury' => 'Injury',
             'observation' => 'Observation',
         ];
+
+        $weightLogs = $pig->healthLogs
+            ->filter(fn ($log) => $log->purpose === 'weight_update' && $log->weight !== null)
+            ->sortByDesc(fn ($log) => ($log->log_date ?? '') . '-' . $log->id)
+            ->values();
+
+        $gain = $pig->weight_gain;
+        $daily = $pig->daily_gain;
+        $growthStatus = $pig->growth_status;
+
+        $growthBadgeClass = match($growthStatus) {
+            'good' => 'green',
+            'declining' => 'red',
+            'stagnant' => 'orange',
+            default => 'blue',
+        };
+
+        if ($gain === null) {
+            $trendSymbol = '—';
+            $trendText = 'No data';
+            $trendClass = 'blue';
+        } elseif ($gain > 0) {
+            $trendSymbol = '↑';
+            $trendText = 'Increasing';
+            $trendClass = 'green';
+        } elseif ($gain < 0) {
+            $trendSymbol = '↓';
+            $trendText = 'Dropping';
+            $trendClass = 'red';
+        } else {
+            $trendSymbol = '→';
+            $trendText = 'Stable';
+            $trendClass = 'orange';
+        }
     @endphp
+
+    @if ($isArchived)
+        <div class="flash error">
+            This pig is archived. Its records are preserved, but it is hidden from the active list until restored.
+        </div>
+    @endif
 
     <div class="panel-card">
         <div class="section-title">
@@ -87,6 +166,74 @@
     <div class="panel-card" style="margin-top: 20px;">
         <div class="section-title">
             <div>
+                <h3>Growth Analytics</h3>
+                <p>Latest growth performance based on the two most recent weight logs.</p>
+            </div>
+            <span class="badge {{ $growthBadgeClass }}">{{ ucfirst(str_replace('_', ' ', $growthStatus)) }}</span>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Weight Gain</label>
+                <input type="text" value="{{ $gain !== null ? number_format($gain, 2) . ' kg' : '—' }}" readonly>
+            </div>
+
+            <div class="form-group">
+                <label>Daily Gain</label>
+                <input type="text" value="{{ $daily !== null ? number_format($daily, 2) . ' kg/day' : '—' }}" readonly>
+            </div>
+
+            <div class="form-group">
+                <label>Trend</label>
+                <input type="text" value="{{ $trendSymbol . ' ' . $trendText }}" readonly>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel-card" style="margin-top: 20px;">
+        <div class="section-title">
+            <div>
+                <h3>Weight History</h3>
+                <p>Recorded weight updates over time for this pig.</p>
+            </div>
+        </div>
+
+        @if($weightLogs->isEmpty())
+            <div class="empty-state">No weight history yet.</div>
+        @else
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Weight</th>
+                            <th>Condition / Summary</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($weightLogs as $log)
+                            <tr>
+                                <td>{{ $log->log_date }}</td>
+                                <td>
+                                    <strong>{{ number_format((float) $log->weight, 2) }} kg</strong>
+                                    @if ($loop->first)
+                                        <span class="badge blue" style="margin-left: 8px;">Latest</span>
+                                    @endif
+                                </td>
+                                <td>{{ $log->condition }}</td>
+                                <td>{{ $log->notes ?: '—' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </div>
+
+    <div class="panel-card" style="margin-top: 20px;">
+        <div class="section-title">
+            <div>
                 <h3>Health Logs</h3>
                 <p>Recorded health conditions and notes for this pig.</p>
             </div>
@@ -102,7 +249,9 @@
                     <option value="observation">Observation</option>
                 </select>
 
-                <a href="{{ route('health-logs.create', $pig) }}" class="btn primary">Add Health Log</a>
+                @if (!$isArchived)
+                    <a href="{{ route('health-logs.create', $pig) }}" class="btn primary">Add Health Log</a>
+                @endif
             </div>
         </div>
 
@@ -145,8 +294,8 @@
                                 <td>{{ $log->notes ?: '—' }}</td>
                                 <td>
                                     <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                        <a href="{{ route('health-logs.edit', [$pig, $log]) }}" class="btn">Edit</a>
-                                        <form method="POST" action="{{ route('health-logs.destroy', [$pig, $log]) }}" onsubmit="return confirm('Delete this health log?');">
+                                        <a href="{{ route('health-logs.edit', [$pig->id, $log]) }}" class="btn">Edit</a>
+                                        <form method="POST" action="{{ route('health-logs.destroy', [$pig->id, $log]) }}" onsubmit="return confirm('Delete this health log?');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-danger">Delete</button>
@@ -167,7 +316,9 @@
                 <h3>Medication</h3>
                 <p>Treatments and administered medicines for this pig.</p>
             </div>
-            <a href="{{ route('medications.create', $pig) }}" class="btn primary">Add Medication</a>
+            @if (!$isArchived)
+                <a href="{{ route('medications.create', $pig) }}" class="btn primary">Add Medication</a>
+            @endif
         </div>
 
         @if($pig->medications->isEmpty())
@@ -215,7 +366,9 @@
                 <h3>Vaccination</h3>
                 <p>Vaccination records and immunization history for this pig.</p>
             </div>
-            <a href="{{ route('vaccinations.create', $pig) }}" class="btn primary">Add Vaccination</a>
+            @if (!$isArchived)
+                <a href="{{ route('vaccinations.create', $pig) }}" class="btn primary">Add Vaccination</a>
+            @endif
         </div>
 
         @if($pig->vaccinations->isEmpty())
@@ -263,12 +416,12 @@
                 <h3>Mortality</h3>
                 <p>Mortality records for this pig.</p>
             </div>
-            @if($pig->sales->isEmpty())
+            @if(!$isArchived && $pig->sales->isEmpty())
                 <a href="{{ route('mortality.create', $pig) }}" class="btn primary">Record Mortality</a>
             @endif
         </div>
 
-        @if($pig->sales->isNotEmpty())
+        @if($pig->sales->isNotEmpty() && !$isArchived)
             <div class="flash error" style="margin-bottom: 16px;">
                 Mortality recording is locked because this pig already has a sale record.
             </div>
@@ -317,12 +470,12 @@
                 <h3>Sold Records</h3>
                 <p>Sale records for this pig.</p>
             </div>
-            @if($pig->mortalityLogs->isEmpty())
+            @if(!$isArchived && $pig->mortalityLogs->isEmpty())
                 <a href="{{ route('sales.create', $pig) }}" class="btn primary">Record Sale</a>
             @endif
         </div>
 
-        @if($pig->mortalityLogs->isNotEmpty())
+        @if($pig->mortalityLogs->isNotEmpty() && !$isArchived)
             <div class="flash error" style="margin-bottom: 16px;">
                 Sale recording is locked because this pig already has a mortality record.
             </div>
@@ -373,7 +526,9 @@
                 <h3>Feed Logs</h3>
                 <p>Feeding periods and diet tracking.</p>
             </div>
-            <a href="{{ route('feed-logs.create', $pig) }}" class="btn primary">Add Feed Log</a>
+            @if (!$isArchived)
+                <a href="{{ route('feed-logs.create', $pig) }}" class="btn primary">Add Feed Log</a>
+            @endif
         </div>
 
         @if($pig->feedLogs->isEmpty())
@@ -438,6 +593,37 @@ function openPigEditPrompt(url) {
         return;
     }
     window.location.href = url + '?code=' + encodeURIComponent(code);
+}
+
+function confirmPigPermanentDelete(url) {
+    const code = prompt('Permanent delete will erase this pig and its related records forever.\n\nEnter challenge code 12345 to continue:');
+    if (code === null) return;
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = '_token';
+    csrf.value = '{{ csrf_token() }}';
+
+    const method = document.createElement('input');
+    method.type = 'hidden';
+    method.name = '_method';
+    method.value = 'DELETE';
+
+    const codeInput = document.createElement('input');
+    codeInput.type = 'hidden';
+    codeInput.name = 'code';
+    codeInput.value = code;
+
+    form.appendChild(csrf);
+    form.appendChild(method);
+    form.appendChild(codeInput);
+
+    document.body.appendChild(form);
+    form.submit();
 }
 
 document.getElementById('healthFilter')?.addEventListener('change', function () {

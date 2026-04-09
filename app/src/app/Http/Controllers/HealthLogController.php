@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FarmSetting;
 use App\Models\HealthLog;
 use App\Models\Pig;
 use Illuminate\Http\Request;
@@ -37,26 +36,17 @@ class HealthLogController extends Controller
     {
         $validated = $request->validate($this->rules());
 
-        if ($validated['purpose'] === 'weight_update' && !array_key_exists('weight', $validated)) {
-            return back()->withErrors(['weight' => 'Weight is required for a weight update.'])->withInput();
+        if ($validated['purpose'] === 'weight_update' && ($validated['weight'] === null || $validated['weight'] === '')) {
+            return back()->withErrors([
+                'weight' => 'Weight is required for a weight update.'
+            ])->withInput();
         }
 
-        if ($validated['purpose'] === 'weight_update' && ($validated['weight'] === null || $validated['weight'] === '')) {
-            return back()->withErrors(['weight' => 'Weight is required for a weight update.'])->withInput();
-        }
+        // ✅ ALLOW WEIGHT REGRESSION (pigs can lose weight in real scenarios)
 
         $validated['pig_id'] = $pig->id;
 
         HealthLog::create($validated);
-
-        if ($validated['purpose'] === 'weight_update') {
-            $newWeight = (float) $validated['weight'];
-            $pricePerKg = FarmSetting::currentPricePerKg();
-
-            $pig->latest_weight = $newWeight;
-            $pig->asset_value = $newWeight * $pricePerKg;
-            $pig->save();
-        }
 
         return redirect()
             ->route('pigs.show', $pig)
@@ -76,24 +66,13 @@ class HealthLogController extends Controller
 
         $validated = $request->validate($this->rules());
 
-        if ($validated['purpose'] === 'weight_update' && !array_key_exists('weight', $validated)) {
-            return back()->withErrors(['weight' => 'Weight is required for a weight update.'])->withInput();
-        }
-
         if ($validated['purpose'] === 'weight_update' && ($validated['weight'] === null || $validated['weight'] === '')) {
-            return back()->withErrors(['weight' => 'Weight is required for a weight update.'])->withInput();
+            return back()->withErrors([
+                'weight' => 'Weight is required for a weight update.'
+            ])->withInput();
         }
 
         $healthLog->update($validated);
-
-        if ($validated['purpose'] === 'weight_update') {
-            $newWeight = (float) $validated['weight'];
-            $pricePerKg = FarmSetting::currentPricePerKg();
-
-            $pig->latest_weight = $newWeight;
-            $pig->asset_value = $newWeight * $pricePerKg;
-            $pig->save();
-        }
 
         return redirect()
             ->route('pigs.show', $pig)
