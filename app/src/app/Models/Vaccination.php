@@ -10,8 +10,13 @@ class Vaccination extends Model
         'pig_id',
         'vaccine_name',
         'dose',
+        'cost',
         'vaccinated_at',
         'notes',
+    ];
+
+    protected $casts = [
+        'cost' => 'float',
     ];
 
     public function pig()

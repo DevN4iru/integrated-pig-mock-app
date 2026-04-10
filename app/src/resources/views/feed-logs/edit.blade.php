@@ -34,7 +34,12 @@
 
             <div class="form-group">
                 <label>Quantity</label>
-                <input type="number" step="0.01" name="quantity" value="{{ old('quantity', $feedLog->quantity) }}" required>
+                <input type="number" step="0.01" min="0" name="quantity" value="{{ old('quantity', $feedLog->quantity) }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Cost (₱)</label>
+                <input type="number" step="0.01" min="0" name="cost" value="{{ old('cost', $feedLog->cost ?? 0) }}" required>
             </div>
 
             <div class="form-group">

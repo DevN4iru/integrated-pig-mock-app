@@ -115,6 +115,14 @@
         } else {
             $lockMessage = null;
         }
+
+        $feedKg = $pig->total_feed_kg;
+        $feedEfficiency = $pig->feed_efficiency;
+        $totalFeedCost = $pig->total_feed_cost;
+        $totalMedicationCost = $pig->total_medication_cost;
+        $totalVaccinationCost = $pig->total_vaccination_cost;
+        $totalCareLiability = $pig->total_care_liability;
+        $totalOperatingCost = $pig->total_operating_cost;
     @endphp
 
     @if ($isArchived)
@@ -204,6 +212,52 @@
             <div class="form-group">
                 <label>Trend</label>
                 <input type="text" value="{{ $trendSymbol . ' ' . $trendText }}" readonly>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel-card" style="margin-top: 20px;">
+        <div class="section-title">
+            <div>
+                <h3>Feed Efficiency & Cost Tracking</h3>
+                <p>Operating cost and feeding efficiency summary for this pig.</p>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Total Feed Cost</label>
+                <input type="text" value="₱ {{ number_format($totalFeedCost, 2) }}" readonly>
+            </div>
+
+            <div class="form-group">
+                <label>Total Medication Cost</label>
+                <input type="text" value="₱ {{ number_format($totalMedicationCost, 2) }}" readonly>
+            </div>
+
+            <div class="form-group">
+                <label>Total Vaccination Cost</label>
+                <input type="text" value="₱ {{ number_format($totalVaccinationCost, 2) }}" readonly>
+            </div>
+
+            <div class="form-group">
+                <label>Care Liability</label>
+                <input type="text" value="₱ {{ number_format($totalCareLiability, 2) }}" readonly>
+            </div>
+
+            <div class="form-group">
+                <label>Total Operating Cost</label>
+                <input type="text" value="₱ {{ number_format($totalOperatingCost, 2) }}" readonly>
+            </div>
+
+            <div class="form-group">
+                <label>Total Feed (kg only)</label>
+                <input type="text" value="{{ number_format($feedKg, 2) }} kg" readonly>
+            </div>
+
+            <div class="form-group">
+                <label>Feed Efficiency</label>
+                <input type="text" value="{{ $feedEfficiency !== null ? number_format($feedEfficiency, 2) . ' kg feed / kg gain' : '—' }}" readonly>
             </div>
         </div>
     </div>
@@ -353,6 +407,7 @@
                             <th>Date</th>
                             <th>Medication</th>
                             <th>Dosage</th>
+                            <th>Cost</th>
                             <th>Notes</th>
                             <th>Actions</th>
                         </tr>
@@ -363,6 +418,7 @@
                                 <td>{{ $med->administered_at }}</td>
                                 <td>{{ $med->medication_name }}</td>
                                 <td>{{ $med->dosage }}</td>
+                                <td>₱ {{ number_format((float) ($med->cost ?? 0), 2) }}</td>
                                 <td>{{ $med->notes ?: '—' }}</td>
                                 <td>
                                     @if (!$isOperationalLocked)
@@ -407,6 +463,7 @@
                             <th>Date</th>
                             <th>Vaccine</th>
                             <th>Dose</th>
+                            <th>Cost</th>
                             <th>Notes</th>
                             <th>Actions</th>
                         </tr>
@@ -417,6 +474,7 @@
                                 <td>{{ $vac->vaccinated_at }}</td>
                                 <td>{{ $vac->vaccine_name }}</td>
                                 <td>{{ $vac->dose }}</td>
+                                <td>₱ {{ number_format((float) ($vac->cost ?? 0), 2) }}</td>
                                 <td>{{ $vac->notes ?: '—' }}</td>
                                 <td>
                                     @if (!$isOperationalLocked)
@@ -572,6 +630,7 @@
                             <th>Start</th>
                             <th>End</th>
                             <th>Qty</th>
+                            <th>Cost</th>
                             <th>Unit</th>
                             <th>Time</th>
                             <th>Status</th>
@@ -586,6 +645,7 @@
                                 <td>{{ $feed->start_feed_date }}</td>
                                 <td>{{ $feed->end_feed_date ?: 'Pending' }}</td>
                                 <td>{{ $feed->quantity }}</td>
+                                <td>₱ {{ number_format((float) ($feed->cost ?? 0), 2) }}</td>
                                 <td>{{ $feed->unit }}</td>
                                 <td>{{ $feed->feeding_time }}</td>
                                 <td>

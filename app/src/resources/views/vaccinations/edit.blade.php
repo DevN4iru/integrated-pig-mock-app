@@ -28,6 +28,11 @@
             </div>
 
             <div class="form-group">
+                <label>Cost (₱)</label>
+                <input type="number" step="0.01" min="0" name="cost" value="{{ old('cost', $vaccination->cost ?? 0) }}" required>
+            </div>
+
+            <div class="form-group">
                 <label>Date Vaccinated</label>
                 <input type="date" name="vaccinated_at" value="{{ old('vaccinated_at', $vaccination->vaccinated_at) }}" required>
             </div>

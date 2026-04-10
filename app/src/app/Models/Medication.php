@@ -10,8 +10,13 @@ class Medication extends Model
         'pig_id',
         'medication_name',
         'dosage',
+        'cost',
         'administered_at',
         'notes',
+    ];
+
+    protected $casts = [
+        'cost' => 'float',
     ];
 
     public function pig()
