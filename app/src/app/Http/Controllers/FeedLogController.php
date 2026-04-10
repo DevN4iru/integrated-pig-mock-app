@@ -8,36 +8,12 @@ use Illuminate\Http\Request;
 
 class FeedLogController extends Controller
 {
-    private function isLocked(Pig $pig): bool
-    {
-        return $pig->trashed()
-            || $pig->mortalityLogs()->exists()
-            || $pig->sales()->exists();
-    }
-
-    private function lockedMessage(Pig $pig): string
-    {
-        if ($pig->trashed()) {
-            return 'Archived pigs cannot receive feed log changes. Restore the pig first.';
-        }
-
-        if ($pig->mortalityLogs()->exists()) {
-            return 'Dead pigs cannot receive feed log changes.';
-        }
-
-        if ($pig->sales()->exists()) {
-            return 'Sold pigs cannot receive feed log changes.';
-        }
-
-        return 'This pig is locked for feed log changes.';
-    }
-
     public function create(Pig $pig)
     {
-        if ($this->isLocked($pig)) {
+        if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $this->lockedMessage($pig));
+                ->with('error', $pig->operationalLockMessage('feed logs'));
         }
 
         return view('feed-logs.create', compact('pig'));
@@ -45,10 +21,10 @@ class FeedLogController extends Controller
 
     public function store(Request $request, Pig $pig)
     {
-        if ($this->isLocked($pig)) {
+        if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $this->lockedMessage($pig));
+                ->with('error', $pig->operationalLockMessage('feed logs'));
         }
 
         $validated = $request->validate([
@@ -75,10 +51,10 @@ class FeedLogController extends Controller
     {
         abort_if($feedLog->pig_id !== $pig->id, 404);
 
-        if ($this->isLocked($pig)) {
+        if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $this->lockedMessage($pig));
+                ->with('error', $pig->operationalLockMessage('feed logs'));
         }
 
         return view('feed-logs.edit', compact('pig', 'feedLog'));
@@ -88,10 +64,10 @@ class FeedLogController extends Controller
     {
         abort_if($feedLog->pig_id !== $pig->id, 404);
 
-        if ($this->isLocked($pig)) {
+        if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $this->lockedMessage($pig));
+                ->with('error', $pig->operationalLockMessage('feed logs'));
         }
 
         $validated = $request->validate([
@@ -116,10 +92,10 @@ class FeedLogController extends Controller
     {
         abort_if($feedLog->pig_id !== $pig->id, 404);
 
-        if ($this->isLocked($pig)) {
+        if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $this->lockedMessage($pig));
+                ->with('error', $pig->operationalLockMessage('feed logs'));
         }
 
         $feedLog->delete();

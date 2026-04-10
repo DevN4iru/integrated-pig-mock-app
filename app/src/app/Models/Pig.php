@@ -37,7 +37,7 @@ class Pig extends Model
 
     public function healthLogs()
     {
-        return $this->hasMany(HealthLog::class)->latest();
+        return $this->hasMany(HealthLog::class);
     }
 
     public function medications()
@@ -63,6 +63,42 @@ class Pig extends Model
     public function feedLogs()
     {
         return $this->hasMany(FeedLog::class)->latest();
+    }
+
+    public function isOperationallyLocked(): bool
+    {
+        return $this->trashed()
+            || $this->mortalityLogs()->exists()
+            || $this->sales()->exists();
+    }
+
+    public function operationalLockState(): ?string
+    {
+        if ($this->trashed()) {
+            return 'archived';
+        }
+
+        if ($this->mortalityLogs()->exists()) {
+            return 'dead';
+        }
+
+        if ($this->sales()->exists()) {
+            return 'sold';
+        }
+
+        return null;
+    }
+
+    public function operationalLockMessage(string $moduleLabel = 'records'): string
+    {
+        $moduleLabel = trim($moduleLabel) !== '' ? trim($moduleLabel) : 'records';
+
+        return match ($this->operationalLockState()) {
+            'archived' => 'This pig is archived. ' . ucfirst($moduleLabel) . ' are locked until the pig is restored.',
+            'dead' => 'This pig already has a mortality record. ' . ucfirst($moduleLabel) . ' are locked to protect lifecycle integrity.',
+            'sold' => 'This pig already has a sale record. ' . ucfirst($moduleLabel) . ' are locked to protect lifecycle integrity.',
+            default => 'This pig is not available for ' . $moduleLabel . '.',
+        };
     }
 
     protected function orderedWeightLogs()

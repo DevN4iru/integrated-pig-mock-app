@@ -11,6 +11,14 @@
 @section('content')
     @php
         $maxDate = now()->toDateString();
+        $existingWeightDates = $pig->healthLogs()
+            ->where('purpose', 'weight_update')
+            ->whereNotNull('weight')
+            ->pluck('log_date')
+            ->map(fn ($date) => substr((string) $date, 0, 10))
+            ->unique()
+            ->values()
+            ->all();
     @endphp
 
     <div class="panel-card">
@@ -35,7 +43,7 @@
 
                 <div class="form-group">
                     <label>Date</label>
-                    <input type="date" name="log_date" value="{{ old('log_date') }}" max="{{ $maxDate }}" required>
+                    <input type="date" name="log_date" id="log_date" value="{{ old('log_date') }}" max="{{ $maxDate }}" required>
                 </div>
 
                 <div class="form-group">
@@ -46,6 +54,12 @@
                 <div class="form-group" id="weight-group">
                     <label>Weight (kg)</label>
                     <input type="number" step="0.01" min="0.01" name="weight" id="weight" value="{{ old('weight') }}">
+                </div>
+
+                <div class="form-group full" id="same-day-weight-warning" style="display:none;">
+                    <div class="flash error" style="margin: 0;">
+                        A weight update already exists for this date. Multiple same-day weight logs are allowed, and the latest saved entry will be used first in trend calculations.
+                    </div>
                 </div>
 
                 <div class="form-group full">
@@ -63,16 +77,25 @@
 @endsection
 
 @section('scripts')
+const existingWeightDates = @json($existingWeightDates);
+
 function toggleWeightField() {
     const purpose = document.getElementById('purpose');
+    const logDate = document.getElementById('log_date');
     const weightGroup = document.getElementById('weight-group');
     const weightInput = document.getElementById('weight');
+    const warning = document.getElementById('same-day-weight-warning');
 
-    if (!purpose || !weightGroup || !weightInput) return;
+    if (!purpose || !logDate || !weightGroup || !weightInput || !warning) return;
 
     const showWeight = purpose.value === 'weight_update';
+    const selectedDate = logDate.value;
+
     weightGroup.style.display = showWeight ? '' : 'none';
     weightInput.required = showWeight;
+
+    const showWarning = showWeight && selectedDate !== '' && existingWeightDates.includes(selectedDate);
+    warning.style.display = showWarning ? '' : 'none';
 
     if (!showWeight) {
         weightInput.value = '';
@@ -80,5 +103,6 @@ function toggleWeightField() {
 }
 
 document.getElementById('purpose')?.addEventListener('change', toggleWeightField);
+document.getElementById('log_date')?.addEventListener('change', toggleWeightField);
 toggleWeightField();
 @endsection
