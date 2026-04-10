@@ -9,6 +9,10 @@
 @endsection
 
 @section('content')
+    @php
+        $maxDate = now()->toDateString();
+    @endphp
+
     <div class="panel-card">
         <h3>Health Log Entry</h3>
 
@@ -31,7 +35,7 @@
 
                 <div class="form-group">
                     <label>Date</label>
-                    <input type="date" name="log_date" value="{{ old('log_date') }}" required>
+                    <input type="date" name="log_date" value="{{ old('log_date') }}" max="{{ $maxDate }}" required>
                 </div>
 
                 <div class="form-group">
@@ -41,7 +45,7 @@
 
                 <div class="form-group" id="weight-group">
                     <label>Weight (kg)</label>
-                    <input type="number" step="0.01" min="0" name="weight" id="weight" value="{{ old('weight') }}">
+                    <input type="number" step="0.01" min="0.01" name="weight" id="weight" value="{{ old('weight') }}">
                 </div>
 
                 <div class="form-group full">

@@ -7,6 +7,9 @@
 @section('top_actions')
     @php
         $isArchivedTop = !is_null($pig->deleted_at);
+        $isDeadTop = !$isArchivedTop && $pig->mortalityLogs->isNotEmpty();
+        $isSoldTop = !$isArchivedTop && $pig->sales->isNotEmpty();
+        $isOperationalLockedTop = $isArchivedTop || $isDeadTop || $isSoldTop;
     @endphp
 
     <a href="{{ route('pigs.index') }}" class="btn">Back to Pig List</a>
@@ -21,7 +24,9 @@
             <button type="submit" class="btn btn-warning">Archive</button>
         </form>
 
-        <a href="{{ route('health-logs.create', $pig) }}" class="btn primary">Add Health Log</a>
+        @if (!$isOperationalLockedTop)
+            <a href="{{ route('health-logs.create', $pig) }}" class="btn primary">Add Health Log</a>
+        @endif
     @else
         <form method="POST" action="{{ route('pigs.restore', $pig->id) }}" style="display:inline-block;"
             onsubmit="return confirm('Restore this pig back to the active list?');">
@@ -40,12 +45,13 @@
     @php
         $dateAdded = $pig->date_added ? substr((string) $pig->date_added, 0, 10) : '—';
         $weight = is_numeric($pig->computed_weight) ? number_format((float) $pig->computed_weight, 2) : $pig->computed_weight;
-        $assetValue = is_numeric($pig->computed_asset_value) ? number_format((float) $pig->computed_asset_value, 2) : $pig->computed_asset_value;
+        $assetValue = is_numeric($pig->asset_value) ? number_format((float) $pig->asset_value, 2) : $pig->asset_value;
         $penName = optional($pig->pen)->name ?: ($pig->pen_location ?? '—');
 
         $isArchived = !is_null($pig->deleted_at);
         $isDead = !$isArchived && $pig->mortalityLogs->isNotEmpty();
         $isSold = !$isArchived && $pig->sales->isNotEmpty();
+        $isOperationalLocked = $isArchived || $isDead || $isSold;
 
         if ($isArchived) {
             $statusLabel = 'Archived';
@@ -89,25 +95,37 @@
         if ($gain === null) {
             $trendSymbol = '—';
             $trendText = 'No data';
-            $trendClass = 'blue';
         } elseif ($gain > 0) {
             $trendSymbol = '↑';
             $trendText = 'Increasing';
-            $trendClass = 'green';
         } elseif ($gain < 0) {
             $trendSymbol = '↓';
             $trendText = 'Dropping';
-            $trendClass = 'red';
         } else {
             $trendSymbol = '→';
             $trendText = 'Stable';
-            $trendClass = 'orange';
+        }
+
+        if ($isArchived) {
+            $lockMessage = 'This pig is archived. Operational records are locked until the pig is restored.';
+        } elseif ($isDead) {
+            $lockMessage = 'This pig has a mortality record. Health, feed, medication, and vaccination records are locked.';
+        } elseif ($isSold) {
+            $lockMessage = 'This pig has a sale record. Health, feed, medication, and vaccination records are locked.';
+        } else {
+            $lockMessage = null;
         }
     @endphp
 
     @if ($isArchived)
         <div class="flash error">
             This pig is archived. Its records are preserved, but it is hidden from the active list until restored.
+        </div>
+    @endif
+
+    @if ($lockMessage)
+        <div class="flash error" style="margin-bottom: 16px;">
+            {{ $lockMessage }}
         </div>
     @endif
 
@@ -249,7 +267,7 @@
                     <option value="observation">Observation</option>
                 </select>
 
-                @if (!$isArchived)
+                @if (!$isOperationalLocked)
                     <a href="{{ route('health-logs.create', $pig) }}" class="btn primary">Add Health Log</a>
                 @endif
             </div>
@@ -293,14 +311,18 @@
                                 <td>{{ $log->weight !== null ? number_format((float) $log->weight, 2) . ' kg' : '—' }}</td>
                                 <td>{{ $log->notes ?: '—' }}</td>
                                 <td>
-                                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                        <a href="{{ route('health-logs.edit', [$pig->id, $log]) }}" class="btn">Edit</a>
-                                        <form method="POST" action="{{ route('health-logs.destroy', [$pig->id, $log]) }}" onsubmit="return confirm('Delete this health log?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-danger">Delete</button>
-                                        </form>
-                                    </div>
+                                    @if (!$isOperationalLocked)
+                                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                            <a href="{{ route('health-logs.edit', [$pig->id, $log]) }}" class="btn">Edit</a>
+                                            <form method="POST" action="{{ route('health-logs.destroy', [$pig->id, $log]) }}" onsubmit="return confirm('Delete this health log?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-danger">Delete</button>
+                                            </form>
+                                        </div>
+                                    @else
+                                        <span class="text-muted">Locked</span>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
@@ -316,7 +338,7 @@
                 <h3>Medication</h3>
                 <p>Treatments and administered medicines for this pig.</p>
             </div>
-            @if (!$isArchived)
+            @if (!$isOperationalLocked)
                 <a href="{{ route('medications.create', $pig) }}" class="btn primary">Add Medication</a>
             @endif
         </div>
@@ -343,14 +365,18 @@
                                 <td>{{ $med->dosage }}</td>
                                 <td>{{ $med->notes ?: '—' }}</td>
                                 <td>
-                                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                        <a href="{{ route('medications.edit', [$pig, $med]) }}" class="btn">Edit</a>
-                                        <form method="POST" action="{{ route('medications.destroy', [$pig, $med]) }}" onsubmit="return confirm('Delete this medication record?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-danger">Delete</button>
-                                        </form>
-                                    </div>
+                                    @if (!$isOperationalLocked)
+                                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                            <a href="{{ route('medications.edit', [$pig, $med]) }}" class="btn">Edit</a>
+                                            <form method="POST" action="{{ route('medications.destroy', [$pig, $med]) }}" onsubmit="return confirm('Delete this medication record?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-danger">Delete</button>
+                                            </form>
+                                        </div>
+                                    @else
+                                        <span class="text-muted">Locked</span>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
@@ -366,7 +392,7 @@
                 <h3>Vaccination</h3>
                 <p>Vaccination records and immunization history for this pig.</p>
             </div>
-            @if (!$isArchived)
+            @if (!$isOperationalLocked)
                 <a href="{{ route('vaccinations.create', $pig) }}" class="btn primary">Add Vaccination</a>
             @endif
         </div>
@@ -393,14 +419,18 @@
                                 <td>{{ $vac->dose }}</td>
                                 <td>{{ $vac->notes ?: '—' }}</td>
                                 <td>
-                                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                        <a href="{{ route('vaccinations.edit', [$pig, $vac]) }}" class="btn">Edit</a>
-                                        <form method="POST" action="{{ route('vaccinations.destroy', [$pig, $vac]) }}" onsubmit="return confirm('Delete this vaccination record?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-danger">Delete</button>
-                                        </form>
-                                    </div>
+                                    @if (!$isOperationalLocked)
+                                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                            <a href="{{ route('vaccinations.edit', [$pig, $vac]) }}" class="btn">Edit</a>
+                                            <form method="POST" action="{{ route('vaccinations.destroy', [$pig, $vac]) }}" onsubmit="return confirm('Delete this vaccination record?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-danger">Delete</button>
+                                            </form>
+                                        </div>
+                                    @else
+                                        <span class="text-muted">Locked</span>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
@@ -526,7 +556,7 @@
                 <h3>Feed Logs</h3>
                 <p>Feeding periods and diet tracking.</p>
             </div>
-            @if (!$isArchived)
+            @if (!$isOperationalLocked)
                 <a href="{{ route('feed-logs.create', $pig) }}" class="btn primary">Add Feed Log</a>
             @endif
         </div>
@@ -565,14 +595,18 @@
                                 </td>
                                 <td>{{ $feed->notes ?: '—' }}</td>
                                 <td>
-                                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                        <a href="{{ route('feed-logs.edit', [$pig, $feed]) }}" class="btn">Edit</a>
-                                        <form method="POST" action="{{ route('feed-logs.destroy', [$pig, $feed]) }}" onsubmit="return confirm('Delete this feed log?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-danger">Delete</button>
-                                        </form>
-                                    </div>
+                                    @if (!$isOperationalLocked)
+                                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                            <a href="{{ route('feed-logs.edit', [$pig, $feed]) }}" class="btn">Edit</a>
+                                            <form method="POST" action="{{ route('feed-logs.destroy', [$pig, $feed]) }}" onsubmit="return confirm('Delete this feed log?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-danger">Delete</button>
+                                            </form>
+                                        </div>
+                                    @else
+                                        <span class="text-muted">Locked</span>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
