@@ -28,6 +28,13 @@ class Pig extends Model
         'weight_gain',
         'daily_gain',
         'growth_status',
+        'total_feed_cost',
+        'total_medication_cost',
+        'total_vaccination_cost',
+        'total_care_liability',
+        'total_operating_cost',
+        'total_feed_kg',
+        'feed_efficiency',
     ];
 
     public function pen()
@@ -200,5 +207,57 @@ class Pig extends Model
         }
 
         return 'stagnant';
+    }
+
+    public function getTotalFeedCostAttribute()
+    {
+        return (float) $this->feedLogs->sum(function ($log) {
+            return (float) ($log->cost ?? 0);
+        });
+    }
+
+    public function getTotalMedicationCostAttribute()
+    {
+        return (float) $this->medications->sum(function ($log) {
+            return (float) ($log->cost ?? 0);
+        });
+    }
+
+    public function getTotalVaccinationCostAttribute()
+    {
+        return (float) $this->vaccinations->sum(function ($log) {
+            return (float) ($log->cost ?? 0);
+        });
+    }
+
+    public function getTotalCareLiabilityAttribute()
+    {
+        return (float) $this->total_medication_cost + (float) $this->total_vaccination_cost;
+    }
+
+    public function getTotalOperatingCostAttribute()
+    {
+        return (float) $this->total_feed_cost + (float) $this->total_care_liability;
+    }
+
+    public function getTotalFeedKgAttribute()
+    {
+        return (float) $this->feedLogs
+            ->filter(fn ($log) => strtolower((string) $log->unit) === 'kg')
+            ->sum(function ($log) {
+                return (float) ($log->quantity ?? 0);
+            });
+    }
+
+    public function getFeedEfficiencyAttribute()
+    {
+        $feedKg = (float) $this->total_feed_kg;
+        $gainFromBaseline = (float) $this->computed_weight - (float) $this->latest_weight;
+
+        if ($feedKg <= 0 || $gainFromBaseline <= 0) {
+            return null;
+        }
+
+        return $feedKg / $gainFromBaseline;
     }
 }

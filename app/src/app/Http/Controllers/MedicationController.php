@@ -30,6 +30,7 @@ class MedicationController extends Controller
         $validated = $request->validate([
             'medication_name' => ['required', 'string', 'max:255'],
             'dosage' => ['required', 'string', 'max:255'],
+            'cost' => ['required', 'numeric', 'min:0'],
             'administered_at' => ['required', 'date'],
             'notes' => ['nullable', 'string'],
         ]);
@@ -69,6 +70,7 @@ class MedicationController extends Controller
         $validated = $request->validate([
             'medication_name' => ['required', 'string', 'max:255'],
             'dosage' => ['required', 'string', 'max:255'],
+            'cost' => ['required', 'numeric', 'min:0'],
             'administered_at' => ['required', 'date'],
             'notes' => ['nullable', 'string'],
         ]);

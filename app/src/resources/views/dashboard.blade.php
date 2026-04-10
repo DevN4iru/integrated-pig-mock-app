@@ -13,7 +13,7 @@
 @section('content')
 
 @php
-    $pigs = \App\Models\Pig::with(['sales', 'mortalityLogs'])->get();
+    $pigs = \App\Models\Pig::with(['sales', 'mortalityLogs', 'feedLogs', 'medications', 'vaccinations'])->get();
 
     $livePigs = $pigs->filter(fn ($pig) => $pig->sales->isEmpty() && $pig->mortalityLogs->isEmpty());
     $soldPigs = $pigs->filter(fn ($pig) => $pig->sales->isNotEmpty());
@@ -23,6 +23,25 @@
     $totalRevenue = (float) $soldPigs->flatMap->sales->sum('price');
     $totalLossValue = (float) $deadPigs->sum('asset_value');
     $netPosition = $totalAssetValue + $totalRevenue - $totalLossValue;
+
+    $totalFeedCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_feed_cost);
+    $totalMedicationCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_medication_cost);
+    $totalVaccinationCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_vaccination_cost);
+    $totalCareLiability = (float) $pigs->sum(fn ($pig) => (float) $pig->total_care_liability);
+    $totalOperatingCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_operating_cost);
+
+    $positiveGainPigs = $pigs->filter(function ($pig) {
+        return $pig->feed_efficiency !== null;
+    });
+
+    $totalFeedKgForEfficiency = (float) $positiveGainPigs->sum(fn ($pig) => (float) $pig->total_feed_kg);
+    $totalGainForEfficiency = (float) $positiveGainPigs->sum(function ($pig) {
+        return max(0, (float) $pig->computed_weight - (float) $pig->latest_weight);
+    });
+
+    $farmFeedEfficiency = $totalFeedKgForEfficiency > 0 && $totalGainForEfficiency > 0
+        ? $totalFeedKgForEfficiency / $totalGainForEfficiency
+        : null;
 
     $recentSales = \App\Models\Sale::with('pig')->latest()->take(5)->get();
     $recentMortality = \App\Models\MortalityLog::with('pig')->latest()->take(5)->get();
@@ -115,8 +134,44 @@
 .trend-down { font-weight: 700; color: #dc2626; }
 .trend-flat { font-weight: 700; color: #6b7280; }
 .panel-actions-inline { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.dashboard-section-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 22px 0 12px;
+}
+.dashboard-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 18px;
+    margin-bottom: 18px;
+}
+.dashboard-compact-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+}
+.dashboard-compact-card .label {
+    display: block;
+    margin-bottom: 8px;
+}
+.dashboard-compact-card .stat-value {
+    margin-bottom: 0;
+}
+@media (max-width: 1150px) {
+    .dashboard-mini-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media (max-width: 640px) {
+    .dashboard-mini-grid {
+        grid-template-columns: 1fr;
+    }
+}
 </style>
 
+<h3 class="dashboard-section-title">Financial Overview</h3>
 <div class="grid stats">
     <div class="stat-card">
         <div class="stat-top">
@@ -155,6 +210,50 @@
     </div>
 </div>
 
+<h3 class="dashboard-section-title">Cost & Liability</h3>
+<div class="dashboard-mini-grid">
+    <div class="dashboard-compact-card">
+        <div class="stat-top">
+            <span class="label">Feed Cost</span>
+            <span class="badge orange">Cost</span>
+        </div>
+        <div class="stat-value">₱ {{ number_format($totalFeedCost, 2) }}</div>
+    </div>
+
+    <div class="dashboard-compact-card">
+        <div class="stat-top">
+            <span class="label">Medication Cost</span>
+            <span class="badge red">Care</span>
+        </div>
+        <div class="stat-value">₱ {{ number_format($totalMedicationCost, 2) }}</div>
+    </div>
+
+    <div class="dashboard-compact-card">
+        <div class="stat-top">
+            <span class="label">Vaccination Cost</span>
+            <span class="badge blue">Care</span>
+        </div>
+        <div class="stat-value">₱ {{ number_format($totalVaccinationCost, 2) }}</div>
+    </div>
+
+    <div class="dashboard-compact-card">
+        <div class="stat-top">
+            <span class="label">Care Liability</span>
+            <span class="badge orange">Liability</span>
+        </div>
+        <div class="stat-value">₱ {{ number_format($totalCareLiability, 2) }}</div>
+    </div>
+
+    <div class="dashboard-compact-card">
+        <div class="stat-top">
+            <span class="label">Operating Cost</span>
+            <span class="badge red">Total</span>
+        </div>
+        <div class="stat-value">₱ {{ number_format($totalOperatingCost, 2) }}</div>
+    </div>
+</div>
+
+<h3 class="dashboard-section-title">Herd Status</h3>
 <div class="grid stats">
     <div class="stat-card">
         <div class="stat-top">
@@ -193,41 +292,46 @@
     </div>
 </div>
 
-<div class="grid stats" style="margin-top:20px;">
-    <div class="stat-card">
+<h3 class="dashboard-section-title">Growth Monitoring</h3>
+<div class="dashboard-mini-grid">
+    <div class="dashboard-compact-card">
         <div class="stat-top">
             <span class="label">Growing Well</span>
             <span class="badge green">Good</span>
         </div>
         <div class="stat-value">{{ $growthSummary['good'] }}</div>
-        <div class="stat-sub">Pigs gaining weight.</div>
     </div>
 
-    <div class="stat-card">
+    <div class="dashboard-compact-card">
         <div class="stat-top">
             <span class="label">Declining</span>
             <span class="badge red">Alert</span>
         </div>
         <div class="stat-value">{{ $growthSummary['declining'] }}</div>
-        <div class="stat-sub">Pigs losing weight.</div>
     </div>
 
-    <div class="stat-card">
+    <div class="dashboard-compact-card">
         <div class="stat-top">
             <span class="label">Stagnant</span>
             <span class="badge orange">Monitor</span>
         </div>
         <div class="stat-value">{{ $growthSummary['stagnant'] }}</div>
-        <div class="stat-sub">No weight change.</div>
     </div>
 
-    <div class="stat-card">
+    <div class="dashboard-compact-card">
         <div class="stat-top">
             <span class="label">No Data</span>
             <span class="badge blue">Unknown</span>
         </div>
         <div class="stat-value">{{ $growthSummary['no_data'] }}</div>
-        <div class="stat-sub">No weight logs yet.</div>
+    </div>
+
+    <div class="dashboard-compact-card">
+        <div class="stat-top">
+            <span class="label">Farm Feed Efficiency</span>
+            <span class="badge green">Ratio</span>
+        </div>
+        <div class="stat-value">{{ $farmFeedEfficiency !== null ? number_format($farmFeedEfficiency, 2) : '—' }}</div>
     </div>
 </div>
 
@@ -252,6 +356,7 @@
                             <th>Latest Weight</th>
                             <th>Weight Gain</th>
                             <th>Daily Gain</th>
+                            <th>Feed Cost</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -262,6 +367,7 @@
                                 <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
                                 <td>{{ $pig->weight_gain !== null ? number_format((float) $pig->weight_gain, 2) . ' kg' : '—' }}</td>
                                 <td>{{ $pig->daily_gain !== null ? number_format((float) $pig->daily_gain, 2) . ' kg/day' : '—' }}</td>
+                                <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
                                 <td>
                                     <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
                                 </td>
@@ -293,6 +399,7 @@
                             <th>Latest Weight</th>
                             <th>Weight Gain</th>
                             <th>Daily Gain</th>
+                            <th>Feed Cost</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -303,6 +410,7 @@
                                 <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
                                 <td>{{ $pig->weight_gain !== null ? number_format((float) $pig->weight_gain, 2) . ' kg' : '—' }}</td>
                                 <td>{{ $pig->daily_gain !== null ? number_format((float) $pig->daily_gain, 2) . ' kg/day' : '—' }}</td>
+                                <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
                                 <td>
                                     <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
                                 </td>
@@ -336,6 +444,7 @@
                             <th>Latest Weight</th>
                             <th>Weight Gain</th>
                             <th>Daily Gain</th>
+                            <th>Feed Cost</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -346,6 +455,7 @@
                                 <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
                                 <td>{{ $pig->weight_gain !== null ? number_format((float) $pig->weight_gain, 2) . ' kg' : '—' }}</td>
                                 <td>{{ $pig->daily_gain !== null ? number_format((float) $pig->daily_gain, 2) . ' kg/day' : '—' }}</td>
+                                <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
                                 <td>
                                     <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
                                 </td>
@@ -376,6 +486,7 @@
                             <th>Ear Tag</th>
                             <th>Latest Weight</th>
                             <th>Growth Status</th>
+                            <th>Feed Cost</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -385,6 +496,7 @@
                                 <td>{{ $pig->ear_tag }}</td>
                                 <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
                                 <td><span class="badge blue">No Data</span></td>
+                                <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
                                 <td>
                                     <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
                                 </td>

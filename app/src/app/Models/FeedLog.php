@@ -12,10 +12,16 @@ class FeedLog extends Model
         'start_feed_date',
         'end_feed_date',
         'quantity',
+        'cost',
         'unit',
         'feeding_time',
         'status',
         'notes',
+    ];
+
+    protected $casts = [
+        'quantity' => 'float',
+        'cost' => 'float',
     ];
 
     public function pig()
