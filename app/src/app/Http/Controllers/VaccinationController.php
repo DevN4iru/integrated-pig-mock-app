@@ -8,36 +8,12 @@ use Illuminate\Http\Request;
 
 class VaccinationController extends Controller
 {
-    private function isLocked(Pig $pig): bool
-    {
-        return $pig->trashed()
-            || $pig->mortalityLogs()->exists()
-            || $pig->sales()->exists();
-    }
-
-    private function lockedMessage(Pig $pig): string
-    {
-        if ($pig->trashed()) {
-            return 'Archived pigs cannot receive vaccination changes. Restore the pig first.';
-        }
-
-        if ($pig->mortalityLogs()->exists()) {
-            return 'Dead pigs cannot receive vaccination changes.';
-        }
-
-        if ($pig->sales()->exists()) {
-            return 'Sold pigs cannot receive vaccination changes.';
-        }
-
-        return 'This pig is locked for vaccination changes.';
-    }
-
     public function create(Pig $pig)
     {
-        if ($this->isLocked($pig)) {
+        if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $this->lockedMessage($pig));
+                ->with('error', $pig->operationalLockMessage('vaccination records'));
         }
 
         return view('vaccinations.create', compact('pig'));
@@ -45,10 +21,10 @@ class VaccinationController extends Controller
 
     public function store(Request $request, Pig $pig)
     {
-        if ($this->isLocked($pig)) {
+        if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $this->lockedMessage($pig));
+                ->with('error', $pig->operationalLockMessage('vaccination records'));
         }
 
         $validated = $request->validate([
@@ -71,10 +47,10 @@ class VaccinationController extends Controller
     {
         abort_if($vaccination->pig_id !== $pig->id, 404);
 
-        if ($this->isLocked($pig)) {
+        if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $this->lockedMessage($pig));
+                ->with('error', $pig->operationalLockMessage('vaccination records'));
         }
 
         return view('vaccinations.edit', compact('pig', 'vaccination'));
@@ -84,10 +60,10 @@ class VaccinationController extends Controller
     {
         abort_if($vaccination->pig_id !== $pig->id, 404);
 
-        if ($this->isLocked($pig)) {
+        if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $this->lockedMessage($pig));
+                ->with('error', $pig->operationalLockMessage('vaccination records'));
         }
 
         $validated = $request->validate([
@@ -108,10 +84,10 @@ class VaccinationController extends Controller
     {
         abort_if($vaccination->pig_id !== $pig->id, 404);
 
-        if ($this->isLocked($pig)) {
+        if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $this->lockedMessage($pig));
+                ->with('error', $pig->operationalLockMessage('vaccination records'));
         }
 
         $vaccination->delete();

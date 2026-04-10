@@ -29,30 +29,6 @@ class HealthLogController extends Controller
         ];
     }
 
-    private function isLocked(Pig $pig): bool
-    {
-        return $pig->trashed()
-            || $pig->mortalityLogs()->exists()
-            || $pig->sales()->exists();
-    }
-
-    private function lockedMessage(Pig $pig): string
-    {
-        if ($pig->trashed()) {
-            return 'Archived pigs cannot receive health log changes. Restore the pig first.';
-        }
-
-        if ($pig->mortalityLogs()->exists()) {
-            return 'Dead pigs cannot receive health log changes.';
-        }
-
-        if ($pig->sales()->exists()) {
-            return 'Sold pigs cannot receive health log changes.';
-        }
-
-        return 'This pig is locked for health log changes.';
-    }
-
     private function validatedPayload(Request $request): array
     {
         $validated = $request->validate($this->rules());
@@ -92,10 +68,10 @@ class HealthLogController extends Controller
 
     public function create(Pig $pig)
     {
-        if ($this->isLocked($pig)) {
+        if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $this->lockedMessage($pig));
+                ->with('error', $pig->operationalLockMessage('health logs'));
         }
 
         return view('health-logs.create', compact('pig'));
@@ -103,10 +79,10 @@ class HealthLogController extends Controller
 
     public function store(Request $request, Pig $pig)
     {
-        if ($this->isLocked($pig)) {
+        if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $this->lockedMessage($pig));
+                ->with('error', $pig->operationalLockMessage('health logs'));
         }
 
         $validated = $this->validatedPayload($request);
@@ -126,10 +102,10 @@ class HealthLogController extends Controller
     {
         abort_if($healthLog->pig_id !== $pig->id, 404);
 
-        if ($this->isLocked($pig)) {
+        if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $this->lockedMessage($pig));
+                ->with('error', $pig->operationalLockMessage('health logs'));
         }
 
         return view('health-logs.edit', compact('pig', 'healthLog'));
@@ -139,10 +115,10 @@ class HealthLogController extends Controller
     {
         abort_if($healthLog->pig_id !== $pig->id, 404);
 
-        if ($this->isLocked($pig)) {
+        if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $this->lockedMessage($pig));
+                ->with('error', $pig->operationalLockMessage('health logs'));
         }
 
         $validated = $this->validatedPayload($request);
@@ -161,10 +137,10 @@ class HealthLogController extends Controller
     {
         abort_if($healthLog->pig_id !== $pig->id, 404);
 
-        if ($this->isLocked($pig)) {
+        if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $this->lockedMessage($pig));
+                ->with('error', $pig->operationalLockMessage('health logs'));
         }
 
         DB::transaction(function () use ($healthLog, $pig): void {
