@@ -13,7 +13,106 @@
 @section('content')
 
 @php
-    $pigs = \App\Models\Pig::with(['sales', 'mortalityLogs', 'feedLogs', 'medications', 'vaccinations'])->get();
+    $pigs = \App\Models\Pig::with([
+        'sales',
+        'mortalityLogs',
+        'feedLogs',
+        'medications',
+        'vaccinations',
+        'healthLogs',
+    ])->get();
+
+    $buildWeightLogs = function ($pig) {
+        return $pig->healthLogs
+            ->filter(fn ($log) => $log->purpose === 'weight_update' && $log->weight !== null)
+            ->sortByDesc(fn ($log) => sprintf('%s-%010d', (string) ($log->log_date ?? ''), (int) $log->id))
+            ->values();
+    };
+
+    $buildMetrics = function ($pig) use ($buildWeightLogs) {
+        $weightLogs = $buildWeightLogs($pig);
+        $latestLog = $weightLogs->get(0);
+        $previousLog = $weightLogs->get(1);
+
+        $baselineWeight = $pig->latest_weight !== null && $pig->latest_weight !== ''
+            ? (float) $pig->latest_weight
+            : null;
+
+        $computedWeight = $latestLog
+            ? (float) $latestLog->weight
+            : (float) ($baselineWeight ?? 0);
+
+        $weightGain = null;
+        $dailyGain = null;
+
+        if ($latestLog && $previousLog) {
+            $weightGain = (float) $latestLog->weight - (float) $previousLog->weight;
+
+            $days = max(
+                1,
+                \Carbon\Carbon::parse($latestLog->log_date)
+                    ->diffInDays(\Carbon\Carbon::parse($previousLog->log_date))
+            );
+
+            $dailyGain = $weightGain / $days;
+        } elseif ($latestLog && $baselineWeight !== null) {
+            $weightGain = (float) $latestLog->weight - $baselineWeight;
+
+            $baselineDate = $pig->date_added ? \Carbon\Carbon::parse($pig->date_added) : null;
+            $days = $baselineDate
+                ? max(1, \Carbon\Carbon::parse($latestLog->log_date)->diffInDays($baselineDate))
+                : 1;
+
+            $dailyGain = $weightGain / $days;
+        }
+
+        $growthStatus = 'no_data';
+
+        if ($weightGain !== null) {
+            if ($weightGain > 0) {
+                $growthStatus = 'good';
+            } elseif ($weightGain < 0) {
+                $growthStatus = 'declining';
+            } else {
+                $growthStatus = 'stagnant';
+            }
+        }
+
+        $feedKg = (float) $pig->feedLogs
+            ->filter(fn ($log) => strtolower((string) $log->unit) === 'kg')
+            ->sum(fn ($log) => (float) ($log->quantity ?? 0));
+
+        $gainFromBaseline = $baselineWeight !== null
+            ? $computedWeight - $baselineWeight
+            : null;
+
+        $feedEfficiency = null;
+        if ($feedKg > 0 && $gainFromBaseline !== null && $gainFromBaseline > 0) {
+            $feedEfficiency = $feedKg / $gainFromBaseline;
+        }
+
+        return [
+            'weight_logs' => $weightLogs,
+            'latest_log_date' => $latestLog?->log_date,
+            'computed_weight' => $computedWeight,
+            'weight_gain' => $weightGain,
+            'daily_gain' => $dailyGain,
+            'growth_status' => $growthStatus,
+            'feed_efficiency' => $feedEfficiency,
+        ];
+    };
+
+    foreach ($pigs as $pig) {
+        $metrics = $buildMetrics($pig);
+
+        $pig->dashboard_weight_logs = $metrics['weight_logs'];
+        $pig->dashboard_latest_log_date = $metrics['latest_log_date'];
+        $pig->dashboard_computed_weight = $metrics['computed_weight'];
+        $pig->dashboard_weight_gain = $metrics['weight_gain'];
+        $pig->dashboard_daily_gain = $metrics['daily_gain'];
+        $pig->dashboard_growth_status = $metrics['growth_status'];
+        $pig->dashboard_feed_efficiency = $metrics['feed_efficiency'];
+    }
 
     $livePigs = $pigs->filter(fn ($pig) => $pig->sales->isEmpty() && $pig->mortalityLogs->isEmpty());
     $soldPigs = $pigs->filter(fn ($pig) => $pig->sales->isNotEmpty());
@@ -30,13 +129,11 @@
     $totalCareLiability = (float) $pigs->sum(fn ($pig) => (float) $pig->total_care_liability);
     $totalOperatingCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_operating_cost);
 
-    $positiveGainPigs = $pigs->filter(function ($pig) {
-        return $pig->feed_efficiency !== null;
-    });
+    $positiveGainPigs = $pigs->filter(fn ($pig) => $pig->dashboard_feed_efficiency !== null);
 
     $totalFeedKgForEfficiency = (float) $positiveGainPigs->sum(fn ($pig) => (float) $pig->total_feed_kg);
     $totalGainForEfficiency = (float) $positiveGainPigs->sum(function ($pig) {
-        return max(0, (float) $pig->computed_weight - (float) $pig->latest_weight);
+        return max(0, (float) $pig->dashboard_computed_weight - (float) $pig->latest_weight);
     });
 
     $farmFeedEfficiency = $totalFeedKgForEfficiency > 0 && $totalGainForEfficiency > 0
@@ -45,39 +142,23 @@
 
     $recentSales = \App\Models\Sale::with('pig')->latest()->take(5)->get();
     $recentMortality = \App\Models\MortalityLog::with('pig')->latest()->take(5)->get();
-
     $recentHealthAlerts = \App\Models\HealthLog::with('pig')
         ->whereIn('purpose', ['sick', 'injury', 'recovered'])
         ->latest()
         ->take(5)
         ->get();
 
-    $staleWeightPigs = \App\Models\Pig::all()->filter(function ($pig) {
-        $latestWeightLog = $pig->healthLogs()
-            ->where('purpose', 'weight_update')
-            ->orderByDesc('log_date')
-            ->orderByDesc('id')
-            ->first();
-
-        if (!$latestWeightLog) {
+    $staleWeightPigs = $pigs->filter(function ($pig) {
+        if (!$pig->dashboard_latest_log_date) {
             return true;
         }
 
-        return now()->diffInDays($latestWeightLog->log_date) > 7;
+        return now()->diffInDays($pig->dashboard_latest_log_date) > 7;
     });
 
     $weightAlertRows = $staleWeightPigs->map(function ($pig) {
-        $weightLogs = $pig->healthLogs()
-            ->where('purpose', 'weight_update')
-            ->whereNotNull('weight')
-            ->orderByDesc('log_date')
-            ->orderByDesc('id')
-            ->take(2)
-            ->get()
-            ->values();
-
-        $latest = $weightLogs->get(0);
-        $previous = $weightLogs->get(1);
+        $latest = $pig->dashboard_weight_logs->get(0);
+        $previous = $pig->dashboard_weight_logs->get(1);
 
         $trendSymbol = '—';
         $trendLabel = 'No change baseline';
@@ -100,7 +181,7 @@
 
         return [
             'pig' => $pig,
-            'latest_weight' => $pig->computed_weight,
+            'latest_weight' => $pig->dashboard_computed_weight,
             'trend_symbol' => $trendSymbol,
             'trend_label' => $trendLabel,
         ];
@@ -114,7 +195,7 @@
     ];
 
     foreach ($pigs as $pig) {
-        $growthGroups[$pig->growth_status]->push($pig);
+        $growthGroups[$pig->dashboard_growth_status]->push($pig);
     }
 
     $growthSummary = [
@@ -364,9 +445,9 @@
                         @foreach($growthGroups['good'] as $pig)
                             <tr>
                                 <td>{{ $pig->ear_tag }}</td>
-                                <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
-                                <td>{{ $pig->weight_gain !== null ? number_format((float) $pig->weight_gain, 2) . ' kg' : '—' }}</td>
-                                <td>{{ $pig->daily_gain !== null ? number_format((float) $pig->daily_gain, 2) . ' kg/day' : '—' }}</td>
+                                <td>{{ number_format((float) $pig->dashboard_computed_weight, 2) }} kg</td>
+                                <td>{{ $pig->dashboard_weight_gain !== null ? number_format((float) $pig->dashboard_weight_gain, 2) . ' kg' : '—' }}</td>
+                                <td>{{ $pig->dashboard_daily_gain !== null ? number_format((float) $pig->dashboard_daily_gain, 2) . ' kg/day' : '—' }}</td>
                                 <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
                                 <td>
                                     <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
@@ -407,9 +488,9 @@
                         @foreach($growthGroups['declining'] as $pig)
                             <tr>
                                 <td>{{ $pig->ear_tag }}</td>
-                                <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
-                                <td>{{ $pig->weight_gain !== null ? number_format((float) $pig->weight_gain, 2) . ' kg' : '—' }}</td>
-                                <td>{{ $pig->daily_gain !== null ? number_format((float) $pig->daily_gain, 2) . ' kg/day' : '—' }}</td>
+                                <td>{{ number_format((float) $pig->dashboard_computed_weight, 2) }} kg</td>
+                                <td>{{ $pig->dashboard_weight_gain !== null ? number_format((float) $pig->dashboard_weight_gain, 2) . ' kg' : '—' }}</td>
+                                <td>{{ $pig->dashboard_daily_gain !== null ? number_format((float) $pig->dashboard_daily_gain, 2) . ' kg/day' : '—' }}</td>
                                 <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
                                 <td>
                                     <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
@@ -452,9 +533,9 @@
                         @foreach($growthGroups['stagnant'] as $pig)
                             <tr>
                                 <td>{{ $pig->ear_tag }}</td>
-                                <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
-                                <td>{{ $pig->weight_gain !== null ? number_format((float) $pig->weight_gain, 2) . ' kg' : '—' }}</td>
-                                <td>{{ $pig->daily_gain !== null ? number_format((float) $pig->daily_gain, 2) . ' kg/day' : '—' }}</td>
+                                <td>{{ number_format((float) $pig->dashboard_computed_weight, 2) }} kg</td>
+                                <td>{{ $pig->dashboard_weight_gain !== null ? number_format((float) $pig->dashboard_weight_gain, 2) . ' kg' : '—' }}</td>
+                                <td>{{ $pig->dashboard_daily_gain !== null ? number_format((float) $pig->dashboard_daily_gain, 2) . ' kg/day' : '—' }}</td>
                                 <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
                                 <td>
                                     <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
@@ -494,7 +575,7 @@
                         @foreach($growthGroups['no_data'] as $pig)
                             <tr>
                                 <td>{{ $pig->ear_tag }}</td>
-                                <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
+                                <td>{{ number_format((float) $pig->dashboard_computed_weight, 2) }} kg</td>
                                 <td><span class="badge blue">No Data</span></td>
                                 <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
                                 <td>
