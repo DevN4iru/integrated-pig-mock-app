@@ -7,12 +7,15 @@
 
     <style>
         :root {
-            --bg: #f5f7fb;
+            --bg: #f3f6fb;
+            --bg-soft: #eef3fb;
             --panel: #ffffff;
-            --panel-2: #f9fafc;
-            --line: #e6eaf2;
-            --text: #1f2937;
-            --muted: #6b7280;
+            --panel-2: #f8fbff;
+            --panel-3: #f1f5f9;
+            --line: #e2e8f0;
+            --line-strong: #d6deea;
+            --text: #172033;
+            --muted: #64748b;
             --accent: #2563eb;
             --accent-soft: #dbeafe;
             --green: #16a34a;
@@ -21,8 +24,14 @@
             --orange-soft: #ffedd5;
             --red: #dc2626;
             --red-soft: #fee2e2;
-            --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+            --slate: #475569;
+            --slate-soft: #e2e8f0;
+            --sidebar: #0f172a;
+            --sidebar-2: #111c34;
+            --shadow-sm: 0 8px 20px rgba(15, 23, 42, 0.05);
+            --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
             --radius: 18px;
+            --radius-sm: 14px;
         }
 
         * {
@@ -38,7 +47,10 @@
         }
 
         body {
-            background: var(--bg);
+            background:
+                radial-gradient(circle at top left, rgba(37, 99, 235, 0.05), transparent 28%),
+                radial-gradient(circle at top right, rgba(22, 163, 74, 0.04), transparent 22%),
+                var(--bg);
             color: var(--text);
             line-height: 1.5;
         }
@@ -62,38 +74,53 @@
 
         .app {
             display: grid;
-            grid-template-columns: 260px 1fr;
+            grid-template-columns: 280px 1fr;
             min-height: 100vh;
         }
 
         .sidebar {
-            background: #111827;
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0)),
+                var(--sidebar);
             color: #fff;
             padding: 24px 18px;
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 22px;
             position: sticky;
             top: 0;
             height: 100vh;
+            border-right: 1px solid rgba(255,255,255,0.06);
         }
 
         .brand {
-            padding: 12px 14px;
-            border-radius: 16px;
-            background: rgba(255,255,255,0.06);
+            padding: 16px;
+            border-radius: 20px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
             border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
         }
 
         .brand h1 {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 4px;
+            font-size: 21px;
+            font-weight: 800;
+            margin-bottom: 5px;
+            letter-spacing: -0.02em;
         }
 
         .brand p {
             color: #cbd5e1;
             font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .nav-group-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #94a3b8;
+            padding: 0 10px;
+            margin-bottom: -6px;
         }
 
         .nav {
@@ -103,36 +130,53 @@
         }
 
         .nav a {
-            text-decoration: none;
-            color: #d1d5db;
-            padding: 12px 14px;
-            border-radius: 14px;
+            color: #d7e0ee;
+            padding: 13px 14px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 14px;
             border: 1px solid transparent;
-            transition: 0.2s ease;
+            transition: 0.18s ease;
             font-size: 14px;
+            background: transparent;
         }
 
-        .nav a:hover,
-        .nav a.active {
-            background: rgba(255,255,255,0.08);
-            color: #fff;
-            border-color: rgba(255,255,255,0.08);
+        .nav a span {
+            font-weight: 600;
         }
 
-        .nav small {
+        .nav a small {
             font-size: 11px;
-            color: #9ca3af;
+            color: #8fa0bb;
+            white-space: nowrap;
+        }
+
+        .nav a:hover {
+            background: rgba(255,255,255,0.06);
+            color: #fff;
+            border-color: rgba(255,255,255,0.06);
+            transform: translateY(-1px);
+        }
+
+        .nav a.active {
+            background: linear-gradient(180deg, rgba(37,99,235,0.22), rgba(37,99,235,0.12));
+            color: #fff;
+            border-color: rgba(96,165,250,0.22);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        .nav a.active small {
+            color: #c6d4ef;
         }
 
         .sidebar-note {
             margin-top: auto;
-            background: rgba(255,255,255,0.06);
+            background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
             border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 16px;
-            padding: 14px;
+            border-radius: 18px;
+            padding: 16px;
         }
 
         .sidebar-note h3 {
@@ -143,61 +187,73 @@
         .sidebar-note p {
             color: #cbd5e1;
             font-size: 12px;
-            line-height: 1.5;
+            line-height: 1.55;
         }
 
         .content {
             padding: 28px;
         }
 
+        .page-shell {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
         .topbar {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 22px;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 24px;
+            padding: 8px 2px 0;
         }
 
         .page-title h1,
         .page-title h2 {
-            font-size: 28px;
+            font-size: 31px;
             margin-bottom: 6px;
-            line-height: 1.2;
+            line-height: 1.15;
+            letter-spacing: -0.03em;
         }
 
         .page-title p {
             color: var(--muted);
             font-size: 14px;
+            max-width: 760px;
         }
 
         .actions {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            justify-content: flex-end;
         }
 
         .btn,
         button.btn,
         a.btn {
             border: 1px solid var(--line);
-            background: white;
+            background: #fff;
             color: var(--text);
             padding: 10px 14px;
             border-radius: 12px;
             font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            transition: 0.2s ease;
+            transition: 0.18s ease;
+            box-shadow: 0 1px 0 rgba(255,255,255,0.4);
         }
 
         .btn:hover,
         button.btn:hover,
         a.btn:hover {
             transform: translateY(-1px);
-            box-shadow: var(--shadow);
+            box-shadow: var(--shadow-sm);
+            border-color: var(--line-strong);
         }
 
         .btn.primary,
@@ -232,7 +288,7 @@
 
         .stats,
         .stats-grid {
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             margin-bottom: 18px;
         }
 
@@ -249,32 +305,53 @@
             background: var(--panel);
             border: 1px solid var(--line);
             border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            padding: 18px;
+            box-shadow: var(--shadow-sm);
+            padding: 20px;
+        }
+
+        .panel-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel-card::before {
+            content: "";
+            position: absolute;
+            inset: 0 0 auto 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.18), transparent);
+            pointer-events: none;
+        }
+
+        .stat-card {
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
         }
 
         .stat-top {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 14px;
+            align-items: flex-start;
+            margin-bottom: 16px;
             gap: 12px;
         }
 
         .label {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--muted);
-            font-weight: 600;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
 
         .badge {
             font-size: 12px;
-            padding: 6px 9px;
+            padding: 6px 10px;
             border-radius: 999px;
-            font-weight: 600;
+            font-weight: 700;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            line-height: 1;
         }
 
         .blue { background: var(--accent-soft); color: var(--accent); }
@@ -283,38 +360,42 @@
         .red { background: var(--red-soft); color: var(--red); }
 
         .stat-value {
-            font-size: 30px;
-            font-weight: 700;
-            margin-bottom: 6px;
+            font-size: 31px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 8px;
+            line-height: 1.05;
         }
 
         .stat-sub {
             font-size: 13px;
             color: var(--muted);
-            line-height: 1.4;
+            line-height: 1.45;
         }
 
         .section-title {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             gap: 16px;
             margin-bottom: 16px;
         }
 
         .section-title h3 {
-            font-size: 18px;
+            font-size: 19px;
+            letter-spacing: -0.02em;
+            margin-bottom: 3px;
         }
 
         .section-title p,
         .section-link {
             color: var(--muted);
             font-size: 13px;
+            line-height: 1.45;
         }
 
         .section-link {
-            text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .overview-panels,
@@ -329,103 +410,6 @@
             grid-template-columns: repeat(3, 1fr);
             gap: 12px;
             margin-top: 18px;
-        }
-
-        .pen-list,
-        .alert-list,
-        .activity-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .row-item {
-            background: var(--panel-2);
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            padding: 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .row-item h4 {
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
-
-        .row-item p {
-            font-size: 12px;
-            color: var(--muted);
-            line-height: 1.4;
-        }
-
-        .mini-stat {
-            font-size: 13px;
-            color: var(--text);
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .alert-item {
-            border-left: 4px solid var(--orange);
-            background: #fffaf5;
-        }
-
-        .alert-item.red-left {
-            border-left-color: var(--red);
-            background: #fff7f7;
-        }
-
-        .quick-btn {
-            padding: 16px;
-            border-radius: 16px;
-            border: 1px dashed var(--line);
-            background: white;
-            cursor: pointer;
-            text-align: left;
-            width: 100%;
-        }
-
-        .quick-btn h4 {
-            font-size: 14px;
-            margin-bottom: 6px;
-        }
-
-        .quick-btn p {
-            color: var(--muted);
-            font-size: 12px;
-            line-height: 1.4;
-        }
-
-        .sales-box {
-            background: var(--panel-2);
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            padding: 14px;
-        }
-
-        .sales-box span {
-            display: block;
-            font-size: 12px;
-            color: var(--muted);
-            margin-bottom: 8px;
-        }
-
-        .sales-box strong {
-            font-size: 22px;
-        }
-
-        .footer-note {
-            margin-top: 18px;
-            font-size: 12px;
-            color: var(--muted);
-            line-height: 1.5;
-            padding: 12px 14px;
-            background: #f8fafc;
-            border: 1px dashed var(--line);
-            border-radius: 14px;
         }
 
         .table-wrap {
@@ -446,12 +430,13 @@
             background: #f8fafc;
             color: var(--muted);
             text-align: left;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.02em;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
             text-transform: uppercase;
             padding: 14px 16px;
             border-bottom: 1px solid var(--line);
+            white-space: nowrap;
         }
 
         table tbody td,
@@ -491,7 +476,7 @@
 
         label {
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--text);
         }
 
@@ -509,7 +494,12 @@
             padding: 11px 13px;
             border-radius: 12px;
             outline: none;
-            transition: 0.2s ease;
+            transition: 0.18s ease;
+        }
+
+        input[readonly],
+        textarea[readonly] {
+            background: var(--panel-2);
         }
 
         input:focus,
@@ -537,7 +527,7 @@
             border-radius: 14px;
             border: 1px solid var(--line);
             background: #fff;
-            box-shadow: var(--shadow);
+            box-shadow: var(--shadow-sm);
             font-size: 14px;
         }
 
@@ -554,13 +544,13 @@
         }
 
         .empty-state {
-            padding: 28px 20px;
+            padding: 30px 20px;
             text-align: center;
             color: var(--muted);
             font-size: 14px;
-            border: 1px dashed var(--line);
+            border: 1px dashed var(--line-strong);
             border-radius: 16px;
-            background: #fff;
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
         }
 
         .text-muted {
@@ -574,7 +564,7 @@
         .mb-4 { margin-bottom: 20px !important; }
         .mb-5 { margin-bottom: 24px !important; }
 
-        @media (max-width: 1150px) {
+        @media (max-width: 1200px) {
             .stats,
             .stats-grid,
             .overview-panels,
@@ -585,7 +575,7 @@
             }
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 980px) {
             .app {
                 grid-template-columns: 1fr;
             }
@@ -604,6 +594,10 @@
                 align-items: flex-start;
             }
 
+            .actions {
+                justify-content: flex-start;
+            }
+
             .stats,
             .stats-grid {
                 grid-template-columns: 1fr 1fr;
@@ -618,6 +612,11 @@
             .stats,
             .stats-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .page-title h1,
+            .page-title h2 {
+                font-size: 26px;
             }
         }
     </style>
@@ -636,6 +635,7 @@
                 <p>Pig Health & Lifecycle Tracking System</p>
             </div>
 
+            <div class="nav-group-label">Navigation</div>
             <nav class="nav">
                 <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <span>Dashboard</span>
@@ -665,47 +665,50 @@
 
             <div class="sidebar-note">
                 <h3>System status</h3>
-                <p>Laravel backend is connected. This layout now applies the realUI styling system to the current pages.</p>
+                <p>Laravel backend is connected. This layout is now focused on clearer navigation, cleaner spacing, and better readability across dashboard and pig profile pages.</p>
             </div>
         </aside>
 
         <main class="content">
-            <header class="topbar">
-                <div class="page-title">
-                    <h1>@yield('page_title')</h1>
-                    <p>@yield('page_subtitle')</p>
-                </div>
-                <div class="actions">
-                    @yield('top_actions')
-                </div>
-            </header>
+            <div class="page-shell">
+                <header class="topbar">
+                    <div class="page-title">
+                        <h1>@yield('page_title')</h1>
+                        <p>@yield('page_subtitle')</p>
+                    </div>
 
-            @if (session('success'))
-                <div class="flash success">
-                    {{ session('success') }}
-                </div>
-            @endif
+                    <div class="actions">
+                        @yield('top_actions')
+                    </div>
+                </header>
 
-            @if (session('error'))
-                <div class="flash error">
-                    {{ session('error') }}
-                </div>
-            @endif
+                @if (session('success'))
+                    <div class="flash success">
+                        {{ session('success') }}
+                    </div>
+                @endif
 
-            @if ($errors->any())
-                <div class="flash error">
-                    <strong>Please fix the following:</strong>
-                    <ul style="margin: 8px 0 0 18px;">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
+                @if (session('error'))
+                    <div class="flash error">
+                        {{ session('error') }}
+                    </div>
+                @endif
 
-            <section>
-                @yield('content')
-            </section>
+                @if ($errors->any())
+                    <div class="flash error">
+                        <strong>Please fix the following:</strong>
+                        <ul style="margin: 8px 0 0 18px;">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <section>
+                    @yield('content')
+                </section>
+            </div>
         </main>
     </div>
 
