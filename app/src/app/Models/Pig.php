@@ -72,11 +72,20 @@ class Pig extends Model
         return $this->hasMany(FeedLog::class)->latest();
     }
 
+    protected function relationHasAny(string $relation): bool
+    {
+        if ($this->relationLoaded($relation)) {
+            return $this->{$relation}->isNotEmpty();
+        }
+
+        return $this->{$relation}()->exists();
+    }
+
     public function isOperationallyLocked(): bool
     {
         return $this->trashed()
-            || $this->mortalityLogs()->exists()
-            || $this->sales()->exists();
+            || $this->relationHasAny('mortalityLogs')
+            || $this->relationHasAny('sales');
     }
 
     public function operationalLockState(): ?string
@@ -85,11 +94,11 @@ class Pig extends Model
             return 'archived';
         }
 
-        if ($this->mortalityLogs()->exists()) {
+        if ($this->relationHasAny('mortalityLogs')) {
             return 'dead';
         }
 
-        if ($this->sales()->exists()) {
+        if ($this->relationHasAny('sales')) {
             return 'sold';
         }
 
