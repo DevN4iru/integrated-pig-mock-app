@@ -4,29 +4,38 @@ namespace App\Http\Controllers;
 
 use App\Models\Pen;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PenController extends Controller
 {
     public function index()
     {
-        $pens = Pen::withCount('pigs')->latest()->get();
+        $pens = Pen::withCount('pigs')
+            ->orderBy('name')
+            ->get();
 
         return view('pens.index', compact('pens'));
     }
 
     public function create()
     {
-        return view('pens.create');
+        $penTypes = Pen::typeOptions();
+
+        return view('pens.create', compact('penTypes'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:pens,name'],
-            'type' => ['required', 'string', 'max:255'],
+            'type' => ['required', Rule::in(Pen::typeOptions())],
             'capacity' => ['required', 'integer', 'min:1'],
             'notes' => ['nullable', 'string'],
         ]);
+
+        $validated['notes'] = isset($validated['notes']) && trim((string) $validated['notes']) !== ''
+            ? trim((string) $validated['notes'])
+            : null;
 
         Pen::create($validated);
 
@@ -41,14 +50,16 @@ class PenController extends Controller
                 ->with('error', 'Access denied. Type the correct edit code first.');
         }
 
-        return view('pens.edit', compact('pen'));
+        $penTypes = Pen::typeOptions();
+
+        return view('pens.edit', compact('pen', 'penTypes'));
     }
 
     public function update(Request $request, Pen $pen)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:pens,name,' . $pen->id],
-            'type' => ['required', 'string', 'max:255'],
+            'type' => ['required', Rule::in(Pen::typeOptions())],
             'capacity' => ['required', 'integer', 'min:1'],
             'notes' => ['nullable', 'string'],
         ]);
@@ -58,6 +69,10 @@ class PenController extends Controller
                 'capacity' => 'Capacity cannot be lower than current occupied count.'
             ])->withInput();
         }
+
+        $validated['notes'] = isset($validated['notes']) && trim((string) $validated['notes']) !== ''
+            ? trim((string) $validated['notes'])
+            : null;
 
         $pen->update($validated);
 
