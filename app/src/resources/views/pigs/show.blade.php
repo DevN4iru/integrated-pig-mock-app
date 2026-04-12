@@ -84,6 +84,49 @@
     white-space: nowrap;
 }
 
+.chart-wrap {
+    width: 100%;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px;
+}
+
+.chart-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.chart-meta p {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.chart-legend {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.chart-legend-line {
+    width: 24px;
+    height: 3px;
+    border-radius: 999px;
+    background: #2563eb;
+}
+
+#weightChart {
+    width: 100%;
+    display: block;
+}
+
 @media (max-width: 1200px) {
     .profile-grid-two,
     .profile-grid-half {
@@ -387,6 +430,19 @@
             @if($weightLogs->isEmpty())
                 <div class="empty-state">No weight history yet.</div>
             @else
+                @if($weightLogs->count() >= 2)
+                    <div class="chart-wrap" style="margin-bottom: 16px;">
+                        <div class="chart-meta">
+                            <p>Weight progression based on recorded weight-update health logs.</p>
+                            <span class="chart-legend">
+                                <span class="chart-legend-line"></span>
+                                Weight trend
+                            </span>
+                        </div>
+                        <canvas id="weightChart" height="140"></canvas>
+                    </div>
+                @endif
+
                 <div class="table-wrap">
                     <table class="data-table tight-table">
                         <thead>
@@ -849,4 +905,92 @@ document.getElementById('healthFilter')?.addEventListener('change', function () 
         }
     });
 });
+
+@if($weightLogs->count() >= 2)
+(function () {
+    const canvas = document.getElementById('weightChart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+
+    const data = @json(
+        $weightLogs->reverse()->map(fn($log) => [
+            'date' => $log->log_date,
+            'weight' => (float) $log->weight
+        ])->values()
+    );
+
+    const width = canvas.width = canvas.offsetWidth;
+    const height = canvas.height;
+    const padding = 30;
+
+    const weights = data.map(point => point.weight);
+    const min = Math.min(...weights);
+    const max = Math.max(...weights);
+    const range = max - min || 1;
+
+    const getX = (index) => {
+        if (data.length === 1) {
+            return width / 2;
+        }
+
+        return padding + (index / (data.length - 1)) * (width - padding * 2);
+    };
+
+    const getY = (value) => {
+        return height - padding - ((value - min) / range) * (height - padding * 2);
+    };
+
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.lineWidth = 1;
+
+    for (let i = 0; i <= 4; i++) {
+        const y = padding + i * ((height - padding * 2) / 4);
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(width - padding, y);
+        ctx.stroke();
+    }
+
+    ctx.beginPath();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#2563eb';
+
+    data.forEach((point, index) => {
+        const x = getX(index);
+        const y = getY(point.weight);
+
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+
+    ctx.stroke();
+
+    data.forEach((point, index) => {
+        const x = getX(index);
+        const y = getY(point.weight);
+
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#2563eb';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+    });
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px Inter, Arial, sans-serif';
+
+    ctx.fillText(max.toFixed(2) + ' kg', 6, padding + 4);
+    ctx.fillText(min.toFixed(2) + ' kg', 6, height - padding + 4);
+})();
+@endif
 @endsection

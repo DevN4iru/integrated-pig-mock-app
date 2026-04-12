@@ -35,6 +35,8 @@ class Pig extends Model
         'total_operating_cost',
         'total_feed_kg',
         'feed_efficiency',
+        'cost_per_kg_gain',
+        'performance_status',
     ];
 
     public function pen()
@@ -117,6 +119,9 @@ class Pig extends Model
         };
     }
 
+    /**
+     * Weight logs newest first.
+     */
     protected function orderedWeightLogs()
     {
         return $this->healthLogs()
@@ -124,6 +129,25 @@ class Pig extends Model
             ->whereNotNull('weight')
             ->orderByDesc('log_date')
             ->orderByDesc('id');
+    }
+
+    /**
+     * Weight logs oldest first.
+     */
+    protected function chronologicalWeightLogs()
+    {
+        return $this->healthLogs()
+            ->where('purpose', 'weight_update')
+            ->whereNotNull('weight')
+            ->orderBy('log_date')
+            ->orderBy('id');
+    }
+
+    protected function currentBaselineWeight(): ?float
+    {
+        return $this->latest_weight !== null && $this->latest_weight !== ''
+            ? (float) $this->latest_weight
+            : null;
     }
 
     public function getComputedWeightAttribute()
@@ -155,8 +179,8 @@ class Pig extends Model
             return (float) $logs[0]->weight - (float) $logs[1]->weight;
         }
 
-        if ($logs->count() === 1 && $this->latest_weight !== null && $this->latest_weight !== '') {
-            return (float) $logs[0]->weight - (float) $this->latest_weight;
+        if ($logs->count() === 1 && $this->currentBaselineWeight() !== null) {
+            return (float) $logs[0]->weight - (float) $this->currentBaselineWeight();
         }
 
         return null;
@@ -183,7 +207,7 @@ class Pig extends Model
             return $gain / $days;
         }
 
-        if ($logs->count() === 1 && $this->latest_weight !== null && $this->latest_weight !== '') {
+        if ($logs->count() === 1 && $this->currentBaselineWeight() !== null) {
             $latest = $logs[0];
             $baselineDate = $this->date_added ? Carbon::parse($this->date_added) : null;
 
@@ -191,7 +215,7 @@ class Pig extends Model
                 ? max(1, Carbon::parse($latest->log_date)->diffInDays($baselineDate))
                 : 1;
 
-            $gain = (float) $latest->weight - (float) $this->latest_weight;
+            $gain = (float) $latest->weight - (float) $this->currentBaselineWeight();
 
             return $gain / $days;
         }
@@ -261,12 +285,73 @@ class Pig extends Model
     public function getFeedEfficiencyAttribute()
     {
         $feedKg = (float) $this->total_feed_kg;
-        $gainFromBaseline = (float) $this->computed_weight - (float) $this->latest_weight;
 
-        if ($feedKg <= 0 || $gainFromBaseline <= 0) {
+        $logs = $this->chronologicalWeightLogs()->get()->values();
+        $firstLog = $logs->first();
+        $latestLog = $logs->last();
+
+        $gainFromStart = null;
+
+        if ($firstLog && $latestLog) {
+            $gainFromStart = (float) $latestLog->weight - (float) $firstLog->weight;
+        } elseif ($latestLog && $this->currentBaselineWeight() !== null) {
+            $gainFromStart = (float) $latestLog->weight - (float) $this->currentBaselineWeight();
+        }
+
+        if ($feedKg <= 0 || $gainFromStart === null || $gainFromStart <= 0) {
             return null;
         }
 
-        return $feedKg / $gainFromBaseline;
+        return $feedKg / $gainFromStart;
+    }
+
+    public function getCostPerKgGainAttribute()
+    {
+        $logs = $this->chronologicalWeightLogs()->get()->values();
+        $firstLog = $logs->first();
+        $latestLog = $logs->last();
+
+        $gainFromStart = null;
+
+        if ($firstLog && $latestLog) {
+            $gainFromStart = (float) $latestLog->weight - (float) $firstLog->weight;
+        } elseif ($latestLog && $this->currentBaselineWeight() !== null) {
+            $gainFromStart = (float) $latestLog->weight - (float) $this->currentBaselineWeight();
+        }
+
+        if ($gainFromStart === null || $gainFromStart <= 0) {
+            return null;
+        }
+
+        return (float) $this->total_operating_cost / $gainFromStart;
+    }
+
+    public function getPerformanceStatusAttribute()
+    {
+        $costPerKgGain = $this->cost_per_kg_gain;
+        $feedEfficiency = $this->feed_efficiency;
+        $growthStatus = $this->growth_status;
+
+        if ($growthStatus === 'declining') {
+            return 'risk';
+        }
+
+        if ($growthStatus === 'no_data') {
+            return 'no_data';
+        }
+
+        if ($growthStatus === 'stagnant') {
+            return 'monitor';
+        }
+
+        if ($costPerKgGain === null || $feedEfficiency === null) {
+            return 'good';
+        }
+
+        if ($costPerKgGain > 300 || $feedEfficiency > 4.5) {
+            return 'inefficient';
+        }
+
+        return 'good';
     }
 }
