@@ -16,7 +16,15 @@ class PigController extends Controller
         $source = (string) $request->query('source', 'all');
 
         $pigs = Pig::withTrashed()
-            ->with(['pen', 'sales', 'mortalityLogs'])
+            ->with([
+                'pen',
+                'healthLogs',
+                'sales',
+                'mortalityLogs',
+                'feedLogs',
+                'medications',
+                'vaccinations',
+            ])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('ear_tag', 'like', '%' . $search . '%')
@@ -98,7 +106,15 @@ class PigController extends Controller
     public function show($pig)
     {
         $pig = Pig::withTrashed()
-            ->with(['pen', 'healthLogs', 'medications', 'vaccinations', 'mortalityLogs', 'sales', 'feedLogs'])
+            ->with([
+                'pen',
+                'healthLogs',
+                'medications',
+                'vaccinations',
+                'mortalityLogs',
+                'sales',
+                'feedLogs',
+            ])
             ->findOrFail($pig);
 
         return view('pigs.show', compact('pig'));
