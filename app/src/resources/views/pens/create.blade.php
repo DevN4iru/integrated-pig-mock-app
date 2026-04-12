@@ -13,7 +13,7 @@
         <div class="section-title">
             <div>
                 <h3>New Pen Record</h3>
-                <p>Fill in the details below to add a pen into the system.</p>
+                <p>Define the pen classification, capacity, and notes for operational use.</p>
             </div>
         </div>
 
@@ -30,11 +30,11 @@
                     <label for="type">Pen Type</label>
                     <select id="type" name="type" required>
                         <option value="">Select type</option>
-                        <option value="Grower" {{ old('type') === 'Grower' ? 'selected' : '' }}>Grower</option>
-                        <option value="Finisher" {{ old('type') === 'Finisher' ? 'selected' : '' }}>Finisher</option>
-                        <option value="Nursery" {{ old('type') === 'Nursery' ? 'selected' : '' }}>Nursery</option>
-                        <option value="Sow" {{ old('type') === 'Sow' ? 'selected' : '' }}>Sow</option>
-                        <option value="Quarantine" {{ old('type') === 'Quarantine' ? 'selected' : '' }}>Quarantine</option>
+                        @foreach ($penTypes as $type)
+                            <option value="{{ $type }}" {{ old('type') === $type ? 'selected' : '' }}>
+                                {{ $type }}
+                            </option>
+                        @endforeach
                     </select>
                 </div>
 
