@@ -26,6 +26,7 @@
 
         @if (!$isOperationalLockedTop)
             <a href="{{ route('health-logs.create', $pig) }}" class="btn primary">Add Health Log</a>
+            <a href="{{ route('pig-transfers.create', $pig) }}" class="btn">Transfer Pig</a>
         @endif
     @else
         <form method="POST" action="{{ route('pigs.restore', $pig->id) }}" style="display:inline-block;"
@@ -127,6 +128,54 @@
     display: block;
 }
 
+.transfer-route {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-weight: 600;
+}
+
+.transfer-arrow {
+    color: var(--muted);
+    font-weight: 800;
+}
+
+.reason-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.reason-badge.health {
+    background: var(--red-soft);
+    color: var(--red);
+}
+
+.reason-badge.weight {
+    background: var(--orange-soft);
+    color: var(--orange);
+}
+
+.reason-badge.production {
+    background: var(--blue-soft);
+    color: var(--accent);
+}
+
+.reason-badge.breeding {
+    background: var(--green-soft);
+    color: var(--green);
+}
+
+.reason-badge.other {
+    background: #eef2ff;
+    color: #4f46e5;
+}
+
 @media (max-width: 1200px) {
     .profile-grid-two,
     .profile-grid-half {
@@ -175,6 +224,14 @@
             ->sortByDesc(fn ($log) => sprintf('%s-%010d', (string) ($log->log_date ?? ''), (int) $log->id))
             ->values();
 
+        $transferLogs = $pig->transfers
+            ->sortByDesc(fn ($transfer) => sprintf(
+                '%s-%010d',
+                optional($transfer->transfer_date)->format('Y-m-d') ?? (string) $transfer->transfer_date,
+                (int) $transfer->id
+            ))
+            ->values();
+
         $gain = $pig->weight_gain;
         $daily = $pig->daily_gain;
         $growthStatus = $pig->growth_status;
@@ -203,9 +260,9 @@
         if ($isArchived) {
             $lockMessage = 'This pig is archived. Operational records are locked until the pig is restored.';
         } elseif ($isDead) {
-            $lockMessage = 'This pig has a mortality record. Health, feed, medication, and vaccination records are locked.';
+            $lockMessage = 'This pig has a mortality record. Health, feed, medication, vaccination, and transfer records are locked.';
         } elseif ($isSold) {
-            $lockMessage = 'This pig has a sale record. Health, feed, medication, and vaccination records are locked.';
+            $lockMessage = 'This pig has a sale record. Health, feed, medication, vaccination, and transfer records are locked.';
         } else {
             $lockMessage = null;
         }
@@ -242,6 +299,31 @@
             'risk' => 'This pig is currently weight-negative and needs attention.',
             'monitor' => 'This pig is not gaining weight yet and should be monitored closely.',
             default => 'There is not enough data yet to assess pig-level performance.',
+        };
+
+        $transferReasonClass = function ($reasonCode) {
+            return match ($reasonCode) {
+                'quarantine_due_to_sickness',
+                'hospital_treatment',
+                'health_monitoring' => 'health',
+
+                'low_weight_separation',
+                'same_weight_grouping',
+                'finisher_transition',
+                'nursery_to_grower',
+                'grower_to_finisher' => 'weight',
+
+                'breeding_service',
+                'pregnancy_monitoring',
+                'farrowing_preparation',
+                'boar_assignment' => 'breeding',
+
+                'pen_maintenance',
+                'capacity_balancing',
+                'production_regrouping' => 'production',
+
+                default => 'other',
+            };
         };
     @endphp
 
@@ -417,6 +499,61 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div class="panel-card">
+            <div class="section-title">
+                <div>
+                    <h3>Transfer History</h3>
+                    <p>Pen movement history for this pig, including structured reasons and notes.</p>
+                </div>
+
+                @if (!$isOperationalLocked)
+                    <a href="{{ route('pig-transfers.create', $pig) }}" class="btn primary">Transfer Pig</a>
+                @endif
+            </div>
+
+            @if($transferLogs->isEmpty())
+                <div class="empty-state">No transfer history yet.</div>
+            @else
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Route</th>
+                                <th>Reason</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($transferLogs as $transfer)
+                                @php
+                                    $reasonClass = $transferReasonClass($transfer->reason_code);
+                                    $fromPenName = $transfer->fromPen?->name ?? '—';
+                                    $toPenName = $transfer->toPen?->name ?? '—';
+                                @endphp
+                                <tr>
+                                    <td>{{ $transfer->transfer_date?->format('Y-m-d') ?? '—' }}</td>
+                                    <td>
+                                        <span class="transfer-route">
+                                            <span>{{ $fromPenName }}</span>
+                                            <span class="transfer-arrow">→</span>
+                                            <span>{{ $toPenName }}</span>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="reason-badge {{ $reasonClass }}">
+                                            {{ $transfer->reason_label }}
+                                        </span>
+                                    </td>
+                                    <td>{{ $transfer->reason_notes ?: '—' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
         </div>
 
         <div class="panel-card">
