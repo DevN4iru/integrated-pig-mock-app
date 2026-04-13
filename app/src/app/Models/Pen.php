@@ -52,23 +52,31 @@ class Pen extends Model
         return $this->hasMany(Pig::class);
     }
 
+    public function activePigs(): HasMany
+    {
+        return $this->hasMany(Pig::class)
+            ->whereNull('deleted_at')
+            ->whereDoesntHave('sales')
+            ->whereDoesntHave('mortalityLogs');
+    }
+
+    public function occupiedCount(): int
+    {
+        return isset($this->pigs_count)
+            ? (int) $this->pigs_count
+            : (int) $this->activePigs()->count();
+    }
+
     public function availableSlots(): int
     {
-        $occupied = isset($this->pigs_count)
-            ? (int) $this->pigs_count
-            : (int) $this->pigs()->count();
-
-        return max((int) $this->capacity - $occupied, 0);
+        return max((int) $this->capacity - $this->occupiedCount(), 0);
     }
 
     public function occupancyPercent(): float
     {
         $capacity = max((int) $this->capacity, 1);
-        $occupied = isset($this->pigs_count)
-            ? (int) $this->pigs_count
-            : (int) $this->pigs()->count();
 
-        return min(100, round(($occupied / $capacity) * 100, 2));
+        return min(100, round(($this->occupiedCount() / $capacity) * 100, 2));
     }
 
     public function occupancyStatus(): string
@@ -84,6 +92,15 @@ class Pen extends Model
         }
 
         return 'open';
+    }
+
+    public function occupancyBadgeClass(): string
+    {
+        return match ($this->occupancyStatus()) {
+            'full' => 'red',
+            'limited' => 'orange',
+            default => 'green',
+        };
     }
 
     public function typeBadgeClass(): string
@@ -107,5 +124,25 @@ class Pen extends Model
 
             default => 'orange',
         };
+    }
+
+    public function heatClass(): string
+    {
+        return match ($this->occupancyStatus()) {
+            'full' => 'heat-full',
+            'limited' => 'heat-limited',
+            default => 'heat-open',
+        };
+    }
+
+    public function sortKey(): string
+    {
+        $typeOrder = array_search($this->type, self::typeOptions(), true);
+        $typeOrder = $typeOrder === false ? 9999 : $typeOrder;
+
+        preg_match('/\d+/', (string) $this->name, $matches);
+        $numberOrder = isset($matches[0]) ? (int) $matches[0] : 9999;
+
+        return sprintf('%04d-%04d-%s', $typeOrder, $numberOrder, strtolower((string) $this->name));
     }
 }
