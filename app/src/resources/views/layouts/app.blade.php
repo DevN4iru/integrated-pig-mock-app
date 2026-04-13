@@ -647,6 +647,11 @@
                     <small>Ear tags</small>
                 </a>
 
+                <a href="{{ route('reproduction-cycles.index') }}" class="{{ request()->routeIs('reproduction-cycles.*') ? 'active' : '' }}">
+                    <span>Breeding</span>
+                    <small>Reproduction</small>
+                </a>
+
                 <a href="{{ route('pens.index') }}" class="{{ request()->routeIs('pens.*') ? 'active' : '' }}">
                     <span>Pens</span>
                     <small>Housing</small>
@@ -665,7 +670,7 @@
 
             <div class="sidebar-note">
                 <h3>System status</h3>
-                <p>Laravel backend is connected. This layout is now focused on clearer navigation, cleaner spacing, and better readability across dashboard and pig profile pages.</p>
+                <p>Laravel backend is connected. The breeding module is now designed to track sow reproduction records, upcoming farrowing dates, and breeding-related cost exposure.</p>
             </div>
         </aside>
 

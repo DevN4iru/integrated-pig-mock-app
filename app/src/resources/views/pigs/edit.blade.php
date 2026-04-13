@@ -9,11 +9,17 @@
 @endsection
 
 @section('content')
+    <div class="panel-card" style="margin-bottom: 20px;">
+        <div class="flash error" style="margin-bottom: 0;">
+            Pen reassignment is no longer handled from the edit form. Use the dedicated transfer action from the pig profile so movement history stays complete.
+        </div>
+    </div>
+
     <div class="panel-card">
         <div class="section-title">
             <div>
                 <h3>Edit Pig Record</h3>
-                <p>Update the details below and save changes.</p>
+                <p>Update the master pig record only. Pen changes must go through transfer history.</p>
             </div>
         </div>
 
@@ -46,15 +52,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="pen_id">Assigned Pen</label>
-                    <select id="pen_id" name="pen_id" required>
-                        <option value="">Select pen</option>
-                        @foreach ($pens as $pen)
-                            <option value="{{ $pen->id }}" {{ (string) old('pen_id', $pig->pen_id) === (string) $pen->id ? 'selected' : '' }}>
-                                {{ $pen->name }} — {{ $pen->type }} (Cap: {{ $pen->capacity }})
-                            </option>
-                        @endforeach
-                    </select>
+                    <label>Current Assigned Pen</label>
+                    <input type="text" value="{{ optional($pig->pen)->name ?: ($pig->pen_location ?? '—') }}" readonly>
                 </div>
 
                 <div class="form-group">
@@ -73,12 +72,12 @@
 
                 <div class="form-group">
                     <label for="latest_weight">Weight Upon Entry</label>
-                    <input id="latest_weight" name="latest_weight" type="number" step="0.01" value="{{ old('latest_weight', $pig->latest_weight) }}" required>
+                    <input id="latest_weight" name="latest_weight" type="number" step="0.01" min="0" value="{{ old('latest_weight', $pig->latest_weight) }}" required>
                 </div>
 
                 <div class="form-group">
                     <label for="asset_value">Asset Value</label>
-                    <input id="asset_value" name="asset_value" type="number" step="0.01" value="{{ old('asset_value', $pig->asset_value) }}" required>
+                    <input id="asset_value" name="asset_value" type="number" step="0.01" value="{{ old('asset_value', $pig->asset_value) }}" readonly>
                 </div>
             </div>
 

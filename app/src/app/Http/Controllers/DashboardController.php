@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\HealthLog;
 use App\Models\MortalityLog;
 use App\Models\Pig;
+use App\Models\ReproductionCycle;
 use App\Models\Sale;
 
 class DashboardController extends Controller
@@ -18,6 +19,7 @@ class DashboardController extends Controller
             'medications',
             'vaccinations',
             'healthLogs',
+            'reproductionCyclesAsSow',
         ])->get();
 
         $buildWeightLogs = function ($pig) {
@@ -103,13 +105,15 @@ class DashboardController extends Controller
         $totalAssetValue = (float) $livePigs->sum('asset_value');
         $totalRevenue = (float) $soldPigs->flatMap->sales->sum('price');
         $totalLossValue = (float) $deadPigs->sum('asset_value');
-        $netPosition = $totalAssetValue + $totalRevenue - $totalLossValue;
 
         $totalFeedCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_feed_cost);
         $totalMedicationCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_medication_cost);
         $totalVaccinationCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_vaccination_cost);
+        $totalBreedingCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_breeding_cost);
         $totalCareLiability = (float) $pigs->sum(fn ($pig) => (float) $pig->total_care_liability);
         $totalOperatingCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_operating_cost);
+
+        $netPosition = $totalAssetValue + $totalRevenue - $totalLossValue - $totalOperatingCost;
 
         $positiveGainPigs = $pigs->filter(fn ($pig) => $pig->feed_efficiency !== null);
 
@@ -127,6 +131,20 @@ class DashboardController extends Controller
         $recentHealthAlerts = HealthLog::with('pig')
             ->whereIn('purpose', ['sick', 'injury', 'recovered'])
             ->latest()
+            ->take(5)
+            ->get();
+
+        $upcomingFarrowings = ReproductionCycle::with(['sow', 'boar'])
+            ->where('status', 'pregnant')
+            ->whereNotNull('expected_farrow_date')
+            ->whereBetween('expected_farrow_date', [now()->toDateString(), now()->copy()->addDays(14)->toDateString()])
+            ->orderBy('expected_farrow_date')
+            ->take(5)
+            ->get();
+
+        $activeBreedingCycles = ReproductionCycle::with(['sow', 'boar'])
+            ->whereIn('status', ['open', 'pregnant'])
+            ->orderByDesc('service_date')
             ->take(5)
             ->get();
 
@@ -213,12 +231,15 @@ class DashboardController extends Controller
             'totalFeedCost',
             'totalMedicationCost',
             'totalVaccinationCost',
+            'totalBreedingCost',
             'totalCareLiability',
             'totalOperatingCost',
             'farmFeedEfficiency',
             'recentSales',
             'recentMortality',
             'recentHealthAlerts',
+            'upcomingFarrowings',
+            'activeBreedingCycles',
             'weightAlertRows',
             'growthGroups',
             'growthSummary',

@@ -2,10 +2,11 @@
 
 @section('title', 'Dashboard')
 @section('page_title', 'Dashboard')
-@section('page_subtitle', 'Farm financials and operational overview.')
+@section('page_subtitle', 'Farm financials, breeding cost exposure, and operational overview.')
 
 @section('top_actions')
     <a href="{{ route('settings.farm.edit') }}" class="btn">Farm Settings</a>
+    <a href="{{ route('reproduction-cycles.index') }}" class="btn">Breeding Records</a>
     <a href="{{ route('pigs.index') }}" class="btn">View Pigs</a>
     <a href="{{ route('pigs.create') }}" class="btn primary">+ Add Pig</a>
 @endsection
@@ -35,7 +36,7 @@
 
 .dashboard-mini-grid {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 18px;
 }
 
@@ -104,7 +105,7 @@
     <div class="dashboard-section">
         <div>
             <div class="dashboard-section-title">Financial Overview</div>
-            <div class="dashboard-section-sub">High-level farm position using current active value, recorded revenue, and mortality-linked losses.</div>
+            <div class="dashboard-section-sub">High-level farm position using current active value, recorded revenue, mortality-linked losses, and full operating costs.</div>
         </div>
 
         <div class="grid stats">
@@ -141,7 +142,7 @@
                     <span class="badge orange">Summary</span>
                 </div>
                 <div class="stat-value">₱ {{ number_format($netPosition, 2) }}</div>
-                <div class="stat-sub">Live assets + revenue − mortality loss.</div>
+                <div class="stat-sub">Live assets + revenue − mortality loss − operating cost.</div>
             </div>
         </div>
     </div>
@@ -149,7 +150,7 @@
     <div class="dashboard-section">
         <div>
             <div class="dashboard-section-title">Cost & Liability</div>
-            <div class="dashboard-section-sub">Consolidated operating costs and care-related exposure across the herd.</div>
+            <div class="dashboard-section-sub">Consolidated operating costs, breeding expenses, and care-related exposure across the herd.</div>
         </div>
 
         <div class="dashboard-mini-grid">
@@ -175,6 +176,14 @@
                     <span class="badge blue">Care</span>
                 </div>
                 <div class="stat-value">₱ {{ number_format($totalVaccinationCost, 2) }}</div>
+            </div>
+
+            <div class="dashboard-compact-card">
+                <div class="stat-top">
+                    <span class="label">Breeding Cost</span>
+                    <span class="badge green">Reproduction</span>
+                </div>
+                <div class="stat-value">₱ {{ number_format($totalBreedingCost, 2) }}</div>
             </div>
 
             <div class="dashboard-compact-card">
@@ -286,6 +295,110 @@
                 </div>
                 <div class="stat-value">{{ $farmFeedEfficiency !== null ? number_format($farmFeedEfficiency, 2) : '—' }}</div>
             </div>
+
+            <div class="dashboard-compact-card">
+                <div class="stat-top">
+                    <span class="label">Active Breeding Cycles</span>
+                    <span class="badge green">Live</span>
+                </div>
+                <div class="stat-value">{{ $activeBreedingCycles->count() }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid overview-panels">
+        <div class="panel-card">
+            <div class="section-title section-accent-green">
+                <div>
+                    <h3>Upcoming Farrowing Alerts</h3>
+                    <p>Pregnant sows expected to farrow within the next 14 days.</p>
+                </div>
+                <a href="{{ route('reproduction-cycles.index') }}" class="btn">View Breeding</a>
+            </div>
+
+            @if($upcomingFarrowings->isEmpty())
+                <div class="empty-state">No upcoming farrowing alerts in the next 14 days.</div>
+            @else
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Sow</th>
+                                <th>Type</th>
+                                <th>Boar</th>
+                                <th>Expected Farrow</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($upcomingFarrowings as $cycle)
+                                <tr>
+                                    <td>{{ $cycle->sow?->ear_tag ?? '—' }}</td>
+                                    <td>{{ $cycle->breeding_type_label }}</td>
+                                    <td>{{ $cycle->boar?->ear_tag ?? '—' }}</td>
+                                    <td>{{ $cycle->expected_farrow_date?->format('Y-m-d') ?? '—' }}</td>
+                                    <td>
+                                        @if($cycle->sow)
+                                            <a href="{{ route('pigs.show', $cycle->sow->id) }}" class="btn">Go to Sow</a>
+                                        @else
+                                            —
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+
+        <div class="panel-card">
+            <div class="section-title section-accent-blue">
+                <div>
+                    <h3>Active Breeding Cycles</h3>
+                    <p>Open and pregnant reproduction records currently in progress.</p>
+                </div>
+                <a href="{{ route('reproduction-cycles.index') }}" class="btn">View Breeding</a>
+            </div>
+
+            @if($activeBreedingCycles->isEmpty())
+                <div class="empty-state">No active breeding cycles yet.</div>
+            @else
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Sow</th>
+                                <th>Status</th>
+                                <th>Service Date</th>
+                                <th>Cost</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($activeBreedingCycles as $cycle)
+                                <tr>
+                                    <td>{{ $cycle->sow?->ear_tag ?? '—' }}</td>
+                                    <td>
+                                        <span class="badge {{ $cycle->status === 'pregnant' ? 'green' : 'orange' }}">
+                                            {{ $cycle->status_label }}
+                                        </span>
+                                    </td>
+                                    <td>{{ $cycle->service_date?->format('Y-m-d') ?? '—' }}</td>
+                                    <td>₱ {{ number_format((float) $cycle->breeding_cost, 2) }}</td>
+                                    <td>
+                                        @if($cycle->sow)
+                                            <a href="{{ route('pigs.show', $cycle->sow->id) }}" class="btn">Go to Sow</a>
+                                        @else
+                                            —
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
         </div>
     </div>
 
