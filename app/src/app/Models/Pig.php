@@ -31,6 +31,7 @@ class Pig extends Model
         'total_feed_cost',
         'total_medication_cost',
         'total_vaccination_cost',
+        'total_breeding_cost',
         'total_care_liability',
         'total_operating_cost',
         'total_feed_kg',
@@ -72,6 +73,27 @@ class Pig extends Model
     public function feedLogs()
     {
         return $this->hasMany(FeedLog::class)->latest();
+    }
+
+    public function transfers()
+    {
+        return $this->hasMany(PigTransfer::class)
+            ->orderByDesc('transfer_date')
+            ->orderByDesc('id');
+    }
+
+    public function reproductionCyclesAsSow()
+    {
+        return $this->hasMany(ReproductionCycle::class, 'sow_id')
+            ->orderByDesc('service_date')
+            ->orderByDesc('id');
+    }
+
+    public function reproductionCyclesAsBoar()
+    {
+        return $this->hasMany(ReproductionCycle::class, 'boar_id')
+            ->orderByDesc('service_date')
+            ->orderByDesc('id');
     }
 
     protected function relationHasAny(string $relation): bool
@@ -119,9 +141,6 @@ class Pig extends Model
         };
     }
 
-    /**
-     * Weight logs newest first.
-     */
     protected function orderedWeightLogs()
     {
         return $this->healthLogs()
@@ -131,9 +150,6 @@ class Pig extends Model
             ->orderByDesc('id');
     }
 
-    /**
-     * Weight logs oldest first.
-     */
     protected function chronologicalWeightLogs()
     {
         return $this->healthLogs()
@@ -244,23 +260,38 @@ class Pig extends Model
 
     public function getTotalFeedCostAttribute()
     {
-        return (float) $this->feedLogs->sum(function ($log) {
-            return (float) ($log->cost ?? 0);
-        });
+        if ($this->relationLoaded('feedLogs')) {
+            return (float) $this->feedLogs->sum(fn ($log) => (float) ($log->cost ?? 0));
+        }
+
+        return (float) $this->feedLogs()->sum('cost');
     }
 
     public function getTotalMedicationCostAttribute()
     {
-        return (float) $this->medications->sum(function ($log) {
-            return (float) ($log->cost ?? 0);
-        });
+        if ($this->relationLoaded('medications')) {
+            return (float) $this->medications->sum(fn ($log) => (float) ($log->cost ?? 0));
+        }
+
+        return (float) $this->medications()->sum('cost');
     }
 
     public function getTotalVaccinationCostAttribute()
     {
-        return (float) $this->vaccinations->sum(function ($log) {
-            return (float) ($log->cost ?? 0);
-        });
+        if ($this->relationLoaded('vaccinations')) {
+            return (float) $this->vaccinations->sum(fn ($log) => (float) ($log->cost ?? 0));
+        }
+
+        return (float) $this->vaccinations()->sum('cost');
+    }
+
+    public function getTotalBreedingCostAttribute()
+    {
+        if ($this->relationLoaded('reproductionCyclesAsSow')) {
+            return (float) $this->reproductionCyclesAsSow->sum(fn ($cycle) => (float) ($cycle->breeding_cost ?? 0));
+        }
+
+        return (float) $this->reproductionCyclesAsSow()->sum('breeding_cost');
     }
 
     public function getTotalCareLiabilityAttribute()
@@ -270,16 +301,22 @@ class Pig extends Model
 
     public function getTotalOperatingCostAttribute()
     {
-        return (float) $this->total_feed_cost + (float) $this->total_care_liability;
+        return (float) $this->total_feed_cost
+            + (float) $this->total_care_liability
+            + (float) $this->total_breeding_cost;
     }
 
     public function getTotalFeedKgAttribute()
     {
-        return (float) $this->feedLogs
-            ->filter(fn ($log) => strtolower((string) $log->unit) === 'kg')
-            ->sum(function ($log) {
-                return (float) ($log->quantity ?? 0);
-            });
+        if ($this->relationLoaded('feedLogs')) {
+            return (float) $this->feedLogs
+                ->filter(fn ($log) => strtolower((string) $log->unit) === 'kg')
+                ->sum(fn ($log) => (float) ($log->quantity ?? 0));
+        }
+
+        return (float) $this->feedLogs()
+            ->whereRaw('LOWER(unit) = ?', ['kg'])
+            ->sum('quantity');
     }
 
     public function getFeedEfficiencyAttribute()

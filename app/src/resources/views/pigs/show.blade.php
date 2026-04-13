@@ -10,6 +10,7 @@
         $isDeadTop = !$isArchivedTop && $pig->mortalityLogs->isNotEmpty();
         $isSoldTop = !$isArchivedTop && $pig->sales->isNotEmpty();
         $isOperationalLockedTop = $isArchivedTop || $isDeadTop || $isSoldTop;
+        $isFemaleTop = strtolower((string) $pig->sex) === 'female';
     @endphp
 
     <a href="{{ route('pigs.index') }}" class="btn">Back to Pig List</a>
@@ -27,6 +28,9 @@
         @if (!$isOperationalLockedTop)
             <a href="{{ route('health-logs.create', $pig) }}" class="btn primary">Add Health Log</a>
             <a href="{{ route('pig-transfers.create', $pig) }}" class="btn">Transfer Pig</a>
+            @if ($isFemaleTop)
+                <a href="{{ route('reproduction-cycles.create', $pig) }}" class="btn">Add Breeding Record</a>
+            @endif
         @endif
     @else
         <form method="POST" action="{{ route('pigs.restore', $pig->id) }}" style="display:inline-block;"
@@ -162,7 +166,7 @@
 }
 
 .reason-badge.production {
-    background: var(--blue-soft);
+    background: var(--accent-soft);
     color: var(--accent);
 }
 
@@ -186,6 +190,8 @@
 
 @section('content')
     @php
+        $pig->loadMissing(['reproductionCyclesAsSow.boar']);
+
         $dateAdded = $pig->date_added ? substr((string) $pig->date_added, 0, 10) : '—';
         $weight = is_numeric($pig->computed_weight) ? number_format((float) $pig->computed_weight, 2) : $pig->computed_weight;
         $assetValue = is_numeric($pig->asset_value) ? number_format((float) $pig->asset_value, 2) : $pig->asset_value;
@@ -195,6 +201,7 @@
         $isDead = !$isArchived && $pig->mortalityLogs->isNotEmpty();
         $isSold = !$isArchived && $pig->sales->isNotEmpty();
         $isOperationalLocked = $isArchived || $isDead || $isSold;
+        $isFemale = strtolower((string) $pig->sex) === 'female';
 
         if ($isArchived) {
             $statusLabel = 'Archived';
@@ -232,6 +239,14 @@
             ))
             ->values();
 
+        $reproductionCycles = $pig->reproductionCyclesAsSow
+            ->sortByDesc(fn ($cycle) => sprintf(
+                '%s-%010d',
+                optional($cycle->service_date)->format('Y-m-d') ?? (string) $cycle->service_date,
+                (int) $cycle->id
+            ))
+            ->values();
+
         $gain = $pig->weight_gain;
         $daily = $pig->daily_gain;
         $growthStatus = $pig->growth_status;
@@ -260,9 +275,9 @@
         if ($isArchived) {
             $lockMessage = 'This pig is archived. Operational records are locked until the pig is restored.';
         } elseif ($isDead) {
-            $lockMessage = 'This pig has a mortality record. Health, feed, medication, vaccination, and transfer records are locked.';
+            $lockMessage = 'This pig has a mortality record. Health, feed, medication, vaccination, transfer, and breeding records are locked.';
         } elseif ($isSold) {
-            $lockMessage = 'This pig has a sale record. Health, feed, medication, vaccination, and transfer records are locked.';
+            $lockMessage = 'This pig has a sale record. Health, feed, medication, vaccination, transfer, and breeding records are locked.';
         } else {
             $lockMessage = null;
         }
@@ -272,6 +287,7 @@
         $totalFeedCost = $pig->total_feed_cost;
         $totalMedicationCost = $pig->total_medication_cost;
         $totalVaccinationCost = $pig->total_vaccination_cost;
+        $totalBreedingCost = $pig->total_breeding_cost;
         $totalCareLiability = $pig->total_care_liability;
         $totalOperatingCost = $pig->total_operating_cost;
         $costPerKgGain = $pig->cost_per_kg_gain;
@@ -316,7 +332,10 @@
                 'breeding_service',
                 'pregnancy_monitoring',
                 'farrowing_preparation',
-                'boar_assignment' => 'breeding',
+                'boar_assignment',
+                'breeding_preparation',
+                'gestation_transfer',
+                'farrowing_transfer' => 'breeding',
 
                 'pen_maintenance',
                 'capacity_balancing',
@@ -463,7 +482,7 @@
                 <div class="section-title">
                     <div>
                         <h3>Cost Tracking</h3>
-                        <p>Operating cost and care liability summary for this pig.</p>
+                        <p>Operating cost, breeding exposure, and care liability summary for this pig.</p>
                     </div>
                 </div>
 
@@ -484,6 +503,11 @@
                     </div>
 
                     <div class="form-group">
+                        <label>Total Breeding Cost</label>
+                        <input type="text" value="₱ {{ number_format($totalBreedingCost, 2) }}" readonly>
+                    </div>
+
+                    <div class="form-group">
                         <label>Care Liability</label>
                         <input type="text" value="₱ {{ number_format($totalCareLiability, 2) }}" readonly>
                     </div>
@@ -492,14 +516,102 @@
                         <label>Total Operating Cost</label>
                         <input type="text" value="₱ {{ number_format($totalOperatingCost, 2) }}" readonly>
                     </div>
-
-                    <div class="form-group">
-                        <label>Feed Efficiency</label>
-                        <input type="text" value="{{ $feedEfficiency !== null ? number_format($feedEfficiency, 2) . ' kg feed / kg gain' : '—' }}" readonly>
-                    </div>
                 </div>
             </div>
         </div>
+
+        @if($isFemale)
+            <div class="panel-card">
+                <div class="section-title">
+                    <div>
+                        <h3>Reproduction Timeline</h3>
+                        <p>Breeding, pregnancy, farrowing, and litter outcome history for this sow.</p>
+                    </div>
+
+                    @if (!$isOperationalLocked)
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <a href="{{ route('reproduction-cycles.create', $pig) }}" class="btn primary">Add Breeding Record</a>
+                            <a href="{{ route('reproduction-cycles.index') }}" class="btn">All Breeding Records</a>
+                        </div>
+                    @endif
+                </div>
+
+                @if($reproductionCycles->isEmpty())
+                    <div class="empty-state">No reproduction cycles recorded yet for this sow.</div>
+                @else
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Breeding Type</th>
+                                    <th>Boar</th>
+                                    <th>Service Date</th>
+                                    <th>Expected Farrow</th>
+                                    <th>Actual Farrow</th>
+                                    <th>Litter Outcome</th>
+                                    <th>Cost</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($reproductionCycles as $cycle)
+                                    @php
+                                        $cycleBadgeClass = match($cycle->status) {
+                                            'pregnant' => 'green',
+                                            'farrowed' => 'blue',
+                                            'failed' => 'red',
+                                            default => 'orange',
+                                        };
+
+                                        $outcomeText = '—';
+
+                                        if ($cycle->status === 'farrowed') {
+                                            $parts = [];
+
+                                            if ($cycle->total_born !== null) {
+                                                $parts[] = 'Total: ' . $cycle->total_born;
+                                            }
+
+                                            if ($cycle->born_alive !== null) {
+                                                $parts[] = 'Alive: ' . $cycle->born_alive;
+                                            }
+
+                                            if ($cycle->stillborn !== null) {
+                                                $parts[] = 'Stillborn: ' . $cycle->stillborn;
+                                            }
+
+                                            if ($cycle->mummified !== null) {
+                                                $parts[] = 'Mummified: ' . $cycle->mummified;
+                                            }
+
+                                            $outcomeText = empty($parts) ? 'Recorded' : implode(' • ', $parts);
+                                        }
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            <span class="badge {{ $cycleBadgeClass }}">
+                                                {{ $cycle->status_label }}
+                                            </span>
+                                        </td>
+                                        <td>{{ $cycle->breeding_type_label }}</td>
+                                        <td>{{ $cycle->boar?->ear_tag ?? '—' }}</td>
+                                        <td>{{ $cycle->service_date?->format('Y-m-d') ?? '—' }}</td>
+                                        <td>{{ $cycle->expected_farrow_date?->format('Y-m-d') ?? '—' }}</td>
+                                        <td>{{ $cycle->actual_farrow_date?->format('Y-m-d') ?? '—' }}</td>
+                                        <td>{{ $outcomeText }}</td>
+                                        <td>₱ {{ number_format((float) $cycle->breeding_cost, 2) }}</td>
+                                        <td>
+                                            <a href="{{ route('reproduction-cycles.edit', $cycle) }}" class="btn">Edit</a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+        @endif
 
         <div class="panel-card">
             <div class="section-title">

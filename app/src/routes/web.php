@@ -9,6 +9,7 @@ use App\Http\Controllers\MortalityLogController;
 use App\Http\Controllers\PenController;
 use App\Http\Controllers\PigController;
 use App\Http\Controllers\PigTransferController;
+use App\Http\Controllers\ReproductionCycleController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\VaccinationController;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +48,18 @@ Route::delete('/pigs/{pig}', [PigController::class, 'destroy'])->name('pigs.dest
 Route::post('/pigs/{pig}/restore', [PigController::class, 'restore'])->name('pigs.restore');
 Route::delete('/pigs/{pig}/force-delete', [PigController::class, 'forceDelete'])->name('pigs.force-delete');
 Route::delete('/pigs/{pig}/remove-records', [PigController::class, 'removeFromRecords'])->name('pigs.remove-records');
+
+/*
+|--------------------------------------------------------------------------
+| Reproduction / Breeding
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/breeding', [ReproductionCycleController::class, 'index'])->name('reproduction-cycles.index');
+Route::get('/pigs/{pig}/reproduction-cycles/create', [ReproductionCycleController::class, 'create'])->name('reproduction-cycles.create');
+Route::post('/pigs/{pig}/reproduction-cycles', [ReproductionCycleController::class, 'store'])->name('reproduction-cycles.store');
+Route::get('/reproduction-cycles/{reproductionCycle}/edit', [ReproductionCycleController::class, 'edit'])->name('reproduction-cycles.edit');
+Route::put('/reproduction-cycles/{reproductionCycle}', [ReproductionCycleController::class, 'update'])->name('reproduction-cycles.update');
 
 /*
 |--------------------------------------------------------------------------
