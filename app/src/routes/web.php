@@ -1,15 +1,16 @@
 <?php
 
-use App\Http\Controllers\PenController;
-use App\Http\Controllers\PigController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FarmSettingController;
+use App\Http\Controllers\FeedLogController;
 use App\Http\Controllers\HealthLogController;
 use App\Http\Controllers\MedicationController;
-use App\Http\Controllers\VaccinationController;
 use App\Http\Controllers\MortalityLogController;
+use App\Http\Controllers\PenController;
+use App\Http\Controllers\PigController;
+use App\Http\Controllers\PigTransferController;
 use App\Http\Controllers\SaleController;
-use App\Http\Controllers\FeedLogController;
-use App\Http\Controllers\FarmSettingController;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\VaccinationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -45,6 +46,17 @@ Route::put('/pigs/{pig}', [PigController::class, 'update'])->name('pigs.update')
 Route::delete('/pigs/{pig}', [PigController::class, 'destroy'])->name('pigs.destroy');
 Route::post('/pigs/{pig}/restore', [PigController::class, 'restore'])->name('pigs.restore');
 Route::delete('/pigs/{pig}/force-delete', [PigController::class, 'forceDelete'])->name('pigs.force-delete');
+Route::delete('/pigs/{pig}/remove-records', [PigController::class, 'removeFromRecords'])->name('pigs.remove-records');
+
+/*
+|--------------------------------------------------------------------------
+| Pig Transfers
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/pigs/{pig}/transfers/create', [PigTransferController::class, 'create'])->name('pig-transfers.create');
+Route::post('/pigs/{pig}/transfers', [PigTransferController::class, 'store'])->name('pig-transfers.store');
+Route::post('/pig-transfers/batch', [PigTransferController::class, 'batchStore'])->name('pig-transfers.batch');
 
 /*
 |--------------------------------------------------------------------------
@@ -102,6 +114,7 @@ Route::delete('/pigs/{pig}/mortality/{mortalityLog}', [MortalityLogController::c
 
 Route::get('/pigs/{pig}/sales/create', [SaleController::class, 'create'])->name('sales.create');
 Route::post('/pigs/{pig}/sales', [SaleController::class, 'store'])->name('sales.store');
+Route::post('/sales/batch', [SaleController::class, 'batchStore'])->name('sales.batch');
 Route::get('/pigs/{pig}/sales/{sale}/edit', [SaleController::class, 'edit'])->name('sales.edit');
 Route::put('/pigs/{pig}/sales/{sale}', [SaleController::class, 'update'])->name('sales.update');
 Route::delete('/pigs/{pig}/sales/{sale}', [SaleController::class, 'destroy'])->name('sales.destroy');
