@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\FarmSetting;
 use App\Models\Pen;
 use App\Models\Pig;
+use App\Models\PigTransfer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PigController extends Controller
 {
@@ -43,30 +45,65 @@ class PigController extends Controller
             ->latest()
             ->get();
 
-        $activePigs = $pigs->filter(function ($pig) use ($status) {
-            $isArchived = !is_null($pig->deleted_at);
-            $isDead = !$isArchived && $pig->mortalityLogs->isNotEmpty();
-            $isSold = !$isArchived && $pig->sales->isNotEmpty();
-            $statusLabel = $isDead ? 'dead' : ($isSold ? 'sold' : 'active');
-
-            if ($isArchived) {
-                return false;
-            }
-
-            return $status === 'all' ? true : $status === $statusLabel;
+        $activePigs = $pigs->filter(function ($pig) {
+            return !$pig->trashed()
+                && $pig->mortalityLogs->isEmpty()
+                && $pig->sales->isEmpty();
         })->values();
 
-        $archivedPigs = $pigs->filter(function ($pig) use ($status) {
-            $isArchived = !is_null($pig->deleted_at);
-
-            if (!$isArchived) {
-                return false;
-            }
-
-            return $status === 'all' || $status === 'archived';
+        $soldPigs = $pigs->filter(function ($pig) {
+            return !$pig->trashed()
+                && $pig->mortalityLogs->isEmpty()
+                && $pig->sales->isNotEmpty();
         })->values();
 
-        return view('pigs.index', compact('activePigs', 'archivedPigs', 'search', 'status', 'source'));
+        $deadPigs = $pigs->filter(function ($pig) {
+            return !$pig->trashed()
+                && $pig->mortalityLogs->isNotEmpty();
+        })->values();
+
+        $archivedPigs = $pigs->filter(function ($pig) {
+            return $pig->trashed();
+        })->values();
+
+        if ($status === 'active') {
+            $soldPigs = collect();
+            $deadPigs = collect();
+            $archivedPigs = collect();
+        } elseif ($status === 'sold') {
+            $activePigs = collect();
+            $deadPigs = collect();
+            $archivedPigs = collect();
+        } elseif ($status === 'dead') {
+            $activePigs = collect();
+            $soldPigs = collect();
+            $archivedPigs = collect();
+        } elseif ($status === 'archived') {
+            $activePigs = collect();
+            $soldPigs = collect();
+            $deadPigs = collect();
+        }
+
+        $destinationPens = Pen::withCount('pigs')
+            ->orderBy('type')
+            ->orderBy('name')
+            ->get();
+
+        $reasonOptions = PigTransfer::reasonOptions();
+        $pricePerKg = FarmSetting::currentPricePerKg();
+
+        return view('pigs.index', compact(
+            'activePigs',
+            'soldPigs',
+            'deadPigs',
+            'archivedPigs',
+            'search',
+            'status',
+            'source',
+            'destinationPens',
+            'reasonOptions',
+            'pricePerKg'
+        ));
     }
 
     public function create()
@@ -114,6 +151,8 @@ class PigController extends Controller
                 'mortalityLogs',
                 'sales',
                 'feedLogs',
+                'transfers.fromPen',
+                'transfers.toPen',
             ])
             ->findOrFail($pig);
 
@@ -208,5 +247,42 @@ class PigController extends Controller
         $pig->forceDelete();
 
         return redirect()->route('pigs.index')->with('success', 'Pig permanently deleted successfully.');
+    }
+
+    public function removeFromRecords(Request $request, $pig)
+    {
+        $pig = Pig::withTrashed()
+            ->with([
+                'healthLogs',
+                'sales',
+                'mortalityLogs',
+                'feedLogs',
+                'medications',
+                'vaccinations',
+                'transfers',
+            ])
+            ->findOrFail($pig);
+
+        if ($request->input('code') !== 'REMOVE') {
+            return redirect()
+                ->route('pigs.index')
+                ->with('error', 'Removal failed. Wrong security code.');
+        }
+
+        DB::transaction(function () use ($pig): void {
+            $pig->healthLogs()->delete();
+            $pig->sales()->delete();
+            $pig->mortalityLogs()->delete();
+            $pig->feedLogs()->delete();
+            $pig->medications()->delete();
+            $pig->vaccinations()->delete();
+            $pig->transfers()->delete();
+
+            $pig->forceDelete();
+        });
+
+        return redirect()
+            ->route('pigs.index')
+            ->with('success', 'Pig and all related records were permanently removed.');
     }
 }
