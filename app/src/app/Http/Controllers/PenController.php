@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pen;
+use App\Models\PigTransfer;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -10,11 +11,31 @@ class PenController extends Controller
 {
     public function index()
     {
-        $pens = Pen::withCount('pigs')
-            ->orderBy('name')
-            ->get();
+        $pens = Pen::withCount([
+                'activePigs as pigs_count',
+            ])
+            ->get()
+            ->sortBy(function ($pen) {
+                return $pen->sortKey();
+            })
+            ->values();
 
-        return view('pens.index', compact('pens'));
+        $penTypes = Pen::typeOptions();
+
+        $penGroups = collect($penTypes)->mapWithKeys(function ($type) use ($pens) {
+            return [$type => $pens->where('type', $type)->values()];
+        });
+
+        $summary = [
+            'total_pens' => $pens->count(),
+            'full' => $pens->where(fn ($pen) => $pen->occupancyStatus() === 'full')->count(),
+            'limited' => $pens->where(fn ($pen) => $pen->occupancyStatus() === 'limited')->count(),
+            'open' => $pens->where(fn ($pen) => $pen->occupancyStatus() === 'open')->count(),
+            'occupied_slots' => $pens->sum(fn ($pen) => $pen->occupiedCount()),
+            'total_capacity' => $pens->sum(fn ($pen) => (int) $pen->capacity),
+        ];
+
+        return view('pens.index', compact('pens', 'penTypes', 'penGroups', 'summary'));
     }
 
     public function create()
@@ -64,7 +85,7 @@ class PenController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        if ($validated['capacity'] < $pen->pigs()->count()) {
+        if ($validated['capacity'] < $pen->activePigs()->count()) {
             return back()->withErrors([
                 'capacity' => 'Capacity cannot be lower than current occupied count.'
             ])->withInput();
@@ -85,8 +106,21 @@ class PenController extends Controller
             return back()->withErrors(['confirm_code' => 'Wrong delete code'])->withInput();
         }
 
-        if ($pen->pigs()->count() > 0) {
-            return back()->withErrors(['confirm_code' => 'Cannot delete a pen that still has pigs assigned.']);
+        if ($pen->activePigs()->count() > 0) {
+            return back()->withErrors([
+                'confirm_code' => 'Cannot delete a pen that still has pigs assigned.'
+            ])->withInput();
+        }
+
+        $hasTransferHistory = PigTransfer::query()
+            ->where('from_pen_id', $pen->id)
+            ->orWhere('to_pen_id', $pen->id)
+            ->exists();
+
+        if ($hasTransferHistory) {
+            return back()->withErrors([
+                'confirm_code' => 'Cannot delete this pen because it is already referenced in transfer history.'
+            ])->withInput();
         }
 
         $pen->delete();

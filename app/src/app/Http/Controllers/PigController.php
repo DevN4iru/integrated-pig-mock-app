@@ -84,7 +84,7 @@ class PigController extends Controller
             $deadPigs = collect();
         }
 
-        $destinationPens = Pen::withCount('pigs')
+        $destinationPens = Pen::withCount(['activePigs as pigs_count'])
             ->orderBy('type')
             ->orderBy('name')
             ->get();
@@ -108,7 +108,10 @@ class PigController extends Controller
 
     public function create()
     {
-        $pens = Pen::orderBy('name')->get();
+        $pens = Pen::withCount(['activePigs as pigs_count'])
+            ->orderBy('name')
+            ->get();
+
         $pricePerKg = FarmSetting::currentPricePerKg();
 
         return view('pigs.create', compact('pens', 'pricePerKg'));
@@ -126,7 +129,7 @@ class PigController extends Controller
             'latest_weight' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $pen = Pen::withCount('pigs')->findOrFail($validated['pen_id']);
+        $pen = Pen::withCount(['activePigs as pigs_count'])->findOrFail($validated['pen_id']);
 
         if ($pen->pigs_count >= $pen->capacity) {
             return back()->withErrors(['pen_id' => 'Pen is FULL'])->withInput();
@@ -173,7 +176,9 @@ class PigController extends Controller
                 ->with('error', 'Access denied. Type the correct edit code first.');
         }
 
-        $pens = Pen::orderBy('name')->get();
+        $pens = Pen::withCount(['activePigs as pigs_count'])
+            ->orderBy('name')
+            ->get();
 
         return view('pigs.edit', compact('pig', 'pens'));
     }
@@ -196,7 +201,7 @@ class PigController extends Controller
             'latest_weight' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $newPen = Pen::withCount('pigs')->findOrFail($validated['pen_id']);
+        $newPen = Pen::withCount(['activePigs as pigs_count'])->findOrFail($validated['pen_id']);
 
         if ((int) $pig->pen_id !== (int) $newPen->id && $newPen->pigs_count >= $newPen->capacity) {
             return back()->withErrors(['pen_id' => 'Selected pen is FULL'])->withInput();
