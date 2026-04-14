@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Pig;
 use App\Models\ReproductionCycle;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -16,8 +17,13 @@ class ReproductionCycleController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        $activeCycles = $cycles->filter(fn ($cycle) => in_array($cycle->status, ['open', 'pregnant'], true))->values();
-        $closedCycles = $cycles->filter(fn ($cycle) => in_array($cycle->status, ['failed', 'farrowed'], true))->values();
+        $activeCycles = $cycles
+            ->filter(fn ($cycle) => in_array($cycle->status, ReproductionCycle::activeStatuses(), true))
+            ->values();
+
+        $closedCycles = $cycles
+            ->filter(fn ($cycle) => !in_array($cycle->status, ReproductionCycle::activeStatuses(), true))
+            ->values();
 
         return view('reproduction-cycles.index', compact('cycles', 'activeCycles', 'closedCycles'));
     }
@@ -26,14 +32,13 @@ class ReproductionCycleController extends Controller
     {
         $this->assertSowEligible($pig);
 
-        $boars = $this->availableBoars($pig);
-
         return view('reproduction-cycles.create', [
             'pig' => $pig,
-            'boars' => $boars,
-            'statusOptions' => $this->statusOptions(),
-            'breedingTypeOptions' => $this->breedingTypeOptions(),
-            'semenSourceOptions' => $this->semenSourceOptions(),
+            'boars' => $this->availableBoars($pig),
+            'statusOptions' => ReproductionCycle::statusOptions(),
+            'pregnancyResultOptions' => ReproductionCycle::pregnancyResultOptions(),
+            'breedingTypeOptions' => ReproductionCycle::breedingTypeOptions(),
+            'semenSourceOptions' => ReproductionCycle::semenSourceOptions(),
         ]);
     }
 
@@ -43,25 +48,7 @@ class ReproductionCycleController extends Controller
 
         $validated = $this->validateCycle($request, $pig);
 
-        ReproductionCycle::create([
-            'sow_id' => $pig->id,
-            'boar_id' => $validated['boar_id'] ?: null,
-            'breeding_type' => $validated['breeding_type'],
-            'service_date' => $validated['service_date'],
-            'pregnancy_check_date' => $validated['pregnancy_check_date'] ?: null,
-            'expected_farrow_date' => $validated['expected_farrow_date'] ?: now()->parse($validated['service_date'])->addDays(114)->toDateString(),
-            'actual_farrow_date' => $validated['actual_farrow_date'] ?: null,
-            'status' => $validated['status'],
-            'semen_source_type' => $validated['semen_source_type'] ?: null,
-            'semen_source_name' => $validated['semen_source_name'] ?: null,
-            'semen_cost' => (float) ($validated['semen_cost'] ?? 0),
-            'breeding_cost' => (float) ($validated['breeding_cost'] ?? 0),
-            'total_born' => $validated['total_born'] !== null && $validated['total_born'] !== '' ? (int) $validated['total_born'] : null,
-            'born_alive' => $validated['born_alive'] !== null && $validated['born_alive'] !== '' ? (int) $validated['born_alive'] : null,
-            'stillborn' => $validated['stillborn'] !== null && $validated['stillborn'] !== '' ? (int) $validated['stillborn'] : null,
-            'mummified' => $validated['mummified'] !== null && $validated['mummified'] !== '' ? (int) $validated['mummified'] : null,
-            'notes' => $validated['notes'] ?: null,
-        ]);
+        ReproductionCycle::create($this->buildPayload($validated, $pig));
 
         return redirect()
             ->route('pigs.show', $pig)
@@ -73,15 +60,14 @@ class ReproductionCycleController extends Controller
         $reproductionCycle->load(['sow', 'boar']);
         $this->assertSowEligible($reproductionCycle->sow, $reproductionCycle);
 
-        $boars = $this->availableBoars($reproductionCycle->sow);
-
         return view('reproduction-cycles.edit', [
             'cycle' => $reproductionCycle,
             'pig' => $reproductionCycle->sow,
-            'boars' => $boars,
-            'statusOptions' => $this->statusOptions(),
-            'breedingTypeOptions' => $this->breedingTypeOptions(),
-            'semenSourceOptions' => $this->semenSourceOptions(),
+            'boars' => $this->availableBoars($reproductionCycle->sow),
+            'statusOptions' => ReproductionCycle::statusOptions(),
+            'pregnancyResultOptions' => ReproductionCycle::pregnancyResultOptions(),
+            'breedingTypeOptions' => ReproductionCycle::breedingTypeOptions(),
+            'semenSourceOptions' => ReproductionCycle::semenSourceOptions(),
         ]);
     }
 
@@ -92,24 +78,7 @@ class ReproductionCycleController extends Controller
 
         $validated = $this->validateCycle($request, $reproductionCycle->sow, $reproductionCycle);
 
-        $reproductionCycle->update([
-            'boar_id' => $validated['boar_id'] ?: null,
-            'breeding_type' => $validated['breeding_type'],
-            'service_date' => $validated['service_date'],
-            'pregnancy_check_date' => $validated['pregnancy_check_date'] ?: null,
-            'expected_farrow_date' => $validated['expected_farrow_date'] ?: now()->parse($validated['service_date'])->addDays(114)->toDateString(),
-            'actual_farrow_date' => $validated['actual_farrow_date'] ?: null,
-            'status' => $validated['status'],
-            'semen_source_type' => $validated['semen_source_type'] ?: null,
-            'semen_source_name' => $validated['semen_source_name'] ?: null,
-            'semen_cost' => (float) ($validated['semen_cost'] ?? 0),
-            'breeding_cost' => (float) ($validated['breeding_cost'] ?? 0),
-            'total_born' => $validated['total_born'] !== null && $validated['total_born'] !== '' ? (int) $validated['total_born'] : null,
-            'born_alive' => $validated['born_alive'] !== null && $validated['born_alive'] !== '' ? (int) $validated['born_alive'] : null,
-            'stillborn' => $validated['stillborn'] !== null && $validated['stillborn'] !== '' ? (int) $validated['stillborn'] : null,
-            'mummified' => $validated['mummified'] !== null && $validated['mummified'] !== '' ? (int) $validated['mummified'] : null,
-            'notes' => $validated['notes'] ?: null,
-        ]);
+        $reproductionCycle->update($this->buildPayload($validated, $reproductionCycle->sow));
 
         return redirect()
             ->route('pigs.show', $reproductionCycle->sow)
@@ -119,14 +88,15 @@ class ReproductionCycleController extends Controller
     protected function validateCycle(Request $request, Pig $sow, ?ReproductionCycle $currentCycle = null): array
     {
         $validated = $request->validate([
-            'breeding_type' => ['required', Rule::in(array_keys($this->breedingTypeOptions()))],
+            'breeding_type' => ['required', Rule::in(array_keys(ReproductionCycle::breedingTypeOptions()))],
             'service_date' => ['required', 'date', 'before_or_equal:today'],
-            'pregnancy_check_date' => ['nullable', 'date', 'after_or_equal:service_date'],
+            'pregnancy_check_date' => ['nullable', 'date', 'after_or_equal:service_date', 'before_or_equal:today'],
+            'pregnancy_result' => ['nullable', Rule::in(array_keys(ReproductionCycle::pregnancyResultOptions()))],
             'expected_farrow_date' => ['nullable', 'date', 'after_or_equal:service_date'],
-            'actual_farrow_date' => ['nullable', 'date', 'after_or_equal:service_date'],
-            'status' => ['required', Rule::in(array_keys($this->statusOptions()))],
+            'actual_farrow_date' => ['nullable', 'date', 'after_or_equal:service_date', 'before_or_equal:today'],
+            'status' => ['required', Rule::in(array_keys(ReproductionCycle::statusOptions()))],
             'boar_id' => ['nullable', 'integer', 'exists:pigs,id'],
-            'semen_source_type' => ['nullable', Rule::in(array_keys($this->semenSourceOptions()))],
+            'semen_source_type' => ['nullable', Rule::in(array_keys(ReproductionCycle::semenSourceOptions()))],
             'semen_source_name' => ['nullable', 'string', 'max:255'],
             'semen_cost' => ['nullable', 'numeric', 'min:0'],
             'breeding_cost' => ['nullable', 'numeric', 'min:0'],
@@ -137,17 +107,27 @@ class ReproductionCycleController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
+        $validated['pregnancy_result'] = $this->resolvePregnancyResult($validated);
+        $validated['expected_farrow_date'] = $validated['expected_farrow_date']
+            ?: Carbon::parse($validated['service_date'])->addDays(114)->toDateString();
+
+        $validated['status'] = $this->normalizeStatus(
+            $validated['status'],
+            $validated['expected_farrow_date'],
+            $validated['pregnancy_result']
+        );
+
         $errors = [];
 
-        if ($validated['breeding_type'] === 'natural_mating' && empty($validated['boar_id'])) {
+        if ($validated['breeding_type'] === ReproductionCycle::BREEDING_TYPE_NATURAL_MATING && empty($validated['boar_id'])) {
             $errors['boar_id'] = 'A boar is required for natural mating records.';
         }
 
-        if ($validated['breeding_type'] === 'artificial_insemination' && empty($validated['semen_source_type'])) {
+        if ($validated['breeding_type'] === ReproductionCycle::BREEDING_TYPE_ARTIFICIAL_INSEMINATION && empty($validated['semen_source_type'])) {
             $errors['semen_source_type'] = 'Semen source type is required for artificial insemination.';
         }
 
-        if (($validated['semen_source_type'] ?? null) === 'purchased') {
+        if (($validated['semen_source_type'] ?? null) === ReproductionCycle::SEMEN_SOURCE_PURCHASED) {
             if (empty($validated['semen_source_name'])) {
                 $errors['semen_source_name'] = 'Purchased semen source name is required.';
             }
@@ -175,22 +155,57 @@ class ReproductionCycleController extends Controller
             ($validated['stillborn'] ?? null) !== null ||
             ($validated['mummified'] ?? null) !== null;
 
-        if (($validated['status'] ?? null) === 'farrowed' && empty($validated['actual_farrow_date'])) {
-            $errors['actual_farrow_date'] = 'Actual farrowing date is required when status is farrowed.';
+        if ($validated['pregnancy_result'] === ReproductionCycle::PREGNANCY_RESULT_PENDING && !empty($validated['pregnancy_check_date'])) {
+            $errors['pregnancy_check_date'] = 'Pregnancy check date can only be set once a pregnancy result is recorded.';
         }
 
-        if ($hasOutcomeCounts && ($validated['status'] ?? null) !== 'farrowed') {
+        if ($validated['pregnancy_result'] !== ReproductionCycle::PREGNANCY_RESULT_PENDING && empty($validated['pregnancy_check_date'])) {
+            $errors['pregnancy_check_date'] = 'Pregnancy check date is required once the pregnancy result is no longer pending.';
+        }
+
+        if (in_array($validated['status'], [
+            ReproductionCycle::STATUS_PREGNANT,
+            ReproductionCycle::STATUS_DUE_SOON,
+            ReproductionCycle::STATUS_FARROWED,
+        ], true) && $validated['pregnancy_result'] !== ReproductionCycle::PREGNANCY_RESULT_PREGNANT) {
+            $errors['pregnancy_result'] = 'This status requires a pregnant pregnancy result.';
+        }
+
+        if (in_array($validated['status'], [
+            ReproductionCycle::STATUS_NOT_PREGNANT,
+            ReproductionCycle::STATUS_RETURNED_TO_HEAT,
+        ], true) && $validated['pregnancy_result'] !== ReproductionCycle::PREGNANCY_RESULT_NOT_PREGNANT) {
+            $errors['pregnancy_result'] = 'This status requires a not pregnant pregnancy result.';
+        }
+
+        if ($validated['status'] === ReproductionCycle::STATUS_SERVICED && $validated['pregnancy_result'] !== ReproductionCycle::PREGNANCY_RESULT_PENDING) {
+            $errors['pregnancy_result'] = 'Serviced cycles must remain pending until a pregnancy check is recorded.';
+        }
+
+        if ($validated['status'] === ReproductionCycle::STATUS_DUE_SOON && !$this->isDueSoon($validated['expected_farrow_date'])) {
+            $errors['expected_farrow_date'] = 'Due soon status may only be used when the expected farrowing date is within the due-soon threshold.';
+        }
+
+        if (!empty($validated['actual_farrow_date']) && $validated['status'] !== ReproductionCycle::STATUS_FARROWED) {
+            $errors['actual_farrow_date'] = 'Actual farrowing date can only be recorded when the cycle status is farrowed.';
+        }
+
+        if ($validated['status'] === ReproductionCycle::STATUS_FARROWED && empty($validated['actual_farrow_date'])) {
+            $errors['actual_farrow_date'] = 'Actual farrowing date is required when the cycle status is farrowed.';
+        }
+
+        if ($hasOutcomeCounts && $validated['status'] !== ReproductionCycle::STATUS_FARROWED) {
             $errors['status'] = 'Litter outcome counts can only be recorded when the cycle status is farrowed.';
         }
 
         $activeCycleQuery = $sow->reproductionCyclesAsSow()
-            ->whereIn('status', ['open', 'pregnant']);
+            ->whereIn('status', ReproductionCycle::activeStatuses());
 
         if ($currentCycle) {
             $activeCycleQuery->where('id', '!=', $currentCycle->id);
         }
 
-        if ($activeCycleQuery->exists() && in_array($validated['status'], ['open', 'pregnant'], true)) {
+        if ($activeCycleQuery->exists() && in_array($validated['status'], ReproductionCycle::activeStatuses(), true)) {
             $errors['status'] = 'This sow already has an active reproduction cycle.';
         }
 
@@ -199,6 +214,67 @@ class ReproductionCycleController extends Controller
         }
 
         return $validated;
+    }
+
+    protected function buildPayload(array $validated, Pig $sow): array
+    {
+        return [
+            'sow_id' => $sow->id,
+            'boar_id' => $validated['boar_id'] ?: null,
+            'breeding_type' => $validated['breeding_type'],
+            'service_date' => $validated['service_date'],
+            'pregnancy_check_date' => $validated['pregnancy_check_date'] ?: null,
+            'pregnancy_result' => $validated['pregnancy_result'],
+            'expected_farrow_date' => $validated['expected_farrow_date'],
+            'actual_farrow_date' => $validated['actual_farrow_date'] ?: null,
+            'status' => $validated['status'],
+            'semen_source_type' => $validated['semen_source_type'] ?: null,
+            'semen_source_name' => $validated['semen_source_name'] ?: null,
+            'semen_cost' => (float) ($validated['semen_cost'] ?? 0),
+            'breeding_cost' => (float) ($validated['breeding_cost'] ?? 0),
+            'total_born' => $validated['total_born'] !== null && $validated['total_born'] !== '' ? (int) $validated['total_born'] : null,
+            'born_alive' => $validated['born_alive'] !== null && $validated['born_alive'] !== '' ? (int) $validated['born_alive'] : null,
+            'stillborn' => $validated['stillborn'] !== null && $validated['stillborn'] !== '' ? (int) $validated['stillborn'] : null,
+            'mummified' => $validated['mummified'] !== null && $validated['mummified'] !== '' ? (int) $validated['mummified'] : null,
+            'notes' => $validated['notes'] ?: null,
+        ];
+    }
+
+    protected function resolvePregnancyResult(array $validated): string
+    {
+        if (!empty($validated['pregnancy_result'])) {
+            return $validated['pregnancy_result'];
+        }
+
+        return match ($validated['status']) {
+            ReproductionCycle::STATUS_PREGNANT,
+            ReproductionCycle::STATUS_DUE_SOON,
+            ReproductionCycle::STATUS_FARROWED => ReproductionCycle::PREGNANCY_RESULT_PREGNANT,
+
+            ReproductionCycle::STATUS_NOT_PREGNANT,
+            ReproductionCycle::STATUS_RETURNED_TO_HEAT => ReproductionCycle::PREGNANCY_RESULT_NOT_PREGNANT,
+
+            default => ReproductionCycle::PREGNANCY_RESULT_PENDING,
+        };
+    }
+
+    protected function normalizeStatus(string $status, string $expectedFarrowDate, string $pregnancyResult): string
+    {
+        if ($status === ReproductionCycle::STATUS_PREGNANT
+            && $pregnancyResult === ReproductionCycle::PREGNANCY_RESULT_PREGNANT
+            && $this->isDueSoon($expectedFarrowDate)
+        ) {
+            return ReproductionCycle::STATUS_DUE_SOON;
+        }
+
+        return $status;
+    }
+
+    protected function isDueSoon(string $expectedFarrowDate): bool
+    {
+        $daysUntilDue = Carbon::today()->diffInDays(Carbon::parse($expectedFarrowDate), false);
+
+        return $daysUntilDue >= 0 && $daysUntilDue <= ReproductionCycle::dueSoonThresholdDays();
     }
 
     protected function assertSowEligible(Pig $pig, ?ReproductionCycle $currentCycle = null): void
@@ -226,31 +302,5 @@ class ReproductionCycleController extends Controller
             ->whereDoesntHave('mortalityLogs')
             ->orderBy('ear_tag')
             ->get();
-    }
-
-    protected function statusOptions(): array
-    {
-        return [
-            'open' => 'Open',
-            'pregnant' => 'Pregnant',
-            'failed' => 'Failed',
-            'farrowed' => 'Farrowed',
-        ];
-    }
-
-    protected function breedingTypeOptions(): array
-    {
-        return [
-            'natural_mating' => 'Natural Mating',
-            'artificial_insemination' => 'Artificial Insemination',
-        ];
-    }
-
-    protected function semenSourceOptions(): array
-    {
-        return [
-            'local' => 'Locally Sourced',
-            'purchased' => 'Purchased',
-        ];
     }
 }

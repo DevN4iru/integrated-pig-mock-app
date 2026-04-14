@@ -13,6 +13,7 @@ class DashboardController extends Controller
     public function index()
     {
         $pigs = Pig::with([
+            'pen',
             'sales',
             'mortalityLogs',
             'feedLogs',
@@ -134,16 +135,43 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        $upcomingFarrowings = ReproductionCycle::with(['sow', 'boar'])
-            ->where('status', 'pregnant')
+        $upcomingFarrowings = ReproductionCycle::with(['sow.pen', 'boar'])
+            ->whereIn('status', [
+                ReproductionCycle::STATUS_PREGNANT,
+                ReproductionCycle::STATUS_DUE_SOON,
+            ])
+            ->where('pregnancy_result', ReproductionCycle::PREGNANCY_RESULT_PREGNANT)
             ->whereNotNull('expected_farrow_date')
-            ->whereBetween('expected_farrow_date', [now()->toDateString(), now()->copy()->addDays(14)->toDateString()])
+            ->whereBetween('expected_farrow_date', [
+                now()->toDateString(),
+                now()->copy()->addDays(14)->toDateString(),
+            ])
             ->orderBy('expected_farrow_date')
             ->take(5)
             ->get();
 
-        $activeBreedingCycles = ReproductionCycle::with(['sow', 'boar'])
-            ->whereIn('status', ['open', 'pregnant'])
+        $activeBreedingCycles = ReproductionCycle::with(['sow.pen', 'boar'])
+            ->whereIn('status', ReproductionCycle::activeStatuses())
+            ->orderByDesc('service_date')
+            ->take(5)
+            ->get();
+
+        $dueSoonCycles = ReproductionCycle::with(['sow.pen', 'boar'])
+            ->where('status', ReproductionCycle::STATUS_DUE_SOON)
+            ->orderBy('expected_farrow_date')
+            ->take(5)
+            ->get();
+
+        $returnedToHeatCycles = ReproductionCycle::with(['sow.pen', 'boar'])
+            ->where('status', ReproductionCycle::STATUS_RETURNED_TO_HEAT)
+            ->orderByDesc('pregnancy_check_date')
+            ->orderByDesc('service_date')
+            ->take(5)
+            ->get();
+
+        $pendingPregnancyChecks = ReproductionCycle::with(['sow.pen', 'boar'])
+            ->where('status', ReproductionCycle::STATUS_SERVICED)
+            ->where('pregnancy_result', ReproductionCycle::PREGNANCY_RESULT_PENDING)
             ->orderByDesc('service_date')
             ->take(5)
             ->get();
@@ -240,6 +268,9 @@ class DashboardController extends Controller
             'recentHealthAlerts',
             'upcomingFarrowings',
             'activeBreedingCycles',
+            'dueSoonCycles',
+            'returnedToHeatCycles',
+            'pendingPregnancyChecks',
             'weightAlertRows',
             'growthGroups',
             'growthSummary',

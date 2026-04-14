@@ -180,6 +180,18 @@
     color: #4f46e5;
 }
 
+.pen-advisory {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pen-advisory-note {
+    color: var(--muted);
+    font-size: 12px;
+}
+
 @media (max-width: 1200px) {
     .profile-grid-two,
     .profile-grid-half {
@@ -190,12 +202,14 @@
 
 @section('content')
     @php
-        $pig->loadMissing(['reproductionCyclesAsSow.boar']);
+        use App\Models\ReproductionCycle;
+
+        $pig->loadMissing(['pen', 'reproductionCyclesAsSow.boar']);
 
         $dateAdded = $pig->date_added ? substr((string) $pig->date_added, 0, 10) : '—';
         $weight = is_numeric($pig->computed_weight) ? number_format((float) $pig->computed_weight, 2) : $pig->computed_weight;
         $assetValue = is_numeric($pig->asset_value) ? number_format((float) $pig->asset_value, 2) : $pig->asset_value;
-        $penName = optional($pig->pen)->name ?: ($pig->pen_location ?? '—');
+        $penName = $pig->pen?->name ?? '—';
 
         $isArchived = !is_null($pig->deleted_at);
         $isDead = !$isArchived && $pig->mortalityLogs->isNotEmpty();
@@ -342,6 +356,18 @@
                 'production_regrouping' => 'production',
 
                 default => 'other',
+            };
+        };
+
+        $cycleBadgeClass = function (string $status) {
+            return match ($status) {
+                ReproductionCycle::STATUS_PREGNANT => 'green',
+                ReproductionCycle::STATUS_DUE_SOON => 'blue',
+                ReproductionCycle::STATUS_FARROWED => 'blue',
+                ReproductionCycle::STATUS_NOT_PREGNANT => 'red',
+                ReproductionCycle::STATUS_RETURNED_TO_HEAT => 'orange',
+                ReproductionCycle::STATUS_CLOSED => 'orange',
+                default => 'orange',
             };
         };
     @endphp
@@ -544,11 +570,13 @@
                             <thead>
                                 <tr>
                                     <th>Status</th>
+                                    <th>Pregnancy Result</th>
                                     <th>Breeding Type</th>
                                     <th>Boar</th>
                                     <th>Service Date</th>
+                                    <th>Pregnancy Check</th>
                                     <th>Expected Farrow</th>
-                                    <th>Actual Farrow</th>
+                                    <th>Recommended Pen</th>
                                     <th>Litter Outcome</th>
                                     <th>Cost</th>
                                     <th>Action</th>
@@ -557,16 +585,9 @@
                             <tbody>
                                 @foreach($reproductionCycles as $cycle)
                                     @php
-                                        $cycleBadgeClass = match($cycle->status) {
-                                            'pregnant' => 'green',
-                                            'farrowed' => 'blue',
-                                            'failed' => 'red',
-                                            default => 'orange',
-                                        };
-
                                         $outcomeText = '—';
 
-                                        if ($cycle->status === 'farrowed') {
+                                        if ($cycle->status === ReproductionCycle::STATUS_FARROWED) {
                                             $parts = [];
 
                                             if ($cycle->total_born !== null) {
@@ -587,18 +608,35 @@
 
                                             $outcomeText = empty($parts) ? 'Recorded' : implode(' • ', $parts);
                                         }
+
+                                        $recommendedPen = $cycle->recommended_pen_type ?? '—';
+                                        $currentPenType = $pig->pen?->type;
+                                        $penAligned = $recommendedPen === '—' || $currentPenType === $recommendedPen;
                                     @endphp
                                     <tr>
                                         <td>
-                                            <span class="badge {{ $cycleBadgeClass }}">
+                                            <span class="badge {{ $cycleBadgeClass($cycle->status) }}">
                                                 {{ $cycle->status_label }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ $cycle->pregnancy_result === ReproductionCycle::PREGNANCY_RESULT_PREGNANT ? 'green' : ($cycle->pregnancy_result === ReproductionCycle::PREGNANCY_RESULT_NOT_PREGNANT ? 'red' : 'blue') }}">
+                                                {{ $cycle->pregnancy_result_label }}
                                             </span>
                                         </td>
                                         <td>{{ $cycle->breeding_type_label }}</td>
                                         <td>{{ $cycle->boar?->ear_tag ?? '—' }}</td>
                                         <td>{{ $cycle->service_date?->format('Y-m-d') ?? '—' }}</td>
+                                        <td>{{ $cycle->pregnancy_check_date?->format('Y-m-d') ?? '—' }}</td>
                                         <td>{{ $cycle->expected_farrow_date?->format('Y-m-d') ?? '—' }}</td>
-                                        <td>{{ $cycle->actual_farrow_date?->format('Y-m-d') ?? '—' }}</td>
+                                        <td>
+                                            <span class="pen-advisory">
+                                                <span>{{ $recommendedPen }}</span>
+                                                @if(!$penAligned)
+                                                    <span class="badge orange">Current pen differs</span>
+                                                @endif
+                                            </span>
+                                        </td>
                                         <td>{{ $outcomeText }}</td>
                                         <td>₱ {{ number_format((float) $cycle->breeding_cost, 2) }}</td>
                                         <td>
