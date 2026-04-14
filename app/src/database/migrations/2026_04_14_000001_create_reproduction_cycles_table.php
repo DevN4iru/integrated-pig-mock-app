@@ -22,11 +22,14 @@ return new class extends Migration
 
             $table->string('breeding_type', 50);
             $table->date('service_date');
+
             $table->date('pregnancy_check_date')->nullable();
+            $table->string('pregnancy_result', 30)->default('pending');
+
             $table->date('expected_farrow_date')->nullable();
             $table->date('actual_farrow_date')->nullable();
 
-            $table->string('status', 30)->default('open');
+            $table->string('status', 30)->default('serviced');
 
             $table->string('semen_source_type', 30)->nullable();
             $table->string('semen_source_name')->nullable();
@@ -43,6 +46,7 @@ return new class extends Migration
 
             $table->index(['sow_id', 'service_date']);
             $table->index(['status', 'expected_farrow_date']);
+            $table->index(['pregnancy_result', 'pregnancy_check_date']);
             $table->index(['breeding_type', 'service_date']);
         });
     }
