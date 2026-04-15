@@ -33,7 +33,7 @@ class ReproductionCycleController extends Controller
         $this->assertSowEligible($pig);
 
         return view('reproduction-cycles.create', [
-            'pig' => $pig,
+            'pig' => $pig->loadMissing('pen'),
             'boars' => $this->availableBoars($pig),
             'statusOptions' => ReproductionCycle::statusOptions(),
             'pregnancyResultOptions' => ReproductionCycle::pregnancyResultOptions(),
@@ -52,12 +52,12 @@ class ReproductionCycleController extends Controller
 
         return redirect()
             ->route('pigs.show', $pig)
-            ->with('success', 'Reproduction cycle recorded successfully.');
+            ->with('success', 'Breeding record created successfully.');
     }
 
     public function edit(ReproductionCycle $reproductionCycle)
     {
-        $reproductionCycle->load(['sow', 'boar']);
+        $reproductionCycle->load(['sow.pen', 'boar']);
         $this->assertSowEligible($reproductionCycle->sow, $reproductionCycle);
 
         return view('reproduction-cycles.edit', [
@@ -82,7 +82,20 @@ class ReproductionCycleController extends Controller
 
         return redirect()
             ->route('pigs.show', $reproductionCycle->sow)
-            ->with('success', 'Reproduction cycle updated successfully.');
+            ->with('success', 'Breeding record updated successfully.');
+    }
+
+    public function destroy(ReproductionCycle $reproductionCycle)
+    {
+        $reproductionCycle->load('sow');
+        $this->assertSowEligible($reproductionCycle->sow, $reproductionCycle);
+
+        $sow = $reproductionCycle->sow;
+        $reproductionCycle->delete();
+
+        return redirect()
+            ->route('pigs.show', $sow)
+            ->with('success', 'Breeding record deleted successfully.');
     }
 
     protected function validateCycle(Request $request, Pig $sow, ?ReproductionCycle $currentCycle = null): array
@@ -94,7 +107,7 @@ class ReproductionCycleController extends Controller
             'pregnancy_result' => ['nullable', Rule::in(array_keys(ReproductionCycle::pregnancyResultOptions()))],
             'expected_farrow_date' => ['nullable', 'date', 'after_or_equal:service_date'],
             'actual_farrow_date' => ['nullable', 'date', 'after_or_equal:service_date', 'before_or_equal:today'],
-            'status' => ['required', Rule::in(array_keys(ReproductionCycle::statusOptions()))],
+            'status' => ['nullable', Rule::in(array_keys(ReproductionCycle::statusOptions()))],
             'boar_id' => ['nullable', 'integer', 'exists:pigs,id'],
             'semen_source_type' => ['nullable', Rule::in(array_keys(ReproductionCycle::semenSourceOptions()))],
             'semen_source_name' => ['nullable', 'string', 'max:255'],
@@ -108,14 +121,12 @@ class ReproductionCycleController extends Controller
         ]);
 
         $validated['pregnancy_result'] = $this->resolvePregnancyResult($validated);
-        $validated['expected_farrow_date'] = $validated['expected_farrow_date']
-            ?: Carbon::parse($validated['service_date'])->addDays(114)->toDateString();
 
-        $validated['status'] = $this->normalizeStatus(
-            $validated['status'],
-            $validated['expected_farrow_date'],
-            $validated['pregnancy_result']
-        );
+        $validated['expected_farrow_date'] = !empty($validated['expected_farrow_date'])
+            ? $validated['expected_farrow_date']
+            : Carbon::parse($validated['service_date'])->addDays(114)->toDateString();
+
+        $validated['status'] = $this->autoDetermineStatus($validated);
 
         $errors = [];
 
@@ -163,39 +174,76 @@ class ReproductionCycleController extends Controller
             $errors['pregnancy_check_date'] = 'Pregnancy check date is required once the pregnancy result is no longer pending.';
         }
 
-        if (in_array($validated['status'], [
-            ReproductionCycle::STATUS_PREGNANT,
-            ReproductionCycle::STATUS_DUE_SOON,
-            ReproductionCycle::STATUS_FARROWED,
-        ], true) && $validated['pregnancy_result'] !== ReproductionCycle::PREGNANCY_RESULT_PREGNANT) {
-            $errors['pregnancy_result'] = 'This status requires a pregnant pregnancy result.';
+        if (
+            $validated['pregnancy_result'] === ReproductionCycle::PREGNANCY_RESULT_PENDING &&
+            !empty($validated['actual_farrow_date'])
+        ) {
+            $errors['pregnancy_result'] = 'A farrowing record cannot remain pending. Record the pregnancy result first.';
         }
 
-        if (in_array($validated['status'], [
-            ReproductionCycle::STATUS_NOT_PREGNANT,
-            ReproductionCycle::STATUS_RETURNED_TO_HEAT,
-        ], true) && $validated['pregnancy_result'] !== ReproductionCycle::PREGNANCY_RESULT_NOT_PREGNANT) {
-            $errors['pregnancy_result'] = 'This status requires a not pregnant pregnancy result.';
+        if (
+            $validated['pregnancy_result'] === ReproductionCycle::PREGNANCY_RESULT_NOT_PREGNANT &&
+            !empty($validated['actual_farrow_date'])
+        ) {
+            $errors['actual_farrow_date'] = 'Actual farrowing date cannot be recorded when the sow is marked not pregnant.';
         }
 
-        if ($validated['status'] === ReproductionCycle::STATUS_SERVICED && $validated['pregnancy_result'] !== ReproductionCycle::PREGNANCY_RESULT_PENDING) {
-            $errors['pregnancy_result'] = 'Serviced cycles must remain pending until a pregnancy check is recorded.';
-        }
-
-        if ($validated['status'] === ReproductionCycle::STATUS_DUE_SOON && !$this->isDueSoon($validated['expected_farrow_date'])) {
-            $errors['expected_farrow_date'] = 'Due soon status may only be used when the expected farrowing date is within the due-soon threshold.';
-        }
-
-        if (!empty($validated['actual_farrow_date']) && $validated['status'] !== ReproductionCycle::STATUS_FARROWED) {
-            $errors['actual_farrow_date'] = 'Actual farrowing date can only be recorded when the cycle status is farrowed.';
+        if (
+            $validated['pregnancy_result'] === ReproductionCycle::PREGNANCY_RESULT_NOT_PREGNANT &&
+            $hasOutcomeCounts
+        ) {
+            $errors['pregnancy_result'] = 'Litter outcome counts cannot be recorded when the sow is marked not pregnant.';
         }
 
         if ($validated['status'] === ReproductionCycle::STATUS_FARROWED && empty($validated['actual_farrow_date'])) {
-            $errors['actual_farrow_date'] = 'Actual farrowing date is required when the cycle status is farrowed.';
+            $errors['actual_farrow_date'] = 'Actual farrowing date is required when the cycle has reached farrowing.';
         }
 
         if ($hasOutcomeCounts && $validated['status'] !== ReproductionCycle::STATUS_FARROWED) {
-            $errors['status'] = 'Litter outcome counts can only be recorded when the cycle status is farrowed.';
+            $errors['actual_farrow_date'] = 'Litter outcome counts can only be recorded after actual farrowing date is set.';
+        }
+
+        if (
+            in_array($validated['status'], [
+                ReproductionCycle::STATUS_PREGNANT,
+                ReproductionCycle::STATUS_DUE_SOON,
+                ReproductionCycle::STATUS_FARROWED,
+            ], true) &&
+            $validated['pregnancy_result'] !== ReproductionCycle::PREGNANCY_RESULT_PREGNANT
+        ) {
+            $errors['pregnancy_result'] = 'This cycle stage requires a pregnant pregnancy result.';
+        }
+
+        if (
+            $validated['status'] === ReproductionCycle::STATUS_RETURNED_TO_HEAT &&
+            $validated['pregnancy_result'] !== ReproductionCycle::PREGNANCY_RESULT_NOT_PREGNANT
+        ) {
+            $errors['pregnancy_result'] = 'Returned to heat requires a not pregnant pregnancy result.';
+        }
+
+        if (($validated['born_alive'] ?? null) !== null && ($validated['total_born'] ?? null) !== null && (int) $validated['born_alive'] > (int) $validated['total_born']) {
+            $errors['born_alive'] = 'Born alive cannot be greater than total born.';
+        }
+
+        if (($validated['stillborn'] ?? null) !== null && ($validated['total_born'] ?? null) !== null && (int) $validated['stillborn'] > (int) $validated['total_born']) {
+            $errors['stillborn'] = 'Stillborn cannot be greater than total born.';
+        }
+
+        if (($validated['mummified'] ?? null) !== null && ($validated['total_born'] ?? null) !== null && (int) $validated['mummified'] > (int) $validated['total_born']) {
+            $errors['mummified'] = 'Mummified cannot be greater than total born.';
+        }
+
+        if (
+            ($validated['born_alive'] ?? null) !== null &&
+            ($validated['stillborn'] ?? null) !== null &&
+            ($validated['mummified'] ?? null) !== null &&
+            ($validated['total_born'] ?? null) !== null
+        ) {
+            $recordedTotal = (int) $validated['born_alive'] + (int) $validated['stillborn'] + (int) $validated['mummified'];
+
+            if ($recordedTotal > (int) $validated['total_born']) {
+                $errors['total_born'] = 'Total born cannot be less than the sum of born alive, stillborn, and mummified.';
+            }
         }
 
         $activeCycleQuery = $sow->reproductionCyclesAsSow()
@@ -206,7 +254,7 @@ class ReproductionCycleController extends Controller
         }
 
         if ($activeCycleQuery->exists() && in_array($validated['status'], ReproductionCycle::activeStatuses(), true)) {
-            $errors['status'] = 'This sow already has an active reproduction cycle.';
+            $errors['service_date'] = 'This sow already has an active reproduction cycle.';
         }
 
         if (!empty($errors)) {
@@ -246,28 +294,32 @@ class ReproductionCycleController extends Controller
             return $validated['pregnancy_result'];
         }
 
-        return match ($validated['status']) {
-            ReproductionCycle::STATUS_PREGNANT,
-            ReproductionCycle::STATUS_DUE_SOON,
-            ReproductionCycle::STATUS_FARROWED => ReproductionCycle::PREGNANCY_RESULT_PREGNANT,
-
-            ReproductionCycle::STATUS_NOT_PREGNANT,
-            ReproductionCycle::STATUS_RETURNED_TO_HEAT => ReproductionCycle::PREGNANCY_RESULT_NOT_PREGNANT,
-
-            default => ReproductionCycle::PREGNANCY_RESULT_PENDING,
-        };
-    }
-
-    protected function normalizeStatus(string $status, string $expectedFarrowDate, string $pregnancyResult): string
-    {
-        if ($status === ReproductionCycle::STATUS_PREGNANT
-            && $pregnancyResult === ReproductionCycle::PREGNANCY_RESULT_PREGNANT
-            && $this->isDueSoon($expectedFarrowDate)
-        ) {
-            return ReproductionCycle::STATUS_DUE_SOON;
+        if (!empty($validated['actual_farrow_date'])) {
+            return ReproductionCycle::PREGNANCY_RESULT_PREGNANT;
         }
 
-        return $status;
+        return ReproductionCycle::PREGNANCY_RESULT_PENDING;
+    }
+
+    protected function autoDetermineStatus(array $data): string
+    {
+        if (!empty($data['actual_farrow_date'])) {
+            return ReproductionCycle::STATUS_FARROWED;
+        }
+
+        if (($data['pregnancy_result'] ?? null) === ReproductionCycle::PREGNANCY_RESULT_PREGNANT) {
+            if (!empty($data['expected_farrow_date']) && $this->isDueSoon($data['expected_farrow_date'])) {
+                return ReproductionCycle::STATUS_DUE_SOON;
+            }
+
+            return ReproductionCycle::STATUS_PREGNANT;
+        }
+
+        if (($data['pregnancy_result'] ?? null) === ReproductionCycle::PREGNANCY_RESULT_NOT_PREGNANT) {
+            return ReproductionCycle::STATUS_RETURNED_TO_HEAT;
+        }
+
+        return ReproductionCycle::STATUS_SERVICED;
     }
 
     protected function isDueSoon(string $expectedFarrowDate): bool

@@ -60,6 +60,7 @@ Route::get('/pigs/{pig}/reproduction-cycles/create', [ReproductionCycleControlle
 Route::post('/pigs/{pig}/reproduction-cycles', [ReproductionCycleController::class, 'store'])->name('reproduction-cycles.store');
 Route::get('/reproduction-cycles/{reproductionCycle}/edit', [ReproductionCycleController::class, 'edit'])->name('reproduction-cycles.edit');
 Route::put('/reproduction-cycles/{reproductionCycle}', [ReproductionCycleController::class, 'update'])->name('reproduction-cycles.update');
+Route::delete('/reproduction-cycles/{reproductionCycle}', [ReproductionCycleController::class, 'destroy'])->name('reproduction-cycles.destroy');
 
 /*
 |--------------------------------------------------------------------------

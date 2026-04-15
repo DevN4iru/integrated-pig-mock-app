@@ -27,7 +27,7 @@
                     <span class="badge green">Live</span>
                 </div>
                 <div class="stat-value">{{ $activeCycles->count() }}</div>
-                <div class="stat-sub">Open or pregnant breeding records.</div>
+                <div class="stat-sub">Serviced, pregnant, returned-to-heat, or due-soon breeding records.</div>
             </div>
 
             <div class="stat-card">
@@ -36,7 +36,7 @@
                     <span class="badge orange">Done</span>
                 </div>
                 <div class="stat-value">{{ $closedCycles->count() }}</div>
-                <div class="stat-sub">Failed or farrowed cycles.</div>
+                <div class="stat-sub">Farrowed or manually closed cycles.</div>
             </div>
 
             <div class="stat-card">
@@ -44,7 +44,7 @@
                     <span class="label">How to Add</span>
                     <span class="badge blue">Flow</span>
                 </div>
-                <div class="stat-sub">Open a female pig profile and start a new reproduction cycle there.</div>
+                <div class="stat-sub">Open a female pig profile and start one ongoing breeding case there, then update the same record as results happen.</div>
             </div>
         </div>
 
@@ -52,7 +52,7 @@
             <div class="section-title">
                 <div>
                     <h3>All Reproduction Cycles</h3>
-                    <p>Each row represents one breeding attempt for one sow.</p>
+                    <p>Each row represents one breeding case for one sow.</p>
                 </div>
             </div>
 
@@ -67,6 +67,7 @@
                                 <th>Type</th>
                                 <th>Boar</th>
                                 <th>Status</th>
+                                <th>Pregnancy Result</th>
                                 <th>Service Date</th>
                                 <th>Expected Farrow</th>
                                 <th>Actual Farrow</th>
@@ -82,12 +83,20 @@
                                     <td>{{ $cycle->boar?->ear_tag ?? '—' }}</td>
                                     <td>
                                         <span class="badge {{ match($cycle->status) {
-                                            'pregnant' => 'green',
-                                            'farrowed' => 'blue',
-                                            'failed' => 'red',
+                                            \App\Models\ReproductionCycle::STATUS_PREGNANT => 'green',
+                                            \App\Models\ReproductionCycle::STATUS_DUE_SOON => 'blue',
+                                            \App\Models\ReproductionCycle::STATUS_FARROWED => 'blue',
+                                            \App\Models\ReproductionCycle::STATUS_NOT_PREGNANT => 'red',
+                                            \App\Models\ReproductionCycle::STATUS_RETURNED_TO_HEAT => 'orange',
+                                            \App\Models\ReproductionCycle::STATUS_CLOSED => 'orange',
                                             default => 'orange',
                                         } }}">
                                             {{ $cycle->status_label }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {{ $cycle->pregnancy_result === \App\Models\ReproductionCycle::PREGNANCY_RESULT_PREGNANT ? 'green' : ($cycle->pregnancy_result === \App\Models\ReproductionCycle::PREGNANCY_RESULT_NOT_PREGNANT ? 'red' : 'blue') }}">
+                                            {{ $cycle->pregnancy_result_label }}
                                         </span>
                                     </td>
                                     <td>{{ $cycle->service_date?->format('Y-m-d') ?? '—' }}</td>
