@@ -2,7 +2,7 @@
 
 @section('title', 'New Breeding Record')
 @section('page_title', 'New Breeding Record')
-@section('page_subtitle', 'Create a reproduction cycle for this sow.')
+@section('page_subtitle', 'Create an ongoing reproduction cycle for this sow.')
 
 @section('top_actions')
     <a href="{{ route('pigs.show', $pig) }}" class="btn">Back to Pig Profile</a>
@@ -36,7 +36,7 @@
 
             <div class="form-group">
                 <label>Assigned Pen</label>
-                <input type="text" value="{{ $pig->pen?->name ?? ($pig->pen_location ?? '—') }}" readonly>
+                <input type="text" value="{{ $pig->pen?->name ?? '—' }}" readonly>
             </div>
         </div>
     </div>
@@ -45,7 +45,7 @@
         <div class="section-title">
             <div>
                 <h3>Cycle Details</h3>
-                <p>Track natural mating or artificial insemination, pregnancy, farrowing, and breeding cost.</p>
+                <p>Start with servicing, then update this same record later as pregnancy check, return to heat, due soon, or farrowing results happen.</p>
             </div>
         </div>
 
@@ -69,7 +69,7 @@
                     <label for="status">Cycle Status</label>
                     <select id="status" name="status" required>
                         @foreach($statusOptions as $value => $label)
-                            <option value="{{ $value }}" {{ old('status', 'open') === $value ? 'selected' : '' }}>
+                            <option value="{{ $value }}" {{ old('status', \App\Models\ReproductionCycle::STATUS_SERVICED) === $value ? 'selected' : '' }}>
                                 {{ $label }}
                             </option>
                         @endforeach
@@ -88,7 +88,19 @@
                     >
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="pregnancy_result_group">
+                    <label for="pregnancy_result">Pregnancy Result</label>
+                    <select id="pregnancy_result" name="pregnancy_result">
+                        <option value="">Auto by status</option>
+                        @foreach($pregnancyResultOptions as $value => $label)
+                            <option value="{{ $value }}" {{ old('pregnancy_result') === $value ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="form-group" id="pregnancy_check_date_group">
                     <label for="pregnancy_check_date">Pregnancy Check Date</label>
                     <input
                         id="pregnancy_check_date"
@@ -108,13 +120,14 @@
                     >
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="actual_farrow_date_group">
                     <label for="actual_farrow_date">Actual Farrowing Date</label>
                     <input
                         id="actual_farrow_date"
                         name="actual_farrow_date"
                         type="date"
                         value="{{ old('actual_farrow_date') }}"
+                        max="{{ now()->toDateString() }}"
                     >
                 </div>
 
@@ -177,7 +190,7 @@
                     >
                 </div>
 
-                <div class="form-group">
+                <div class="form-group outcome-field">
                     <label for="total_born">Total Born</label>
                     <input
                         id="total_born"
@@ -189,7 +202,7 @@
                     >
                 </div>
 
-                <div class="form-group">
+                <div class="form-group outcome-field">
                     <label for="born_alive">Born Alive</label>
                     <input
                         id="born_alive"
@@ -201,7 +214,7 @@
                     >
                 </div>
 
-                <div class="form-group">
+                <div class="form-group outcome-field">
                     <label for="stillborn">Stillborn</label>
                     <input
                         id="stillborn"
@@ -213,7 +226,7 @@
                     >
                 </div>
 
-                <div class="form-group">
+                <div class="form-group outcome-field">
                     <label for="mummified">Mummified</label>
                     <input
                         id="mummified"
@@ -244,30 +257,35 @@
 @endsection
 
 @section('scripts')
+function setGroupVisibility(elementId, visible) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    element.style.display = visible ? '' : 'none';
+}
+
+function setOutcomeFieldsVisibility(visible) {
+    document.querySelectorAll('.outcome-field').forEach((element) => {
+        element.style.display = visible ? '' : 'none';
+    });
+}
+
 function updateBreedingFormState() {
     const breedingType = document.getElementById('breeding_type')?.value || '';
     const semenSourceType = document.getElementById('semen_source_type')?.value || '';
+    const status = document.getElementById('status')?.value || '';
 
-    const boarGroup = document.getElementById('boar_group');
-    const semenSourceTypeGroup = document.getElementById('semen_source_type_group');
-    const semenSourceNameGroup = document.getElementById('semen_source_name_group');
-    const semenCostGroup = document.getElementById('semen_cost_group');
+    const needsPregnancyCheck = ['pregnant', 'not_pregnant', 'returned_to_heat', 'due_soon', 'farrowed'].includes(status);
+    const isFarrowed = status === 'farrowed';
 
-    if (boarGroup) {
-        boarGroup.style.display = '';
-    }
+    setGroupVisibility('boar_group', breedingType === 'natural_mating' || breedingType === '');
+    setGroupVisibility('semen_source_type_group', breedingType === 'artificial_insemination');
+    setGroupVisibility('semen_source_name_group', breedingType === 'artificial_insemination' && semenSourceType === 'purchased');
+    setGroupVisibility('semen_cost_group', breedingType === 'artificial_insemination' && semenSourceType === 'purchased');
 
-    if (semenSourceTypeGroup) {
-        semenSourceTypeGroup.style.display = breedingType === 'artificial_insemination' ? '' : 'none';
-    }
-
-    if (semenSourceNameGroup) {
-        semenSourceNameGroup.style.display = (breedingType === 'artificial_insemination' && semenSourceType === 'purchased') ? '' : 'none';
-    }
-
-    if (semenCostGroup) {
-        semenCostGroup.style.display = (breedingType === 'artificial_insemination' && semenSourceType === 'purchased') ? '' : 'none';
-    }
+    setGroupVisibility('pregnancy_result_group', needsPregnancyCheck);
+    setGroupVisibility('pregnancy_check_date_group', needsPregnancyCheck);
+    setGroupVisibility('actual_farrow_date_group', isFarrowed);
+    setOutcomeFieldsVisibility(isFarrowed);
 }
 
 function autofillExpectedFarrowDate() {
@@ -302,6 +320,7 @@ function autofillExpectedFarrowDate() {
 
 document.getElementById('breeding_type')?.addEventListener('change', updateBreedingFormState);
 document.getElementById('semen_source_type')?.addEventListener('change', updateBreedingFormState);
+document.getElementById('status')?.addEventListener('change', updateBreedingFormState);
 document.getElementById('service_date')?.addEventListener('change', autofillExpectedFarrowDate);
 
 updateBreedingFormState();
