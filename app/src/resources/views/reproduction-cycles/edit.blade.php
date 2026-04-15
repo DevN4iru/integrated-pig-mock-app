@@ -111,7 +111,7 @@
                     >
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="expected_farrow_date_group">
                     <label for="expected_farrow_date">Expected Farrowing Date</label>
                     <input
                         id="expected_farrow_date"
@@ -157,13 +157,13 @@
                 </div>
 
                 <div class="form-group" id="semen_source_name_group">
-                    <label for="semen_source_name">Purchased Semen Source / Supplier</label>
+                    <label for="semen_source_name">AI Semen Source / Supplier</label>
                     <input
                         id="semen_source_name"
                         name="semen_source_name"
                         type="text"
                         value="{{ old('semen_source_name', $cycle->semen_source_name) }}"
-                        placeholder="Where the semen was bought"
+                        placeholder="Where the semen came from"
                     >
                 </div>
 
@@ -249,6 +249,10 @@
                 </div>
             </div>
 
+            <div class="flash" style="margin-top: 16px;" id="stage_hint">
+                Update only the fields needed for the current stage of this breeding case.
+            </div>
+
             <div class="form-actions" style="display:flex; gap:10px; flex-wrap:wrap;">
                 <button type="submit" class="btn primary">Update Breeding Record</button>
                 <a href="{{ route('pigs.show', $pig) }}" class="btn">Cancel</a>
@@ -278,28 +282,112 @@ function setOutcomeFieldsVisibility(visible) {
     });
 }
 
+function setStageHint(text) {
+    const hint = document.getElementById('stage_hint');
+    if (!hint) return;
+    hint.innerHTML = text;
+}
+
+function syncPregnancyResultWithStatus(status) {
+    const pregnancyResult = document.getElementById('pregnancy_result');
+    if (!pregnancyResult) return;
+
+    if (status === 'serviced') {
+        pregnancyResult.value = 'pending';
+        return;
+    }
+
+    if (['pregnant', 'due_soon', 'farrowed'].includes(status)) {
+        pregnancyResult.value = 'pregnant';
+        return;
+    }
+
+    if (['not_pregnant', 'returned_to_heat'].includes(status)) {
+        pregnancyResult.value = 'not_pregnant';
+        return;
+    }
+
+    if (status === 'closed') {
+        const actualFarrowDate = document.getElementById('actual_farrow_date')?.value || '';
+        if (actualFarrowDate) {
+            pregnancyResult.value = 'pregnant';
+        } else if (!pregnancyResult.value || pregnancyResult.value === 'pending') {
+            pregnancyResult.value = 'not_pregnant';
+        }
+    }
+}
+
 function updateBreedingFormState() {
     const breedingType = document.getElementById('breeding_type')?.value || '';
     const semenSourceType = document.getElementById('semen_source_type')?.value || '';
     const status = document.getElementById('status')?.value || '';
-
-    const needsPregnancyCheck = ['pregnant', 'not_pregnant', 'returned_to_heat', 'due_soon', 'farrowed'].includes(status);
+    const pregnancyResult = document.getElementById('pregnancy_result')?.value || '';
+    const actualFarrowDate = document.getElementById('actual_farrow_date')?.value || '';
+    const isClosed = status === 'closed';
+    const isFailedPath = ['not_pregnant', 'returned_to_heat'].includes(status);
+    const isPregnantPath = ['pregnant', 'due_soon', 'farrowed'].includes(status);
     const isFarrowed = status === 'farrowed';
+    const isClosedSuccess = isClosed && !!actualFarrowDate;
+    const isClosedFailure = isClosed && !actualFarrowDate;
 
     setGroupVisibility('boar_group', breedingType === 'natural_mating' || breedingType === '');
     setGroupVisibility('semen_source_type_group', breedingType === 'artificial_insemination');
-    setGroupVisibility('semen_source_name_group', breedingType === 'artificial_insemination' && semenSourceType === 'purchased');
+    setGroupVisibility('semen_source_name_group', breedingType === 'artificial_insemination');
     setGroupVisibility('semen_cost_group', breedingType === 'artificial_insemination' && semenSourceType === 'purchased');
 
-    setGroupVisibility('pregnancy_result_group', needsPregnancyCheck);
-    setGroupVisibility('pregnancy_check_date_group', needsPregnancyCheck);
-    setGroupVisibility('actual_farrow_date_group', isFarrowed);
-    setOutcomeFieldsVisibility(isFarrowed);
+    const showPregnancyFields =
+        status !== 'serviced' && !isClosedFailure;
+
+    const showExpectedFarrow =
+        isPregnantPath || isClosedSuccess;
+
+    const showActualFarrow =
+        isFarrowed || isClosedSuccess;
+
+    const showOutcomeFields =
+        isFarrowed || isClosedSuccess;
+
+    setGroupVisibility('pregnancy_result_group', status !== 'serviced');
+    setGroupVisibility('pregnancy_check_date_group', showPregnancyFields);
+    setGroupVisibility('expected_farrow_date_group', showExpectedFarrow);
+    setGroupVisibility('actual_farrow_date_group', showActualFarrow);
+    setOutcomeFieldsVisibility(showOutcomeFields);
+
+    if (status === 'serviced') {
+        setStageHint('This sow has only been serviced. Pregnancy check and farrowing fields stay hidden until later.');
+    } else if (status === 'pregnant') {
+        setStageHint('Pregnancy is confirmed. Record the check date and keep the expected farrowing date updated.');
+    } else if (status === 'not_pregnant') {
+        setStageHint('This cycle did not continue to pregnancy. Record the pregnancy check result and notes only.');
+    } else if (status === 'returned_to_heat') {
+        setStageHint('The sow returned to heat after failed breeding. Record the pregnancy check result and notes only.');
+    } else if (status === 'due_soon') {
+        setStageHint('This sow is near farrowing. Keep expected farrow date visible and prepare for actual farrowing update.');
+    } else if (status === 'farrowed') {
+        setStageHint('Farrowing is complete. Actual farrow date and litter outcome fields are now active.');
+    } else if (status === 'closed' && pregnancyResult === 'pregnant') {
+        setStageHint('This cycle is closed as a successful breeding case. Keep the farrowing outcome visible for audit history.');
+    } else if (status === 'closed' && pregnancyResult === 'not_pregnant') {
+        setStageHint('This cycle is closed as a failed breeding case. Pregnancy check details remain the final audit record.');
+    } else {
+        setStageHint('Update only the fields needed for the current stage of this breeding case.');
+    }
 }
 
 document.getElementById('breeding_type')?.addEventListener('change', updateBreedingFormState);
 document.getElementById('semen_source_type')?.addEventListener('change', updateBreedingFormState);
-document.getElementById('status')?.addEventListener('change', updateBreedingFormState);
+document.getElementById('status')?.addEventListener('change', function () {
+    syncPregnancyResultWithStatus(this.value);
+    updateBreedingFormState();
+});
+document.getElementById('actual_farrow_date')?.addEventListener('change', function () {
+    const status = document.getElementById('status')?.value || '';
+    if (status === 'closed') {
+        syncPregnancyResultWithStatus(status);
+        updateBreedingFormState();
+    }
+});
 
+syncPregnancyResultWithStatus(document.getElementById('status')?.value || '');
 updateBreedingFormState();
 @endsection
