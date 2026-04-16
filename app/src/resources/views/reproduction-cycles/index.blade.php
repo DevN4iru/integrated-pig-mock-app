@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Breeding Records')
-@section('page_title', 'Breeding Records')
-@section('page_subtitle', 'Sow reproduction history, active cycles, and farrowing tracking.')
+@section('title', 'Breeding Cases')
+@section('page_title', 'Breeding Cases')
+@section('page_subtitle', 'Parent breeding cases with current snapshot and append-only timeline flow.')
 
 @section('top_actions')
     <a href="{{ route('dashboard') }}" class="btn">Back to Dashboard</a>
@@ -14,50 +14,50 @@
         <div class="grid stats">
             <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">Total Cycles</span>
+                    <span class="label">Total Cases</span>
                     <span class="badge blue">All</span>
                 </div>
                 <div class="stat-value">{{ $cycles->count() }}</div>
-                <div class="stat-sub">All recorded reproduction cycles.</div>
+                <div class="stat-sub">All breeding cases currently recorded in the farm.</div>
             </div>
 
             <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">Active Cycles</span>
+                    <span class="label">Active Cases</span>
                     <span class="badge green">Live</span>
                 </div>
                 <div class="stat-value">{{ $activeCycles->count() }}</div>
-                <div class="stat-sub">Serviced, pregnant, returned-to-heat, or due-soon breeding records.</div>
+                <div class="stat-sub">Serviced, pregnant, or derived due-soon breeding cases.</div>
             </div>
 
             <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">Closed Cycles</span>
-                    <span class="badge orange">Done</span>
+                    <span class="label">Inactive Cases</span>
+                    <span class="badge orange">History</span>
                 </div>
                 <div class="stat-value">{{ $closedCycles->count() }}</div>
-                <div class="stat-sub">Farrowed or manually closed cycles.</div>
+                <div class="stat-sub">Not pregnant, returned-to-heat, farrowed, or closed breeding cases.</div>
             </div>
 
             <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">How to Add</span>
-                    <span class="badge blue">Flow</span>
+                    <span class="label">Primary Workflow</span>
+                    <span class="badge blue">Flow A</span>
                 </div>
-                <div class="stat-sub">Open a female pig profile and start one ongoing breeding case there, then update the same record as results happen.</div>
+                <div class="stat-sub">Create the case once from the sow profile, then append biological milestones as separate timeline events. Due soon is date-derived, not manually submitted.</div>
             </div>
         </div>
 
         <div class="panel-card">
             <div class="section-title">
                 <div>
-                    <h3>All Reproduction Cycles</h3>
-                    <p>Each row represents one breeding case for one sow.</p>
+                    <h3>All Breeding Cases</h3>
+                    <p>Each row is a parent breeding case. Open the case to see the summary, timeline, and event-specific progress form.</p>
                 </div>
             </div>
 
             @if($cycles->isEmpty())
-                <div class="empty-state">No breeding records yet.</div>
+                <div class="empty-state">No breeding cases recorded yet.</div>
             @else
                 <div class="table-wrap">
                     <table class="data-table">
@@ -70,45 +70,58 @@
                                 <th>Pregnancy Result</th>
                                 <th>Service Date</th>
                                 <th>Expected Farrow</th>
-                                <th>Actual Farrow</th>
+                                <th>Timeline Events</th>
+                                <th>Registered Piglets</th>
                                 <th>Breeding Cost</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($cycles as $cycle)
+                                @php
+                                    $displayStatus = $cycle->display_status;
+
+                                    $statusBadgeClass = match($displayStatus) {
+                                        \App\Models\ReproductionCycle::STATUS_PREGNANT => 'green',
+                                        \App\Models\ReproductionCycle::STATUS_DUE_SOON => 'blue',
+                                        \App\Models\ReproductionCycle::STATUS_FARROWED => 'blue',
+                                        \App\Models\ReproductionCycle::STATUS_NOT_PREGNANT => 'red',
+                                        \App\Models\ReproductionCycle::STATUS_RETURNED_TO_HEAT => 'orange',
+                                        \App\Models\ReproductionCycle::STATUS_CLOSED => 'orange',
+                                        default => 'orange',
+                                    };
+
+                                    $pregnancyBadgeClass = match($cycle->pregnancy_result) {
+                                        \App\Models\ReproductionCycle::PREGNANCY_RESULT_PREGNANT => 'green',
+                                        \App\Models\ReproductionCycle::PREGNANCY_RESULT_NOT_PREGNANT => 'red',
+                                        default => 'blue',
+                                    };
+
+                                    $registeredPiglets = (int) ($cycle->born_piglets_count ?? 0);
+                                @endphp
                                 <tr>
                                     <td>{{ $cycle->sow?->ear_tag ?? '—' }}</td>
                                     <td>{{ $cycle->breeding_type_label }}</td>
                                     <td>{{ $cycle->boar?->ear_tag ?? '—' }}</td>
                                     <td>
-                                        <span class="badge {{ match($cycle->status) {
-                                            \App\Models\ReproductionCycle::STATUS_PREGNANT => 'green',
-                                            \App\Models\ReproductionCycle::STATUS_DUE_SOON => 'blue',
-                                            \App\Models\ReproductionCycle::STATUS_FARROWED => 'blue',
-                                            \App\Models\ReproductionCycle::STATUS_NOT_PREGNANT => 'red',
-                                            \App\Models\ReproductionCycle::STATUS_RETURNED_TO_HEAT => 'orange',
-                                            \App\Models\ReproductionCycle::STATUS_CLOSED => 'orange',
-                                            default => 'orange',
-                                        } }}">
+                                        <span class="badge {{ $statusBadgeClass }}">
                                             {{ $cycle->status_label }}
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge {{ $cycle->pregnancy_result === \App\Models\ReproductionCycle::PREGNANCY_RESULT_PREGNANT ? 'green' : ($cycle->pregnancy_result === \App\Models\ReproductionCycle::PREGNANCY_RESULT_NOT_PREGNANT ? 'red' : 'blue') }}">
+                                        <span class="badge {{ $pregnancyBadgeClass }}">
                                             {{ $cycle->pregnancy_result_label }}
                                         </span>
                                     </td>
                                     <td>{{ $cycle->service_date?->format('Y-m-d') ?? '—' }}</td>
                                     <td>{{ $cycle->expected_farrow_date?->format('Y-m-d') ?? '—' }}</td>
-                                    <td>{{ $cycle->actual_farrow_date?->format('Y-m-d') ?? '—' }}</td>
+                                    <td>{{ (int) ($cycle->updates_count ?? 0) }}</td>
+                                    <td>{{ $registeredPiglets }}</td>
                                     <td>₱ {{ number_format((float) $cycle->breeding_cost, 2) }}</td>
                                     <td>
                                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                            <a href="{{ route('reproduction-cycles.edit', $cycle) }}" class="btn">Edit</a>
-                                            @if($cycle->sow)
-                                                <a href="{{ route('pigs.show', $cycle->sow) }}" class="btn">Go to Sow</a>
-                                            @endif
+                                            <a href="{{ route('reproduction-cycles.show', $cycle) }}" class="btn primary">Open Case</a>
+                                            <a href="{{ route('reproduction-cycles.edit', $cycle) }}" class="btn">Edit Metadata</a>
                                         </div>
                                     </td>
                                 </tr>
