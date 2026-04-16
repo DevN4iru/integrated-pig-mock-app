@@ -60,11 +60,14 @@ class ReproductionCycle extends Model
 
     protected $appends = [
         'breeding_type_label',
+        'display_status',
+        'display_status_label',
         'status_label',
         'pregnancy_result_label',
         'total_recorded_outcome',
         'recommended_pen_type',
         'is_active_cycle',
+        'is_due_soon',
     ];
 
     public function sow()
@@ -75,6 +78,20 @@ class ReproductionCycle extends Model
     public function boar()
     {
         return $this->belongsTo(Pig::class, 'boar_id');
+    }
+
+    public function updates()
+    {
+        return $this->hasMany(ReproductionCycleUpdate::class)
+            ->orderBy('event_date')
+            ->orderBy('id');
+    }
+
+    public function bornPiglets()
+    {
+        return $this->hasMany(Pig::class, 'reproduction_cycle_id')
+            ->orderBy('date_added')
+            ->orderBy('id');
     }
 
     public function scopeActive($query)
@@ -140,10 +157,22 @@ class ReproductionCycle extends Model
             ?? ucfirst(str_replace('_', ' ', (string) $this->breeding_type));
     }
 
+    public function getDisplayStatusAttribute(): string
+    {
+        return $this->resolveDisplayStatus();
+    }
+
+    public function getDisplayStatusLabelAttribute(): string
+    {
+        $status = $this->display_status;
+
+        return static::statusOptions()[$status]
+            ?? ucfirst(str_replace('_', ' ', (string) $status));
+    }
+
     public function getStatusLabelAttribute(): string
     {
-        return static::statusOptions()[$this->status]
-            ?? ucfirst(str_replace('_', ' ', (string) $this->status));
+        return $this->display_status_label;
     }
 
     public function getPregnancyResultLabelAttribute(): string
@@ -171,21 +200,44 @@ class ReproductionCycle extends Model
 
     public function getRecommendedPenTypeAttribute(): ?string
     {
-        return match ($this->status) {
+        return match ($this->display_status) {
             self::STATUS_SERVICED,
             self::STATUS_RETURNED_TO_HEAT => Pen::TYPE_BREEDING_SERVICE,
-
             self::STATUS_PREGNANT => Pen::TYPE_GESTATION,
-
             self::STATUS_DUE_SOON,
             self::STATUS_FARROWED => Pen::TYPE_FARROWING,
-
             default => null,
         };
     }
 
     public function getIsActiveCycleAttribute(): bool
     {
-        return in_array($this->status, static::activeStatuses(), true);
+        return in_array($this->display_status, static::activeStatuses(), true);
+    }
+
+    public function getIsDueSoonAttribute(): bool
+    {
+        return $this->display_status === self::STATUS_DUE_SOON;
+    }
+
+    protected function resolveDisplayStatus(): string
+    {
+        if (
+            in_array($this->status, [self::STATUS_PREGNANT, self::STATUS_DUE_SOON], true)
+            && $this->pregnancy_result === self::PREGNANCY_RESULT_PREGNANT
+            && !$this->actual_farrow_date
+        ) {
+            if ($this->expected_farrow_date) {
+                $daysUntilDue = now()->startOfDay()->diffInDays($this->expected_farrow_date->copy()->startOfDay(), false);
+
+                if ($daysUntilDue >= 0 && $daysUntilDue <= static::dueSoonThresholdDays()) {
+                    return self::STATUS_DUE_SOON;
+                }
+            }
+
+            return self::STATUS_PREGNANT;
+        }
+
+        return $this->status;
     }
 }

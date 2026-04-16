@@ -17,6 +17,8 @@ class Pig extends Model
         'pen_id',
         'pen_location',
         'pig_source',
+        'mother_sow_id',
+        'reproduction_cycle_id',
         'date_added',
         'latest_weight',
         'asset_value',
@@ -43,6 +45,23 @@ class Pig extends Model
     public function pen()
     {
         return $this->belongsTo(Pen::class);
+    }
+
+    public function motherSow()
+    {
+        return $this->belongsTo(Pig::class, 'mother_sow_id');
+    }
+
+    public function birthCycle()
+    {
+        return $this->belongsTo(ReproductionCycle::class, 'reproduction_cycle_id');
+    }
+
+    public function birthedPiglets()
+    {
+        return $this->hasMany(Pig::class, 'mother_sow_id')
+            ->orderBy('date_added')
+            ->orderBy('id');
     }
 
     public function healthLogs()

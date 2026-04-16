@@ -6,8 +6,11 @@ use App\Models\FarmSetting;
 use App\Models\Pen;
 use App\Models\Pig;
 use App\Models\PigTransfer;
+use App\Models\ReproductionCycle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class PigController extends Controller
 {
@@ -143,6 +146,119 @@ class PigController extends Controller
         return redirect()->route('pigs.index')->with('success', 'Pig added successfully.');
     }
 
+    public function createBornBatch(ReproductionCycle $reproductionCycle)
+    {
+        $reproductionCycle->load(['sow.pen', 'boar'])->loadCount('bornPiglets');
+
+        $this->assertCycleCanRegisterBornPiglets($reproductionCycle);
+
+        $pens = Pen::withCount(['activePigs as pigs_count'])
+            ->orderBy('type')
+            ->orderBy('name')
+            ->get();
+
+        $recommendedPens = $pens
+            ->filter(fn ($pen) => in_array($pen->type, [
+                Pen::TYPE_NURSERY,
+                Pen::TYPE_FARROWING,
+                Pen::TYPE_GROWER,
+            ], true))
+            ->values();
+
+        $pricePerKg = FarmSetting::currentPricePerKg();
+        $pigletCount = (int) $reproductionCycle->born_alive;
+
+        return view('pigs.create-born-batch', [
+            'cycle' => $reproductionCycle,
+            'pens' => $pens,
+            'recommendedPens' => $recommendedPens,
+            'pricePerKg' => $pricePerKg,
+            'pigletCount' => $pigletCount,
+        ]);
+    }
+
+    public function storeBornBatch(Request $request, ReproductionCycle $reproductionCycle)
+    {
+        $reproductionCycle->load(['sow.pen', 'boar'])->loadCount('bornPiglets');
+
+        $this->assertCycleCanRegisterBornPiglets($reproductionCycle);
+
+        $pigletCount = (int) $reproductionCycle->born_alive;
+
+        $validated = $request->validate([
+            'piglets' => ['required', 'array', 'size:' . $pigletCount],
+            'piglets.*.ear_tag' => ['required', 'string', 'max:255', 'distinct', 'unique:pigs,ear_tag'],
+            'piglets.*.breed' => ['required', 'string', 'max:255'],
+            'piglets.*.sex' => ['required', Rule::in(['male', 'female', 'undetermined'])],
+            'piglets.*.pen_id' => ['required', 'integer', 'exists:pens,id'],
+            'piglets.*.latest_weight' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $requestedPenIds = collect($validated['piglets'])
+            ->pluck('pen_id')
+            ->unique()
+            ->values();
+
+        $pens = Pen::withCount(['activePigs as pigs_count'])
+            ->whereIn('id', $requestedPenIds)
+            ->get()
+            ->keyBy('id');
+
+        $capacityErrors = [];
+        $penRequestCounts = collect($validated['piglets'])->countBy('pen_id');
+
+        foreach ($penRequestCounts as $penId => $requestedCount) {
+            $pen = $pens->get((int) $penId);
+
+            if (!$pen) {
+                $capacityErrors['piglets.0.pen_id'] = 'One or more selected pens could not be loaded.';
+                continue;
+            }
+
+            if ($pen->availableSlots() < (int) $requestedCount) {
+                $capacityErrors["pen_{$penId}"] = "{$pen->name} does not have enough available slots for {$requestedCount} piglet(s).";
+            }
+        }
+
+        if (!empty($capacityErrors)) {
+            throw ValidationException::withMessages($capacityErrors);
+        }
+
+        $pricePerKg = FarmSetting::currentPricePerKg();
+        $birthDate = $reproductionCycle->actual_farrow_date->toDateString();
+
+        DB::transaction(function () use ($validated, $pens, $pricePerKg, $birthDate, $reproductionCycle): void {
+            if ($reproductionCycle->bornPiglets()->exists()) {
+                throw ValidationException::withMessages([
+                    'piglets' => 'This litter already has registered piglets. Duplicate registration is blocked.',
+                ]);
+            }
+
+            foreach ($validated['piglets'] as $piglet) {
+                $pen = $pens->get((int) $piglet['pen_id']);
+                $weight = (float) $piglet['latest_weight'];
+
+                Pig::create([
+                    'ear_tag' => trim((string) $piglet['ear_tag']),
+                    'breed' => trim((string) $piglet['breed']),
+                    'sex' => trim((string) $piglet['sex']),
+                    'pen_id' => $pen->id,
+                    'pen_location' => $pen->name,
+                    'pig_source' => 'birthed',
+                    'mother_sow_id' => $reproductionCycle->sow_id,
+                    'reproduction_cycle_id' => $reproductionCycle->id,
+                    'date_added' => $birthDate,
+                    'latest_weight' => $weight,
+                    'asset_value' => $weight * $pricePerKg,
+                ]);
+            }
+        });
+
+        return redirect()
+            ->route('reproduction-cycles.show', $reproductionCycle)
+            ->with('success', "{$pigletCount} born piglet(s) registered successfully.");
+    }
+
     public function show($pig)
     {
         $pig = Pig::withTrashed()
@@ -156,6 +272,8 @@ class PigController extends Controller
                 'feedLogs',
                 'transfers.fromPen',
                 'transfers.toPen',
+                'motherSow',
+                'birthCycle',
             ])
             ->findOrFail($pig);
 
@@ -289,5 +407,24 @@ class PigController extends Controller
         return redirect()
             ->route('pigs.index')
             ->with('success', 'Pig and all related records were permanently removed.');
+    }
+
+    protected function assertCycleCanRegisterBornPiglets(ReproductionCycle $reproductionCycle): void
+    {
+        if (!$reproductionCycle->actual_farrow_date) {
+            abort(422, 'Born piglets can only be registered after actual farrowing has been recorded.');
+        }
+
+        if ((int) ($reproductionCycle->born_alive ?? 0) <= 0) {
+            abort(422, 'This breeding case has no born-alive piglets to register.');
+        }
+
+        if ($reproductionCycle->pregnancy_result !== ReproductionCycle::PREGNANCY_RESULT_PREGNANT) {
+            abort(422, 'Born piglets can only be registered from a successful pregnant-to-farrowed breeding case.');
+        }
+
+        if ($reproductionCycle->bornPiglets()->exists()) {
+            abort(422, 'Born piglets for this litter were already registered. Duplicate registration is blocked.');
+        }
     }
 }

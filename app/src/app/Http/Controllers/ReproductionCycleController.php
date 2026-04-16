@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Pig;
 use App\Models\ReproductionCycle;
+use App\Models\ReproductionCycleUpdate;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -13,19 +14,36 @@ class ReproductionCycleController extends Controller
     public function index()
     {
         $cycles = ReproductionCycle::with(['sow', 'boar'])
+            ->withCount(['updates', 'bornPiglets'])
             ->orderByDesc('service_date')
             ->orderByDesc('id')
             ->get();
 
         $activeCycles = $cycles
-            ->filter(fn ($cycle) => in_array($cycle->status, ReproductionCycle::activeStatuses(), true))
+            ->filter(fn ($cycle) => $cycle->is_active_cycle)
             ->values();
 
         $closedCycles = $cycles
-            ->filter(fn ($cycle) => !in_array($cycle->status, ReproductionCycle::activeStatuses(), true))
+            ->filter(fn ($cycle) => !$cycle->is_active_cycle)
             ->values();
 
         return view('reproduction-cycles.index', compact('cycles', 'activeCycles', 'closedCycles'));
+    }
+
+    public function show(ReproductionCycle $reproductionCycle)
+    {
+        $reproductionCycle->load([
+            'sow.pen',
+            'boar',
+            'updates',
+        ])->loadCount('bornPiglets');
+
+        return view('reproduction-cycles.show', [
+            'cycle' => $reproductionCycle,
+            'pig' => $reproductionCycle->sow,
+            'availableUpdateEvents' => $this->availableUpdateEvents($reproductionCycle),
+            'pregnancyResultOptions' => ReproductionCycle::pregnancyResultOptions(),
+        ]);
     }
 
     public function create(Pig $pig)
@@ -48,11 +66,13 @@ class ReproductionCycleController extends Controller
 
         $validated = $this->validateCycle($request, $pig);
 
-        ReproductionCycle::create($this->buildPayload($validated, $pig));
+        $cycle = ReproductionCycle::create($this->buildPayload($validated, $pig));
+
+        $this->recordInitialTimelineEntry($cycle);
 
         return redirect()
-            ->route('pigs.show', $pig)
-            ->with('success', 'Breeding record created successfully.');
+            ->route('reproduction-cycles.show', $cycle)
+            ->with('success', 'Breeding case created successfully.');
     }
 
     public function edit(ReproductionCycle $reproductionCycle)
@@ -81,8 +101,8 @@ class ReproductionCycleController extends Controller
         $reproductionCycle->update($this->buildPayload($validated, $reproductionCycle->sow));
 
         return redirect()
-            ->route('pigs.show', $reproductionCycle->sow)
-            ->with('success', 'Breeding record updated successfully.');
+            ->route('reproduction-cycles.show', $reproductionCycle)
+            ->with('success', 'Breeding case snapshot updated successfully.');
     }
 
     public function destroy(ReproductionCycle $reproductionCycle)
@@ -95,7 +115,7 @@ class ReproductionCycleController extends Controller
 
         return redirect()
             ->route('pigs.show', $sow)
-            ->with('success', 'Breeding record deleted successfully.');
+            ->with('success', 'Breeding case deleted successfully.');
     }
 
     protected function validateCycle(Request $request, Pig $sow, ?ReproductionCycle $currentCycle = null): array
@@ -341,6 +361,12 @@ class ReproductionCycleController extends Controller
 
     protected function buildPayload(array $validated, Pig $sow): array
     {
+        $status = $validated['status'] ?? ReproductionCycle::STATUS_SERVICED;
+
+        if ($status === ReproductionCycle::STATUS_DUE_SOON) {
+            $status = ReproductionCycle::STATUS_PREGNANT;
+        }
+
         return [
             'sow_id' => $sow->id,
             'boar_id' => $validated['boar_id'] ?? null,
@@ -350,7 +376,7 @@ class ReproductionCycleController extends Controller
             'pregnancy_result' => $validated['pregnancy_result'] ?? ReproductionCycle::PREGNANCY_RESULT_PENDING,
             'expected_farrow_date' => $validated['expected_farrow_date'] ?? Carbon::parse($validated['service_date'])->addDays(114)->toDateString(),
             'actual_farrow_date' => $validated['actual_farrow_date'] ?? null,
-            'status' => $validated['status'] ?? ReproductionCycle::STATUS_SERVICED,
+            'status' => $status,
             'semen_source_type' => $validated['semen_source_type'] ?? null,
             'semen_source_name' => $validated['semen_source_name'] ?? null,
             'semen_cost' => (float) ($validated['semen_cost'] ?? 0),
@@ -404,5 +430,46 @@ class ReproductionCycleController extends Controller
             ->whereDoesntHave('mortalityLogs')
             ->orderBy('ear_tag')
             ->get();
+    }
+
+    protected function recordInitialTimelineEntry(ReproductionCycle $cycle): void
+    {
+        $cycle->updates()->create([
+            'event_type' => ReproductionCycleUpdate::EVENT_SERVICE_STARTED,
+            'event_date' => $cycle->service_date,
+            'status_after_event' => ReproductionCycle::STATUS_SERVICED,
+            'pregnancy_result' => ReproductionCycle::PREGNANCY_RESULT_PENDING,
+            'added_cost' => (float) $cycle->breeding_cost,
+            'notes' => $cycle->notes,
+        ]);
+    }
+
+    protected function availableUpdateEvents(ReproductionCycle $cycle): array
+    {
+        return match ($cycle->display_status) {
+            ReproductionCycle::STATUS_SERVICED => [
+                ReproductionCycleUpdate::EVENT_PREGNANCY_CHECKED => ReproductionCycleUpdate::eventOptions()[ReproductionCycleUpdate::EVENT_PREGNANCY_CHECKED],
+            ],
+
+            ReproductionCycle::STATUS_PREGNANT,
+            ReproductionCycle::STATUS_DUE_SOON => [
+                ReproductionCycleUpdate::EVENT_FARROWING_RECORDED => ReproductionCycleUpdate::eventOptions()[ReproductionCycleUpdate::EVENT_FARROWING_RECORDED],
+            ],
+
+            ReproductionCycle::STATUS_NOT_PREGNANT => [
+                ReproductionCycleUpdate::EVENT_RETURNED_TO_HEAT => ReproductionCycleUpdate::eventOptions()[ReproductionCycleUpdate::EVENT_RETURNED_TO_HEAT],
+                ReproductionCycleUpdate::EVENT_CYCLE_CLOSED => ReproductionCycleUpdate::eventOptions()[ReproductionCycleUpdate::EVENT_CYCLE_CLOSED],
+            ],
+
+            ReproductionCycle::STATUS_RETURNED_TO_HEAT => [
+                ReproductionCycleUpdate::EVENT_CYCLE_CLOSED => ReproductionCycleUpdate::eventOptions()[ReproductionCycleUpdate::EVENT_CYCLE_CLOSED],
+            ],
+
+            ReproductionCycle::STATUS_FARROWED => [
+                ReproductionCycleUpdate::EVENT_CYCLE_CLOSED => ReproductionCycleUpdate::eventOptions()[ReproductionCycleUpdate::EVENT_CYCLE_CLOSED],
+            ],
+
+            default => [],
+        };
     }
 }

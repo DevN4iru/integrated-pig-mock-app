@@ -135,6 +135,13 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        $normalizeCycleStatuses = function ($cycles) {
+            return $cycles->map(function ($cycle) {
+                $cycle->status = $cycle->display_status;
+                return $cycle;
+            })->values();
+        };
+
         $upcomingFarrowings = ReproductionCycle::with(['sow.pen', 'boar'])
             ->whereIn('status', [
                 ReproductionCycle::STATUS_PREGNANT,
@@ -157,10 +164,18 @@ class DashboardController extends Controller
             ->get();
 
         $dueSoonCycles = ReproductionCycle::with(['sow.pen', 'boar'])
-            ->where('status', ReproductionCycle::STATUS_DUE_SOON)
+            ->whereIn('status', [
+                ReproductionCycle::STATUS_PREGNANT,
+                ReproductionCycle::STATUS_DUE_SOON,
+            ])
+            ->where('pregnancy_result', ReproductionCycle::PREGNANCY_RESULT_PREGNANT)
+            ->whereNotNull('expected_farrow_date')
+            ->whereNull('actual_farrow_date')
             ->orderBy('expected_farrow_date')
+            ->get()
+            ->filter(fn ($cycle) => $cycle->is_due_soon)
             ->take(5)
-            ->get();
+            ->values();
 
         $returnedToHeatCycles = ReproductionCycle::with(['sow.pen', 'boar'])
             ->where('status', ReproductionCycle::STATUS_RETURNED_TO_HEAT)
@@ -175,6 +190,12 @@ class DashboardController extends Controller
             ->orderByDesc('service_date')
             ->take(5)
             ->get();
+
+        $upcomingFarrowings = $normalizeCycleStatuses($upcomingFarrowings);
+        $activeBreedingCycles = $normalizeCycleStatuses($activeBreedingCycles);
+        $dueSoonCycles = $normalizeCycleStatuses($dueSoonCycles);
+        $returnedToHeatCycles = $normalizeCycleStatuses($returnedToHeatCycles);
+        $pendingPregnancyChecks = $normalizeCycleStatuses($pendingPregnancyChecks);
 
         $staleWeightPigs = $pigs->filter(function ($pig) {
             if (!$pig->dashboard_latest_log_date) {
