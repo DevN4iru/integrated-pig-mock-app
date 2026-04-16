@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class ReproductionCycle extends Model
 {
@@ -68,6 +69,8 @@ class ReproductionCycle extends Model
         'recommended_pen_type',
         'is_active_cycle',
         'is_due_soon',
+        'current_attempt_number',
+        'total_attempts',
     ];
 
     public function sow()
@@ -151,6 +154,21 @@ class ReproductionCycle extends Model
         return 7;
     }
 
+    public function currentAttemptServiceUpdate()
+    {
+        $query = $this->updates()
+            ->where('event_type', ReproductionCycleUpdate::EVENT_SERVICE_STARTED);
+
+        if ($this->supportsAttemptMetadata()) {
+            $query->orderByDesc('attempt_number');
+        }
+
+        return $query
+            ->orderByDesc('event_date')
+            ->orderByDesc('id')
+            ->first();
+    }
+
     public function getBreedingTypeLabelAttribute(): string
     {
         return static::breedingTypeOptions()[$this->breeding_type]
@@ -220,6 +238,26 @@ class ReproductionCycle extends Model
         return $this->display_status === self::STATUS_DUE_SOON;
     }
 
+    public function getCurrentAttemptNumberAttribute(): int
+    {
+        if (!$this->supportsAttemptMetadata()) {
+            return 1;
+        }
+
+        if ($this->relationLoaded('updates') && $this->updates->isNotEmpty()) {
+            return max(1, (int) $this->updates->max(fn ($update) => (int) ($update->attempt_number ?? 1)));
+        }
+
+        $maxAttempt = $this->updates()->max('attempt_number');
+
+        return max(1, (int) ($maxAttempt ?? 1));
+    }
+
+    public function getTotalAttemptsAttribute(): int
+    {
+        return $this->current_attempt_number;
+    }
+
     protected function resolveDisplayStatus(): string
     {
         if (
@@ -239,5 +277,10 @@ class ReproductionCycle extends Model
         }
 
         return $this->status;
+    }
+
+    protected function supportsAttemptMetadata(): bool
+    {
+        return Schema::hasColumn('reproduction_cycle_updates', 'attempt_number');
     }
 }

@@ -10,6 +10,7 @@ use App\Http\Controllers\PenController;
 use App\Http\Controllers\PigController;
 use App\Http\Controllers\PigTransferController;
 use App\Http\Controllers\ReproductionCycleController;
+use App\Http\Controllers\ReproductionCycleUpdateController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\VaccinationController;
 use Illuminate\Support\Facades\Route;
@@ -58,6 +59,15 @@ Route::delete('/pigs/{pig}/remove-records', [PigController::class, 'removeFromRe
 Route::get('/breeding', [ReproductionCycleController::class, 'index'])->name('reproduction-cycles.index');
 Route::get('/pigs/{pig}/reproduction-cycles/create', [ReproductionCycleController::class, 'create'])->name('reproduction-cycles.create');
 Route::post('/pigs/{pig}/reproduction-cycles', [ReproductionCycleController::class, 'store'])->name('reproduction-cycles.store');
+
+Route::get('/reproduction-cycles/{reproductionCycle}', [ReproductionCycleController::class, 'show'])->name('reproduction-cycles.show');
+Route::post('/reproduction-cycles/{reproductionCycle}/updates', [ReproductionCycleUpdateController::class, 'store'])->name('reproduction-cycle-updates.store');
+Route::get('/reproduction-cycles/{reproductionCycle}/attempts/create', [ReproductionCycleController::class, 'createNextAttempt'])->name('reproduction-cycles.attempts.create');
+Route::post('/reproduction-cycles/{reproductionCycle}/attempts', [ReproductionCycleController::class, 'storeNextAttempt'])->name('reproduction-cycles.attempts.store');
+
+Route::get('/reproduction-cycles/{reproductionCycle}/born-piglets/create', [PigController::class, 'createBornBatch'])->name('pigs.create-born-batch');
+Route::post('/reproduction-cycles/{reproductionCycle}/born-piglets', [PigController::class, 'storeBornBatch'])->name('pigs.store-born-batch');
+
 Route::get('/reproduction-cycles/{reproductionCycle}/edit', [ReproductionCycleController::class, 'edit'])->name('reproduction-cycles.edit');
 Route::put('/reproduction-cycles/{reproductionCycle}', [ReproductionCycleController::class, 'update'])->name('reproduction-cycles.update');
 Route::delete('/reproduction-cycles/{reproductionCycle}', [ReproductionCycleController::class, 'destroy'])->name('reproduction-cycles.destroy');
