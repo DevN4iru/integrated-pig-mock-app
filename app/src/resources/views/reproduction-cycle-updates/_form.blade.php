@@ -1,15 +1,40 @@
-<form method="POST" action="{{ route('reproduction-cycle-updates.store', $cycle) }}" id="reproduction-update-form">
-    @csrf
+@php
+    $today = now()->startOfDay();
+    $todayString = $today->toDateString();
 
-    @php
-        $today = now()->toDateString();
-        $oldEventType = old('event_type', '');
-        $oldEventDate = old('event_date', $today);
-        $oldActualFarrowDate = old(
-            'actual_farrow_date',
-            $oldEventType === \App\Models\ReproductionCycleUpdate::EVENT_FARROWING_RECORDED ? $oldEventDate : ''
-        );
-    @endphp
+    $oldEventType = old('event_type', request('event_type', ''));
+    $oldEventDate = old('event_date', $todayString);
+
+    $projectedExpectedFarrowDate = optional($cycle->expected_farrow_date)->copy()
+        ?? optional($cycle->service_date)->copy()?->addDays(114);
+
+    $expectedFarrowDateValue = $projectedExpectedFarrowDate?->format('Y-m-d') ?? '';
+    $farrowWindowStartValue = $projectedExpectedFarrowDate?->copy()->subMonthNoOverflow()->startOfMonth()->format('Y-m-d') ?? '';
+    $farrowWindowEndValue = $projectedExpectedFarrowDate?->copy()->addMonthNoOverflow()->endOfMonth()->format('Y-m-d') ?? '';
+
+    $defaultActualFarrowDate = '';
+
+    if (
+        $oldEventType === \App\Models\ReproductionCycleUpdate::EVENT_FARROWING_RECORDED
+        && $projectedExpectedFarrowDate
+        && $projectedExpectedFarrowDate->lessThanOrEqualTo($today)
+    ) {
+        $defaultActualFarrowDate = $expectedFarrowDateValue;
+    }
+
+    $oldActualFarrowDate = old('actual_farrow_date', $defaultActualFarrowDate);
+@endphp
+
+<form
+    method="POST"
+    action="{{ route('reproduction-cycle-updates.store', $cycle) }}"
+    id="reproduction-update-form"
+    data-expected-farrow-date="{{ $expectedFarrowDateValue }}"
+    data-farrow-window-start="{{ $farrowWindowStartValue }}"
+    data-farrow-window-end="{{ $farrowWindowEndValue }}"
+    data-today="{{ $todayString }}"
+>
+    @csrf
 
     <div class="form-grid">
         <div class="form-group">
@@ -34,9 +59,10 @@
                 type="date"
                 name="event_date"
                 value="{{ $oldEventDate }}"
-                max="{{ $today }}"
+                max="{{ $todayString }}"
                 required
             >
+            <small class="metric-note">This is the system input date. It can be different from the biological farrowing date.</small>
             @error('event_date')
                 <div class="error-text">{{ $message }}</div>
             @enderror
@@ -63,6 +89,22 @@
             @enderror
         </div>
 
+        <div
+            class="form-group event-specific full"
+            data-events="pregnancy_checked"
+            id="pregnancy_expected_preview_group"
+            style="display:none;"
+        >
+            <label for="pregnancy_expected_farrow_preview">Computed Expected Farrow Date</label>
+            <input
+                id="pregnancy_expected_farrow_preview"
+                type="text"
+                value=""
+                readonly
+            >
+            <small class="metric-note" id="pregnancy_expected_preview_note">Computed from service date + 114 days.</small>
+        </div>
+
         <div class="form-group event-specific" data-events="pregnancy_checked,farrowing_recorded">
             <label for="added_cost">Added Cost</label>
             <input
@@ -87,9 +129,9 @@
                 type="date"
                 name="actual_farrow_date"
                 value="{{ $oldActualFarrowDate }}"
-                max="{{ $today }}"
                 disabled
             >
+            <small class="metric-note" id="actual_farrow_window_note" style="display:none;"></small>
             @error('actual_farrow_date')
                 <div class="error-text">{{ $message }}</div>
             @enderror
@@ -156,7 +198,7 @@
         </div>
 
         <div class="form-group full">
-            <label for="notes">Notes / Observation</label>
+            <label for="notes" id="notes_label">Notes / Observation</label>
             <textarea
                 id="notes"
                 name="notes"
@@ -182,33 +224,43 @@
 
     const eventType = form.querySelector('#event_type');
     const eventDate = form.querySelector('#event_date');
+    const pregnancyResult = form.querySelector('#pregnancy_result');
     const actualFarrowDate = form.querySelector('#actual_farrow_date');
+    const actualFarrowWindowNote = form.querySelector('#actual_farrow_window_note');
     const notes = form.querySelector('#notes');
+    const notesLabel = form.querySelector('#notes_label');
     const help = form.querySelector('#event_help');
     const groups = Array.from(form.querySelectorAll('.event-specific'));
-    const notesLabel = form.querySelector('label[for="notes"]');
-    const today = new Date().toISOString().split('T')[0];
+
+    const pregnancyExpectedPreviewGroup = form.querySelector('#pregnancy_expected_preview_group');
+    const pregnancyExpectedFarrowPreview = form.querySelector('#pregnancy_expected_farrow_preview');
+    const pregnancyExpectedPreviewNote = form.querySelector('#pregnancy_expected_preview_note');
+
+    const expectedFarrowDate = form.dataset.expectedFarrowDate || '';
+    const farrowWindowStart = form.dataset.farrowWindowStart || '';
+    const farrowWindowEnd = form.dataset.farrowWindowEnd || '';
+    const today = form.dataset.today || '';
 
     let actualFarrowDateTouched = actualFarrowDate ? actualFarrowDate.value !== '' : false;
 
     const configs = {
         pregnancy_checked: {
-            help: 'Pregnancy check records the diagnosis only. Choose Pregnant or Not Pregnant. Returned to heat is a separate later event.',
+            help: 'Pregnancy check records the diagnosis only. Choose Pregnant or Not Pregnant.',
             notesLabel: 'Pregnancy Check Notes / Symptoms',
             notesPlaceholder: 'Add pregnancy check findings, symptoms, or observations.'
         },
         returned_to_heat: {
-            help: 'Returned to heat is a separate observation after a not-pregnant result. Use notes to describe heat signs or repeat-service readiness.',
+            help: 'Returned to heat confirms that the failed attempt cycled back. After this, you can quick-close the parent case or start the next attempt from the case page.',
             notesLabel: 'Return-to-Heat Notes / Signs',
             notesPlaceholder: 'Describe the observed return-to-heat signs or repeat-service notes.'
         },
         farrowing_recorded: {
-            help: 'Farrowing records only farrowing-specific fields. Actual farrow date cannot be in the future and should usually match the farrowing event date.',
+            help: 'Farrowing records only farrowing-specific fields. Actual farrow date can differ from event date because system entry may be delayed.',
             notesLabel: 'Farrowing Notes',
             notesPlaceholder: 'Add farrowing observations, complications, or post-farrow notes.'
         },
         cycle_closed: {
-            help: 'Cycle closure is only for ended cases. Add a clear closure note.',
+            help: 'Cycle closure ends the parent breeding case. Use this after return to heat or after farrowing when the case is fully finished.',
             notesLabel: 'Closure Notes',
             notesPlaceholder: 'Explain why this breeding case is being closed.'
         }
@@ -220,6 +272,10 @@
                 return;
             }
 
+            if (field.id === 'pregnancy_expected_farrow_preview') {
+                return;
+            }
+
             if (field.tagName === 'SELECT') {
                 field.selectedIndex = 0;
             } else {
@@ -228,22 +284,64 @@
         });
     }
 
-    function syncActualFarrowDate() {
-        if (!actualFarrowDate) return;
-
-        actualFarrowDate.max = today;
-
-        if (eventType.value !== 'farrowing_recorded') {
-            actualFarrowDateTouched = false;
+    function showPregnancyPreview(selectedEvent) {
+        if (!pregnancyExpectedPreviewGroup || !pregnancyExpectedFarrowPreview) {
             return;
         }
 
-        if (!actualFarrowDateTouched && eventDate.value) {
-            actualFarrowDate.value = eventDate.value > today ? today : eventDate.value;
+        const show = selectedEvent === 'pregnancy_checked'
+            && pregnancyResult
+            && pregnancyResult.value === 'pregnant';
+
+        pregnancyExpectedPreviewGroup.style.display = show ? '' : 'none';
+
+        if (!show) {
+            pregnancyExpectedFarrowPreview.value = '';
+            return;
         }
 
-        if (actualFarrowDate.value && actualFarrowDate.value > today) {
-            actualFarrowDate.value = today;
+        pregnancyExpectedFarrowPreview.value = expectedFarrowDate || 'Unavailable';
+
+        if (pregnancyExpectedPreviewNote) {
+            pregnancyExpectedPreviewNote.textContent = expectedFarrowDate
+                ? 'Computed from service date + 114 days.'
+                : 'Expected farrow date cannot be computed because service date is unavailable.';
+        }
+    }
+
+    function syncActualFarrowDate() {
+        if (!actualFarrowDate) return;
+
+        if (eventType.value !== 'farrowing_recorded') {
+            actualFarrowDateTouched = false;
+
+            if (actualFarrowWindowNote) {
+                actualFarrowWindowNote.style.display = 'none';
+                actualFarrowWindowNote.textContent = '';
+            }
+
+            return;
+        }
+
+        const expectedIsUsableDefault = expectedFarrowDate && (!today || expectedFarrowDate <= today);
+
+        if (actualFarrowWindowNote) {
+            actualFarrowWindowNote.style.display = '';
+
+            if (expectedFarrowDate && today && expectedFarrowDate > today) {
+                actualFarrowWindowNote.textContent =
+                    `Projected expected farrow date is ${expectedFarrowDate}, which is still in the future, so no default actual farrow date is prefilled yet. Calendar stays fully editable for testing. Allowed biological fallback window: ${farrowWindowStart || '—'} to ${farrowWindowEnd || '—'}. Backend validation still applies on submit.`;
+            } else if (farrowWindowStart && farrowWindowEnd) {
+                actualFarrowWindowNote.textContent =
+                    `Allowed biological fallback window: ${farrowWindowStart} to ${farrowWindowEnd}. Calendar stays fully editable. Backend validation still applies on submit.`;
+            } else {
+                actualFarrowWindowNote.textContent =
+                    'Actual farrow date can be entered manually. Calendar stays fully editable. Backend validation still applies on submit.';
+            }
+        }
+
+        if (!actualFarrowDateTouched) {
+            actualFarrowDate.value = expectedIsUsableDefault ? expectedFarrowDate : '';
         }
     }
 
@@ -261,6 +359,11 @@
             group.style.display = visible ? '' : 'none';
 
             group.querySelectorAll('input, select, textarea').forEach((field) => {
+                if (field.id === 'pregnancy_expected_farrow_preview') {
+                    field.disabled = true;
+                    return;
+                }
+
                 field.disabled = !visible;
             });
 
@@ -272,30 +375,41 @@
         if (!selected || !configs[selected]) {
             help.style.display = 'none';
             help.textContent = '';
-            notesLabel.textContent = 'Notes / Observation';
-            notes.placeholder = 'Add the observation or event note here.';
+
+            if (notesLabel) notesLabel.textContent = 'Notes / Observation';
+            if (notes) notes.placeholder = 'Add the observation or event note here.';
+
+            showPregnancyPreview(selected);
             syncActualFarrowDate();
             return;
         }
 
         help.style.display = '';
         help.textContent = configs[selected].help;
-        notesLabel.textContent = configs[selected].notesLabel;
-        notes.placeholder = configs[selected].notesPlaceholder;
 
+        if (notesLabel) notesLabel.textContent = configs[selected].notesLabel;
+        if (notes) notes.placeholder = configs[selected].notesPlaceholder;
+
+        showPregnancyPreview(selected);
         syncActualFarrowDate();
     }
-
-    eventDate.max = today;
-
-    eventType.addEventListener('change', refresh);
-    eventDate.addEventListener('input', syncActualFarrowDate);
 
     if (actualFarrowDate) {
         actualFarrowDate.addEventListener('input', function () {
             actualFarrowDateTouched = this.value !== '';
         });
+
+        actualFarrowDate.addEventListener('change', function () {
+            actualFarrowDateTouched = this.value !== '';
+        });
     }
+
+    if (pregnancyResult) {
+        pregnancyResult.addEventListener('change', refresh);
+    }
+
+    eventType.addEventListener('change', refresh);
+    eventDate.addEventListener('change', syncActualFarrowDate);
 
     refresh();
 })();

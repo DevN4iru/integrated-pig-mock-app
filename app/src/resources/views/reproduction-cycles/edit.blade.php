@@ -2,11 +2,11 @@
 
 @section('title', 'Edit Breeding Case')
 @section('page_title', 'Edit Breeding Case')
-@section('page_subtitle', 'Edit base breeding metadata only. Biological progression stays in timeline events.')
+@section('page_subtitle', 'Edit only the current attempt metadata. Biological progression stays in timeline events.')
 
 @section('top_actions')
     <a href="{{ route('reproduction-cycles.show', $cycle) }}" class="btn">Back to Case</a>
-    @if($pig)
+    @if(!empty($pig))
         <a href="{{ route('pigs.show', $pig) }}" class="btn">Open Sow Profile</a>
     @endif
 @endsection
@@ -23,13 +23,15 @@
             \App\Models\ReproductionCycle::STATUS_CLOSED => 'orange',
             default => 'orange',
         };
+
+        $showExpectedSummary = $cycle->pregnancy_result === \App\Models\ReproductionCycle::PREGNANCY_RESULT_PREGNANT || $cycle->actual_farrow_date;
     @endphp
 
     <div class="panel-card" style="margin-bottom: 20px;">
         <div class="section-title">
             <div>
                 <h3>Current Case State</h3>
-                <p>This page now edits base breeding metadata only. Timeline events control pregnancy, return-to-heat, farrowing, and closure.</p>
+                <p>This page edits current attempt metadata only. Timeline events still control pregnancy, return to heat, farrowing, retries, and closure.</p>
             </div>
             <span class="badge {{ $statusBadgeClass }}">{{ $cycle->status_label }}</span>
         </div>
@@ -46,23 +48,23 @@
             </div>
 
             <div class="form-group">
+                <label>Current Attempt</label>
+                <input type="text" value="Attempt {{ $cycle->current_attempt_number }}" readonly>
+            </div>
+
+            <div class="form-group">
                 <label>Pregnancy Result</label>
                 <input type="text" value="{{ $cycle->pregnancy_result_label }}" readonly>
             </div>
 
             <div class="form-group">
                 <label>Expected Farrow Date</label>
-                <input type="text" value="{{ optional($cycle->expected_farrow_date)->format('Y-m-d') ?? '—' }}" readonly>
+                <input type="text" value="{{ $showExpectedSummary ? (optional($cycle->expected_farrow_date)->format('Y-m-d') ?? '—') : 'Hidden until pregnant' }}" readonly>
             </div>
 
             <div class="form-group">
                 <label>Actual Farrow Date</label>
                 <input type="text" value="{{ optional($cycle->actual_farrow_date)->format('Y-m-d') ?? '—' }}" readonly>
-            </div>
-
-            <div class="form-group">
-                <label>Born Alive</label>
-                <input type="text" value="{{ $cycle->born_alive ?? '—' }}" readonly>
             </div>
         </div>
     </div>
@@ -70,8 +72,8 @@
     <div class="panel-card">
         <div class="section-title">
             <div>
-                <h3>Editable Base Metadata</h3>
-                <p>You can still correct service metadata, breeding source details, and notes here without manually forcing breeding stages.</p>
+                <h3>Editable Current Attempt Metadata</h3>
+                <p>You can still correct service date, donor boar, AI source details, cumulative breeding cost, and notes here.</p>
             </div>
         </div>
 
@@ -79,86 +81,124 @@
             @csrf
             @method('PUT')
 
-            <input type="hidden" name="status" value="{{ old('status', $cycle->status) }}">
-            <input type="hidden" name="pregnancy_result" value="{{ old('pregnancy_result', $cycle->pregnancy_result) }}">
-            <input type="hidden" name="pregnancy_check_date" value="{{ old('pregnancy_check_date', optional($cycle->pregnancy_check_date)->format('Y-m-d')) }}">
-            <input type="hidden" name="actual_farrow_date" value="{{ old('actual_farrow_date', optional($cycle->actual_farrow_date)->format('Y-m-d')) }}">
-            <input type="hidden" name="total_born" value="{{ old('total_born', $cycle->total_born) }}">
-            <input type="hidden" name="born_alive" value="{{ old('born_alive', $cycle->born_alive) }}">
-            <input type="hidden" name="stillborn" value="{{ old('stillborn', $cycle->stillborn) }}">
-            <input type="hidden" name="mummified" value="{{ old('mummified', $cycle->mummified) }}">
-            <input type="hidden" id="expected_farrow_date" name="expected_farrow_date" value="{{ old('expected_farrow_date', optional($cycle->expected_farrow_date)->format('Y-m-d')) }}">
-
             <div class="form-grid">
                 <div class="form-group">
                     <label for="breeding_type">Breeding Type</label>
                     <select id="breeding_type" name="breeding_type" required>
                         <option value="">Select breeding type</option>
-                        @foreach($breedingTypeOptions as $value => $label)
+                        @foreach(($breedingTypeOptions ?? []) as $value => $label)
                             <option value="{{ $value }}" {{ old('breeding_type', $cycle->breeding_type) === $value ? 'selected' : '' }}>
                                 {{ $label }}
                             </option>
                         @endforeach
                     </select>
+                    @error('breeding_type')
+                        <div class="error-text">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="form-group">
+                    <label for="service_date">Service Date</label>
+                    <input
+                        id="service_date"
+                        name="service_date"
+                        type="date"
+                        value="{{ old('service_date', optional($cycle->service_date)->format('Y-m-d')) }}"
+                        max="{{ now()->toDateString() }}"
+                        required
+                    >
+                    @error('service_date')
+                        <div class="error-text">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div id="boar_group" class="form-group">
-                    <label for="boar_id">Boar</label>
+                    <label for="boar_id" id="boar_label">Boar</label>
                     <select id="boar_id" name="boar_id">
                         <option value="">Select boar</option>
-                        @foreach($boars as $boar)
+                        @foreach(($boars ?? []) as $boar)
                             <option value="{{ $boar->id }}" {{ (string) old('boar_id', $cycle->boar_id) === (string) $boar->id ? 'selected' : '' }}>
                                 {{ $boar->ear_tag }} — {{ $boar->breed }}
                             </option>
                         @endforeach
                     </select>
+                    <small class="metric-note" id="boar_note" style="display:none;">Required for natural mating and locally sourced AI donor boar selection.</small>
+                    @error('boar_id')
+                        <div class="error-text">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div id="semen_source_type_group" class="form-group">
-                    <label for="semen_source_type">Semen Source Type</label>
+                    <label for="semen_source_type">AI Semen Source Type</label>
                     <select id="semen_source_type" name="semen_source_type">
                         <option value="">Select source type</option>
-                        @foreach($semenSourceOptions as $value => $label)
+                        @foreach(($semenSourceOptions ?? []) as $value => $label)
                             <option value="{{ $value }}" {{ old('semen_source_type', $cycle->semen_source_type) === $value ? 'selected' : '' }}>
                                 {{ $label }}
                             </option>
                         @endforeach
                     </select>
+                    @error('semen_source_type')
+                        <div class="error-text">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div id="semen_source_name_group" class="form-group">
-                    <label for="semen_source_name">Semen Source Name</label>
-                    <input id="semen_source_name" name="semen_source_name" type="text" value="{{ old('semen_source_name', $cycle->semen_source_name) }}">
+                    <label for="semen_source_name" id="semen_source_name_label">AI Semen Source / Supplier</label>
+                    <input
+                        id="semen_source_name"
+                        name="semen_source_name"
+                        type="text"
+                        value="{{ old('semen_source_name', $cycle->semen_source_name) }}"
+                    >
+                    <small class="metric-note" id="semen_source_name_note">Required for purchased AI. Optional for locally sourced AI notes.</small>
+                    @error('semen_source_name')
+                        <div class="error-text">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div id="semen_cost_group" class="form-group">
-                    <label for="semen_cost">Semen Cost</label>
-                    <input id="semen_cost" name="semen_cost" type="number" step="0.01" min="0" value="{{ old('semen_cost', $cycle->semen_cost) }}">
+                    <label for="semen_cost">Purchased Semen Cost</label>
+                    <input
+                        id="semen_cost"
+                        name="semen_cost"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value="{{ old('semen_cost', number_format((float) $cycle->semen_cost, 2, '.', '')) }}"
+                    >
+                    @error('semen_cost')
+                        <div class="error-text">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
-                    <label for="service_date">Service Date</label>
-                    <input id="service_date" name="service_date" type="date" value="{{ old('service_date', optional($cycle->service_date)->format('Y-m-d')) }}" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Expected Farrow Date (Auto)</label>
-                    <input id="expected_farrow_preview" type="text" value="{{ old('expected_farrow_date', optional($cycle->expected_farrow_date)->format('Y-m-d')) }}" readonly>
-                </div>
-
-                <div class="form-group">
-                    <label for="breeding_cost">Base Breeding Cost</label>
-                    <input id="breeding_cost" name="breeding_cost" type="number" step="0.01" min="0" value="{{ old('breeding_cost', $cycle->breeding_cost) }}">
+                    <label for="breeding_cost">Cumulative Breeding Cost</label>
+                    <input
+                        id="breeding_cost"
+                        name="breeding_cost"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value="{{ old('breeding_cost', number_format((float) $cycle->breeding_cost, 2, '.', '')) }}"
+                    >
+                    <small class="metric-note">This is the total accumulated breeding cost across all attempts already recorded in this parent case.</small>
+                    @error('breeding_cost')
+                        <div class="error-text">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group full">
                     <label for="notes">Case Notes</label>
                     <textarea id="notes" name="notes" rows="4">{{ old('notes', $cycle->notes) }}</textarea>
+                    @error('notes')
+                        <div class="error-text">{{ $message }}</div>
+                    @enderror
                 </div>
             </div>
 
             <div class="flash" style="margin-top: 16px;">
-                The expected farrow date is auto-derived from <strong>service date + 114 days</strong>. Pregnancy confirmation and farrowing should be recorded from the case timeline, not forced here.
+                The projected farrow date remains hidden until the case is on the pregnant path. If this case is already pregnant or farrowed, the saved expected farrow date still stays derived from <strong>service date + 114 days</strong>.
             </div>
 
             <div class="form-actions">
@@ -168,7 +208,7 @@
         </form>
 
         <div style="margin-top:16px;">
-            <form method="POST" action="{{ route('reproduction-cycles.destroy', $cycle) }}">
+            <form method="POST" action="{{ route('reproduction-cycles.destroy', $cycle) }}" onsubmit="return confirm('Delete this breeding case? This removes the parent case and its timeline.');">
                 @csrf
                 @method('DELETE')
                 <button class="btn btn-danger">Delete Record</button>
@@ -178,59 +218,54 @@
 @endsection
 
 @section('scripts')
-function setGroupVisibility(elementId, visible) {
-    const element = document.getElementById(elementId);
-    if (!element) return;
-    element.style.display = visible ? '' : 'none';
-}
-
-function updateBreedingEditState() {
-    const breedingType = document.getElementById('breeding_type')?.value || '';
-    const semenSourceType = document.getElementById('semen_source_type')?.value || '';
-
-    setGroupVisibility('boar_group', breedingType === 'natural_mating' || breedingType === '');
-    setGroupVisibility('semen_source_type_group', breedingType === 'artificial_insemination');
-    setGroupVisibility('semen_source_name_group', breedingType === 'artificial_insemination');
-    setGroupVisibility('semen_cost_group', breedingType === 'artificial_insemination' && semenSourceType === 'purchased');
-}
-
-function autofillExpectedFarrowDate() {
-    const serviceDateInput = document.getElementById('service_date');
-    const hiddenExpected = document.getElementById('expected_farrow_date');
-    const previewExpected = document.getElementById('expected_farrow_preview');
-
-    if (!serviceDateInput || !hiddenExpected || !previewExpected) {
-        return;
+document.addEventListener('DOMContentLoaded', function () {
+    function setGroupVisibility(elementId, visible) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        element.style.display = visible ? '' : 'none';
     }
 
-    if (!serviceDateInput.value) {
-        hiddenExpected.value = '';
-        previewExpected.value = '';
-        return;
+    function updateBreedingEditState() {
+        const breedingType = document.getElementById('breeding_type')?.value || '';
+        const semenSourceType = document.getElementById('semen_source_type')?.value || '';
+        const boarLabel = document.getElementById('boar_label');
+        const boarNote = document.getElementById('boar_note');
+        const sourceNameLabel = document.getElementById('semen_source_name_label');
+        const sourceNameNote = document.getElementById('semen_source_name_note');
+
+        const showBoar = breedingType === 'natural_mating' || (breedingType === 'artificial_insemination' && semenSourceType === 'local');
+        const showAiFields = breedingType === 'artificial_insemination';
+        const showSemenCost = showAiFields && semenSourceType === 'purchased';
+
+        setGroupVisibility('boar_group', showBoar);
+        setGroupVisibility('semen_source_type_group', showAiFields);
+        setGroupVisibility('semen_source_name_group', showAiFields);
+        setGroupVisibility('semen_cost_group', showSemenCost);
+
+        if (boarLabel) {
+            boarLabel.textContent = breedingType === 'artificial_insemination' ? 'Donor Boar' : 'Boar';
+        }
+
+        if (boarNote) {
+            boarNote.style.display = showBoar ? '' : 'none';
+        }
+
+        if (sourceNameLabel) {
+            sourceNameLabel.textContent = semenSourceType === 'local'
+                ? 'Local Source Notes (Optional)'
+                : 'AI Semen Source / Supplier';
+        }
+
+        if (sourceNameNote) {
+            sourceNameNote.textContent = semenSourceType === 'local'
+                ? 'Optional notes about the local source. Donor boar selection is required.'
+                : 'Required for purchased AI. Optional for locally sourced AI notes.';
+        }
     }
 
-    const baseDate = new Date(serviceDateInput.value + 'T00:00:00');
-    if (Number.isNaN(baseDate.getTime())) {
-        hiddenExpected.value = '';
-        previewExpected.value = '';
-        return;
-    }
+    document.getElementById('breeding_type')?.addEventListener('change', updateBreedingEditState);
+    document.getElementById('semen_source_type')?.addEventListener('change', updateBreedingEditState);
 
-    baseDate.setDate(baseDate.getDate() + 114);
-
-    const yyyy = baseDate.getFullYear();
-    const mm = String(baseDate.getMonth() + 1).padStart(2, '0');
-    const dd = String(baseDate.getDate()).padStart(2, '0');
-    const formatted = `${yyyy}-${mm}-${dd}`;
-
-    hiddenExpected.value = formatted;
-    previewExpected.value = formatted;
-}
-
-document.getElementById('breeding_type')?.addEventListener('change', updateBreedingEditState);
-document.getElementById('semen_source_type')?.addEventListener('change', updateBreedingEditState);
-document.getElementById('service_date')?.addEventListener('change', autofillExpectedFarrowDate);
-
-updateBreedingEditState();
-autofillExpectedFarrowDate();
+    updateBreedingEditState();
+});
 @endsection

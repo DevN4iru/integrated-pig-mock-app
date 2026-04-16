@@ -6,6 +6,7 @@ use App\Models\ReproductionCycle;
 use App\Models\ReproductionCycleUpdate;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class ReproductionCycleUpdateController extends Controller
@@ -56,7 +57,7 @@ class ReproductionCycleUpdateController extends Controller
             ($validated['mummified'] ?? null) !== null;
 
         if ($validated['event_type'] === ReproductionCycleUpdate::EVENT_SERVICE_STARTED) {
-            $errors['event_type'] = 'Service started is recorded automatically when the breeding case is first created.';
+            $errors['event_type'] = 'Service started is recorded automatically when a breeding attempt begins.';
         }
 
         [$statusAfterEvent, $pregnancyResult] = $this->resolveDerivedState($validated, $reproductionCycle, $errors);
@@ -115,7 +116,22 @@ class ReproductionCycleUpdateController extends Controller
                     && !empty($validated['event_date'])
                     && Carbon::parse($validated['actual_farrow_date'])->greaterThan(Carbon::parse($validated['event_date']))
                 ) {
-                    $errors['actual_farrow_date'] = 'Actual farrowing date cannot be later than the farrowing event date.';
+                    $errors['actual_farrow_date'] = 'Actual farrowing date cannot be later than the event date recorded in the system.';
+                }
+
+                $windowStart = $this->farrowWindowStart($reproductionCycle);
+                $windowEnd = $this->farrowWindowEnd($reproductionCycle);
+
+                if (!empty($validated['actual_farrow_date']) && $windowStart && $windowEnd) {
+                    $actualFarrowDate = Carbon::parse($validated['actual_farrow_date'])->startOfDay();
+
+                    if ($actualFarrowDate->lt($windowStart) || $actualFarrowDate->gt($windowEnd)) {
+                        $errors['actual_farrow_date'] = 'Actual farrowing date must stay within ' .
+                            $windowStart->format('Y-m-d') .
+                            ' to ' .
+                            $windowEnd->format('Y-m-d') .
+                            ' based on the expected farrowing month fallback.';
+                    }
                 }
                 break;
 
@@ -175,7 +191,7 @@ class ReproductionCycleUpdateController extends Controller
 
     protected function buildPayload(array $validated, ReproductionCycle $reproductionCycle): array
     {
-        return [
+        $payload = [
             'reproduction_cycle_id' => $reproductionCycle->id,
             'event_type' => $validated['event_type'],
             'event_date' => $validated['event_date'],
@@ -189,6 +205,19 @@ class ReproductionCycleUpdateController extends Controller
             'added_cost' => (float) ($validated['added_cost'] ?? 0),
             'notes' => $validated['notes'] ?? null,
         ];
+
+        if ($this->supportsAttemptMetadata()) {
+            $payload = array_merge([
+                'attempt_number' => $reproductionCycle->current_attempt_number,
+                'boar_id' => $reproductionCycle->boar_id,
+                'breeding_type' => $reproductionCycle->breeding_type,
+                'semen_source_type' => $reproductionCycle->semen_source_type,
+                'semen_source_name' => $reproductionCycle->semen_source_name,
+                'semen_cost' => (float) ($reproductionCycle->semen_cost ?? 0),
+            ], $payload);
+        }
+
+        return $payload;
     }
 
     protected function resolveDerivedState(array $validated, ReproductionCycle $reproductionCycle, array &$errors): array
@@ -246,23 +275,38 @@ class ReproductionCycleUpdateController extends Controller
 
     protected function applyUpdateToCycle(ReproductionCycle $reproductionCycle, ReproductionCycleUpdate $update): void
     {
-        $breedingCost = (float) $reproductionCycle->breeding_cost + (float) ($update->added_cost ?? 0);
-
         $payload = [
             'status' => $update->status_after_event ?? $reproductionCycle->status,
             'pregnancy_result' => $update->pregnancy_result ?? $reproductionCycle->pregnancy_result,
-            'breeding_cost' => $breedingCost,
+            'breeding_cost' => (float) $reproductionCycle->breeding_cost + (float) ($update->added_cost ?? 0),
         ];
-
-        if (
-            $update->event_type === ReproductionCycleUpdate::EVENT_PREGNANCY_CHECKED
-            && !$reproductionCycle->expected_farrow_date
-        ) {
-            $payload['expected_farrow_date'] = Carbon::parse($reproductionCycle->service_date)->addDays(114)->toDateString();
-        }
 
         if ($update->event_type === ReproductionCycleUpdate::EVENT_PREGNANCY_CHECKED) {
             $payload['pregnancy_check_date'] = $update->event_date;
+
+            if ($update->pregnancy_result === ReproductionCycle::PREGNANCY_RESULT_PREGNANT) {
+                $payload['expected_farrow_date'] = Carbon::parse($reproductionCycle->service_date)
+                    ->addDays(114)
+                    ->toDateString();
+            }
+
+            if ($update->pregnancy_result === ReproductionCycle::PREGNANCY_RESULT_NOT_PREGNANT) {
+                $payload['expected_farrow_date'] = null;
+                $payload['actual_farrow_date'] = null;
+                $payload['total_born'] = null;
+                $payload['born_alive'] = null;
+                $payload['stillborn'] = null;
+                $payload['mummified'] = null;
+            }
+        }
+
+        if ($update->event_type === ReproductionCycleUpdate::EVENT_RETURNED_TO_HEAT) {
+            $payload['expected_farrow_date'] = null;
+            $payload['actual_farrow_date'] = null;
+            $payload['total_born'] = null;
+            $payload['born_alive'] = null;
+            $payload['stillborn'] = null;
+            $payload['mummified'] = null;
         }
 
         if ($update->event_type === ReproductionCycleUpdate::EVENT_FARROWING_RECORDED) {
@@ -271,9 +315,58 @@ class ReproductionCycleUpdateController extends Controller
             $payload['born_alive'] = $update->born_alive;
             $payload['stillborn'] = $update->stillborn;
             $payload['mummified'] = $update->mummified;
+
+            if (empty($reproductionCycle->expected_farrow_date) && $reproductionCycle->service_date) {
+                $payload['expected_farrow_date'] = Carbon::parse($reproductionCycle->service_date)
+                    ->addDays(114)
+                    ->toDateString();
+            }
         }
 
         $reproductionCycle->update($payload);
+    }
+
+    protected function projectedExpectedFarrowDate(ReproductionCycle $reproductionCycle): ?Carbon
+    {
+        if (!$reproductionCycle->service_date) {
+            return null;
+        }
+
+        return Carbon::parse($reproductionCycle->service_date)
+            ->addDays(114)
+            ->startOfDay();
+    }
+
+    protected function farrowWindowStart(ReproductionCycle $reproductionCycle): ?Carbon
+    {
+        $expected = $reproductionCycle->expected_farrow_date
+            ? $reproductionCycle->expected_farrow_date->copy()->startOfDay()
+            : $this->projectedExpectedFarrowDate($reproductionCycle);
+
+        if (!$expected) {
+            return null;
+        }
+
+        return $expected->copy()
+            ->subMonthNoOverflow()
+            ->startOfMonth()
+            ->startOfDay();
+    }
+
+    protected function farrowWindowEnd(ReproductionCycle $reproductionCycle): ?Carbon
+    {
+        $expected = $reproductionCycle->expected_farrow_date
+            ? $reproductionCycle->expected_farrow_date->copy()->startOfDay()
+            : $this->projectedExpectedFarrowDate($reproductionCycle);
+
+        if (!$expected) {
+            return null;
+        }
+
+        return $expected->copy()
+            ->addMonthNoOverflow()
+            ->endOfMonth()
+            ->startOfDay();
     }
 
     protected function assertCycleCanReceiveUpdates(ReproductionCycle $reproductionCycle): void
@@ -285,5 +378,10 @@ class ReproductionCycleUpdateController extends Controller
         if ($reproductionCycle->sow && $reproductionCycle->sow->isOperationallyLocked()) {
             abort(422, $reproductionCycle->sow->operationalLockMessage('breeding records'));
         }
+    }
+
+    protected function supportsAttemptMetadata(): bool
+    {
+        return Schema::hasColumn('reproduction_cycle_updates', 'attempt_number');
     }
 }
