@@ -346,6 +346,8 @@
                                         <td>{{ $pen->notes ?: '—' }}</td>
                                         <td>
                                             <div style="display:grid; gap:8px;">
+                                                <a href="{{ route('pens.show', $pen) }}" class="btn">Go to Pen</a>
+
                                                 <button
                                                     type="button"
                                                     class="btn"
@@ -450,6 +452,8 @@
                                 </div>
 
                                 <div style="margin-top: 4px; display:flex; gap:8px; flex-wrap:wrap;">
+                                    <a href="{{ route('pens.show', $pen) }}" class="btn">Go to Pen</a>
+
                                     <button
                                         type="button"
                                         class="btn"

@@ -2,7 +2,7 @@
 
 @section('title', 'Pigs')
 @section('page_title', 'Pig List')
-@section('page_subtitle', 'View active and archived pig records.')
+@section('page_subtitle', 'View active, sold, dead, and archived pig records.')
 
 @section('top_actions')
     <a href="{{ route('pigs.create') }}" class="btn primary">+ Add Pig</a>
@@ -64,6 +64,35 @@
     font-size: 13px;
     margin-top: 6px;
 }
+
+.pen-group-stack {
+    display: grid;
+    gap: 18px;
+}
+
+.pen-group-card {
+    display: grid;
+    gap: 14px;
+}
+
+.pen-group-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.pen-group-sub {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.inline-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
 @endsection
 
 @section('content')
@@ -116,7 +145,7 @@
     <div class="section-title">
         <div>
             <h3>Search & Filters</h3>
-            <p>Quickly locate pigs and filter by operational status.</p>
+            <p>Quickly locate pigs and filter by operational status, source, and assigned pen.</p>
         </div>
     </div>
 
@@ -124,7 +153,7 @@
         <div class="form-grid">
             <div class="form-group">
                 <label>Search</label>
-                <input type="text" name="search" value="{{ $search }}" placeholder="Ear tag, breed, pen...">
+                <input type="text" name="search" value="{{ $search }}" placeholder="Ear tag, breed, age, pen...">
             </div>
 
             <div class="form-group">
@@ -144,6 +173,18 @@
                     <option value="all" {{ $source === 'all' ? 'selected' : '' }}>All</option>
                     <option value="birthed" {{ $source === 'birthed' ? 'selected' : '' }}>Birthed</option>
                     <option value="purchased" {{ $source === 'purchased' ? 'selected' : '' }}>Purchased</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Pen</label>
+                <select name="pen">
+                    <option value="all" {{ $penFilter === 'all' ? 'selected' : '' }}>All Pens</option>
+                    @foreach ($pensForFilter as $pen)
+                        <option value="{{ $pen->id }}" {{ (string) $penFilter === (string) $pen->id ? 'selected' : '' }}>
+                            {{ $pen->name }} — {{ $pen->type }}
+                        </option>
+                    @endforeach
                 </select>
             </div>
 
@@ -304,110 +345,127 @@
 @endif
 
 @if ($showActiveSection)
-<div class="panel-card" style="margin-top: 20px;">
-    <div class="section-title">
-        <div>
-            <h3>Active Pigs</h3>
-            <p>Live operational pigs with real-time indicators.</p>
+<div class="pen-group-stack">
+    <div class="panel-card">
+        <div class="section-title">
+            <div>
+                <h3>Active Pigs by Pen</h3>
+                <p>Live pigs are now grouped by assigned pen for easier housing operations.</p>
+            </div>
         </div>
-    </div>
 
-    @if ($activePigs->isEmpty())
-        <div class="empty-state">No active pigs.</div>
-    @else
-        <div class="table-wrap">
-            <table class="data-table pig-table">
-                <thead>
-                    <tr>
-                        <th style="width:44px;">
-                            <input type="checkbox" id="toggleAllActivePigs" onclick="toggleAllFromHeader(this.checked)">
-                        </th>
-                        <th>Ear Tag</th>
-                        <th>Breed</th>
-                        <th>Pen</th>
-                        <th>Status</th>
-                        <th>Weight</th>
-                        <th>Trend</th>
-                        <th>Value</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($activePigs as $pig)
-                        @php
-                            $trend = $buildTrend($pig);
-                            $stale = $isStale($pig);
+        @if ($activePenGroups->isEmpty())
+            <div class="empty-state">No active pigs match the current filters.</div>
+        @else
+            <div class="pen-group-stack">
+                @foreach ($activePenGroups as $group)
+                    @php
+                        $pen = $group['pen'];
+                    @endphp
 
-                            $latestLog = $pig->healthLogs
-                                ->whereNotNull('weight')
-                                ->sortByDesc(fn ($log) => sprintf('%s-%010d', (string) ($log->log_date ?? ''), (int) $log->id))
-                                ->first();
-
-                            $displayWeight = $latestLog?->weight ?? $pig->latest_weight;
-                            $recommendedValue = (float) $pig->computed_asset_value;
-                        @endphp
-
-                        <tr>
-                            <td>
-                                <input
-                                    type="checkbox"
-                                    class="batch-pig-checkbox"
-                                    value="{{ $pig->id }}"
-                                    data-recommended="{{ $recommendedValue }}"
-                                >
-                            </td>
-
-                            <td>
-                                <div class="pig-meta">
-                                    <strong>{{ $pig->ear_tag }}</strong>
-                                    <span class="text-muted">{{ ucfirst($pig->sex) }}</span>
-
-                                    @if ($stale)
-                                        <span class="alert-badge">⚠ No recent weight</span>
+                    <div class="panel-card pen-group-card">
+                        <div class="pen-group-meta">
+                            <div>
+                                <h3 style="margin-bottom: 4px;">{{ $group['title'] }}</h3>
+                                <div class="pen-group-sub">
+                                    @if ($pen)
+                                        {{ $group['type'] }} • {{ $pen->occupiedCount() }}/{{ $pen->capacity }} occupied
+                                    @else
+                                        No assigned pen
                                     @endif
                                 </div>
-                            </td>
+                            </div>
 
-                            <td>{{ $pig->breed }}</td>
-                            <td>{{ $pig->pen?->name ?? '—' }}</td>
+                            <div class="inline-actions">
+                                @if ($pen)
+                                    <a href="{{ route('pens.show', $pen) }}" class="btn">Go to Pen</a>
+                                @endif
+                            </div>
+                        </div>
 
-                            <td>
-                                <span class="badge green">Active</span>
-                            </td>
+                        <div class="table-wrap">
+                            <table class="data-table pig-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:44px;">
+                                            <input type="checkbox" class="batch-group-toggle" data-group-index="{{ $loop->index }}">
+                                        </th>
+                                        <th>Ear Tag</th>
+                                        <th>Breed</th>
+                                        <th>Age</th>
+                                        <th>Source</th>
+                                        <th>Weight</th>
+                                        <th>Trend</th>
+                                        <th>Value</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($group['pigs'] as $pig)
+                                        @php
+                                            $trend = $buildTrend($pig);
+                                            $stale = $isStale($pig);
 
-                            <td>
-                                {{ $displayWeight ? number_format($displayWeight, 2) . ' kg' : '—' }}
-                            </td>
+                                            $latestLog = $pig->healthLogs
+                                                ->whereNotNull('weight')
+                                                ->sortByDesc(fn ($log) => sprintf('%s-%010d', (string) ($log->log_date ?? ''), (int) $log->id))
+                                                ->first();
 
-                            <td class="{{ $trend['class'] }}">
-                                {{ $trend['symbol'] }}
-                            </td>
+                                            $displayWeight = $latestLog?->weight ?? $pig->latest_weight;
+                                            $recommendedValue = (float) $pig->computed_asset_value;
+                                        @endphp
 
-                            <td>₱ {{ number_format((float) $pig->computed_asset_value, 2) }}</td>
+                                        <tr>
+                                            <td>
+                                                <input
+                                                    type="checkbox"
+                                                    class="batch-pig-checkbox batch-group-{{ $loop->parent->index }}"
+                                                    value="{{ $pig->id }}"
+                                                    data-recommended="{{ $recommendedValue }}"
+                                                >
+                                            </td>
 
-                            <td>
-                                <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                                    <a href="{{ route('pigs.show', $pig->id) }}" class="btn">View</a>
+                                            <td>
+                                                <div class="pig-meta">
+                                                    <strong>{{ $pig->ear_tag }}</strong>
+                                                    <span class="text-muted">{{ ucfirst($pig->sex) }}</span>
+                                                    @if ($stale)
+                                                        <span class="alert-badge">⚠ No recent weight</span>
+                                                    @endif
+                                                </div>
+                                            </td>
 
-                                    <button class="btn"
-                                        onclick="openPigEditPrompt('{{ route('pigs.edit', $pig) }}')"
-                                        type="button">
-                                        Edit
-                                    </button>
+                                            <td>{{ $pig->breed }}</td>
+                                            <td>{{ $pig->age_display }}</td>
+                                            <td>{{ ucfirst($pig->pig_source) }}</td>
+                                            <td>{{ $displayWeight ? number_format((float) $displayWeight, 2) . ' kg' : '—' }}</td>
+                                            <td class="{{ $trend['class'] }}">{{ $trend['symbol'] }}</td>
+                                            <td>₱ {{ number_format((float) $pig->computed_asset_value, 2) }}</td>
+                                            <td>
+                                                <div class="inline-actions">
+                                                    <a href="{{ route('pigs.show', $pig->id) }}" class="btn">View</a>
+                                                    @if ($pig->pen)
+                                                        <a href="{{ route('pens.show', $pig->pen) }}" class="btn">Pen</a>
+                                                    @endif
+                                                    <button class="btn" onclick="openPigEditPrompt('{{ route('pigs.edit', $pig) }}')" type="button">Edit</button>
 
-                                    <form method="POST" action="{{ route('pigs.destroy', $pig->id) }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="btn btn-warning">Archive</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
+                                                    <form method="POST" action="{{ route('pigs.destroy', $pig->id) }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button class="btn btn-warning" type="submit">Archive</button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
 </div>
 @endif
 
@@ -421,42 +479,37 @@
     </div>
 
     @if ($soldPigs->isEmpty())
-        <div class="empty-state">No sold pigs.</div>
+        <div class="empty-state">No sold pigs match the current filters.</div>
     @else
         <div class="table-wrap">
-            <table class="data-table">
+            <table class="data-table pig-table">
                 <thead>
                     <tr>
                         <th>Ear Tag</th>
                         <th>Breed</th>
-                        <th>Sold Date</th>
-                        <th>Sold Price</th>
-                        <th>Buyer</th>
+                        <th>Age</th>
+                        <th>Pen</th>
+                        <th>Latest Weight</th>
+                        <th>Latest Sale Price</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($soldPigs as $pig)
                         @php
-                            $sale = $pig->sales->sortByDesc('sold_date')->first();
+                            $latestSale = $pig->sales->sortByDesc('sold_date')->first();
                         @endphp
                         <tr>
                             <td>{{ $pig->ear_tag }}</td>
                             <td>{{ $pig->breed }}</td>
-                            <td>{{ $sale?->sold_date ? $sale->sold_date->format('Y-m-d') : '—' }}</td>
-                            <td>₱ {{ number_format((float) ($sale->price ?? 0), 2) }}</td>
-                            <td>{{ $sale->buyer ?: '—' }}</td>
+                            <td>{{ $pig->age_display }}</td>
+                            <td>{{ $pig->pen?->name ?? $pig->pen_location ?? '—' }}</td>
+                            <td>{{ $pig->computed_weight !== null ? number_format((float) $pig->computed_weight, 2) . ' kg' : '—' }}</td>
+                            <td>{{ $latestSale ? '₱ ' . number_format((float) $latestSale->price, 2) : '—' }}</td>
                             <td>
-                                <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                                    <a href="{{ route('pigs.show', $pig->id) }}" class="btn">View Profile</a>
-
-                                    @if ($sale)
-                                        <a href="{{ route('sales.edit', [$pig->id, $sale->id]) }}" class="btn">Edit Record</a>
-                                    @endif
-
-                                    <button class="btn btn-danger"
-                                        onclick="confirmRemoveRecords('{{ route('pigs.remove-records', $pig->id) }}')"
-                                        type="button">
+                                <div class="inline-actions">
+                                    <a href="{{ route('pigs.show', $pig) }}" class="btn">View</a>
+                                    <button type="button" class="btn btn-danger" onclick="confirmPigRemoveFromRecords('{{ route('pigs.remove-records', $pig) }}')">
                                         Remove from Records
                                     </button>
                                 </div>
@@ -475,31 +528,45 @@
     <div class="section-title">
         <div>
             <h3>Dead Pigs</h3>
-            <p>Mortality records currently classified as dead.</p>
+            <p>Mortality records remain separated from live operations. Removing from records permanently deletes the pig and all related records.</p>
         </div>
     </div>
 
     @if ($deadPigs->isEmpty())
-        <div class="empty-state">No dead pigs.</div>
+        <div class="empty-state">No dead pigs match the current filters.</div>
     @else
         <div class="table-wrap">
-            <table class="data-table">
+            <table class="data-table pig-table">
                 <thead>
                     <tr>
                         <th>Ear Tag</th>
                         <th>Breed</th>
-                        <th>Last Pen</th>
+                        <th>Age</th>
+                        <th>Pen</th>
+                        <th>Latest Weight</th>
+                        <th>Mortality Cause</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($deadPigs as $pig)
+                        @php
+                            $latestMortality = $pig->mortalityLogs->sortByDesc('death_date')->first();
+                        @endphp
                         <tr>
                             <td>{{ $pig->ear_tag }}</td>
                             <td>{{ $pig->breed }}</td>
+                            <td>{{ $pig->age_display }}</td>
                             <td>{{ $pig->pen?->name ?? $pig->pen_location ?? '—' }}</td>
+                            <td>{{ $pig->computed_weight !== null ? number_format((float) $pig->computed_weight, 2) . ' kg' : '—' }}</td>
+                            <td>{{ $latestMortality?->cause ?? '—' }}</td>
                             <td>
-                                <a href="{{ route('pigs.show', $pig->id) }}" class="btn">View</a>
+                                <div class="inline-actions">
+                                    <a href="{{ route('pigs.show', $pig) }}" class="btn">View</a>
+                                    <button type="button" class="btn btn-danger" onclick="confirmPigRemoveFromRecords('{{ route('pigs.remove-records', $pig) }}')">
+                                        Remove from Records
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     @endforeach
@@ -515,53 +582,46 @@
     <div class="section-title">
         <div>
             <h3>Archived Pigs</h3>
-            <p>Stored records (non-operational).</p>
+            <p>Archived pigs no longer count as active and do not occupy pen capacity.</p>
         </div>
     </div>
 
     @if ($archivedPigs->isEmpty())
-        <div class="empty-state">No archived pigs.</div>
+        <div class="empty-state">No archived pigs match the current filters.</div>
     @else
         <div class="table-wrap">
-            <table class="data-table">
+            <table class="data-table pig-table">
                 <thead>
                     <tr>
                         <th>Ear Tag</th>
                         <th>Breed</th>
-                        <th>Weight</th>
+                        <th>Age</th>
+                        <th>Pen</th>
+                        <th>Source</th>
                         <th>Value</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($archivedPigs as $pig)
-                        @php
-                            $latestLog = $pig->healthLogs
-                                ->whereNotNull('weight')
-                                ->sortByDesc(fn ($log) => sprintf('%s-%010d', (string) ($log->log_date ?? ''), (int) $log->id))
-                                ->first();
-
-                            $displayWeight = $latestLog?->weight ?? $pig->latest_weight;
-                        @endphp
-
                         <tr>
                             <td>{{ $pig->ear_tag }}</td>
                             <td>{{ $pig->breed }}</td>
-                            <td>{{ number_format((float) $displayWeight, 2) }} kg</td>
-                            <td>₱ {{ number_format((float) $pig->asset_value, 2) }}</td>
+                            <td>{{ $pig->age_display }}</td>
+                            <td>{{ $pig->pen?->name ?? $pig->pen_location ?? '—' }}</td>
+                            <td>{{ ucfirst($pig->pig_source) }}</td>
+                            <td>₱ {{ number_format((float) $pig->computed_asset_value, 2) }}</td>
                             <td>
-                                <div style="display:flex; gap:6px;">
-                                    <a href="{{ route('pigs.show', $pig->id) }}" class="btn">View</a>
+                                <div class="inline-actions">
+                                    <a href="{{ route('pigs.show', $pig) }}" class="btn">View</a>
 
-                                    <form method="POST" action="{{ route('pigs.restore', $pig->id) }}">
+                                    <form method="POST" action="{{ route('pigs.restore', $pig) }}">
                                         @csrf
-                                        <button class="btn">Restore</button>
+                                        <button class="btn" type="submit">Restore</button>
                                     </form>
 
-                                    <button class="btn btn-danger"
-                                        onclick="confirmPigPermanentDelete('{{ route('pigs.force-delete', $pig->id) }}')"
-                                        type="button">
-                                        Delete
+                                    <button type="button" class="btn btn-danger" onclick="confirmPigPermanentDelete('{{ route('pigs.force-delete', $pig) }}')">
+                                        Permanent Delete
                                     </button>
                                 </div>
                             </td>
@@ -573,79 +633,28 @@
     @endif
 </div>
 @endif
-
 @endsection
 
 @section('scripts')
-function openPigEditPrompt(url) {
-    const code = prompt('Enter edit code:');
-    if (code === '12345') {
-        window.location.href = url + '?code=' + code;
-    } else if (code !== null) {
-        alert('Wrong code');
-    }
+function getSelectedPigCheckboxes() {
+    return Array.from(document.querySelectorAll('.batch-pig-checkbox'))
+        .filter((checkbox) => checkbox.checked);
 }
 
-function confirmPigPermanentDelete(url) {
-    const code = prompt('Enter delete code (12345):');
-    if (!code) return;
+function updateSelectedCount() {
+    const selected = getSelectedPigCheckboxes();
+    const countText = document.getElementById('selectedCountText');
 
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = url;
-
-    form.innerHTML = `
-        <input type="hidden" name="_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="_method" value="DELETE">
-        <input type="hidden" name="code" value="${code}">
-    `;
-
-    document.body.appendChild(form);
-    form.submit();
-}
-
-function confirmRemoveRecords(url) {
-    const proceed = confirm(
-        'WARNING:\\n\\nThis will permanently remove the pig and ALL related records, including sales, transfers, health logs, feed logs, medication, vaccination, and mortality records.\\n\\nDashboard totals will change.\\n\\nDo you want to continue?'
-    );
-
-    if (!proceed) return;
-
-    const code = prompt('Enter REMOVE to permanently remove this pig from all records:');
-    if (!code) return;
-
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = url;
-
-    form.innerHTML = `
-        <input type="hidden" name="_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="_method" value="DELETE">
-        <input type="hidden" name="code" value="${code}">
-    `;
-
-    document.body.appendChild(form);
-    form.submit();
-}
-
-function getSelectedPigIds() {
-    return Array.from(document.querySelectorAll('.batch-pig-checkbox:checked')).map(cb => cb.value);
-}
-
-function updateSelectedPigCount() {
-    const count = getSelectedPigIds().length;
-    const selectedCountText = document.getElementById('selectedCountText');
-
-    if (selectedCountText) {
-        selectedCountText.textContent = `${count} pig(s) selected`;
+    if (countText) {
+        countText.textContent = `${selected.length} pig(s) selected`;
     }
 
-    updateRecommendedBatchTotal();
+    updateBatchSaleRecommendedTotal();
 }
 
 function toggleAllPigSelection(checked) {
-    document.querySelectorAll('.batch-pig-checkbox').forEach(cb => {
-        cb.checked = checked;
+    document.querySelectorAll('.batch-pig-checkbox').forEach((checkbox) => {
+        checkbox.checked = checked;
     });
 
     const headerToggle = document.getElementById('toggleAllActivePigs');
@@ -653,104 +662,80 @@ function toggleAllPigSelection(checked) {
         headerToggle.checked = checked;
     }
 
-    updateSelectedPigCount();
+    document.querySelectorAll('.batch-group-toggle').forEach((checkbox) => {
+        checkbox.checked = checked;
+    });
+
+    updateSelectedCount();
 }
 
 function toggleAllFromHeader(checked) {
     toggleAllPigSelection(checked);
 }
 
-function hideBatchPanels() {
-    const transferPanel = document.getElementById('batchTransferPanel');
-    const salePanel = document.getElementById('batchSalePanel');
+document.querySelectorAll('.batch-group-toggle').forEach((toggle) => {
+    toggle.addEventListener('change', function () {
+        const groupIndex = this.dataset.groupIndex;
+        document.querySelectorAll(`.batch-group-${groupIndex}`).forEach((checkbox) => {
+            checkbox.checked = this.checked;
+        });
+        updateSelectedCount();
+    });
+});
 
-    if (transferPanel) {
-        transferPanel.classList.add('batch-hidden');
-    }
-
-    if (salePanel) {
-        salePanel.classList.add('batch-hidden');
-    }
-}
-
-function showBatchTransfer() {
-    const ids = getSelectedPigIds();
-    if (!ids.length) {
-        alert('Select at least one active pig first.');
-        return;
-    }
-
-    hideBatchPanels();
-
-    const transferPanel = document.getElementById('batchTransferPanel');
-    if (transferPanel) {
-        transferPanel.classList.remove('batch-hidden');
-    }
-
-    syncBatchTransferPigIds();
-    toggleBatchTransferOther();
-}
-
-function showBatchSale() {
-    const ids = getSelectedPigIds();
-    if (!ids.length) {
-        alert('Select at least one active pig first.');
-        return;
-    }
-
-    hideBatchPanels();
-
-    const salePanel = document.getElementById('batchSalePanel');
-    if (salePanel) {
-        salePanel.classList.remove('batch-hidden');
-    }
-
-    syncBatchSalePigIds();
-    toggleBatchSalePricingMode();
-    updateRecommendedBatchTotal();
-}
+document.querySelectorAll('.batch-pig-checkbox').forEach((checkbox) => {
+    checkbox.addEventListener('change', updateSelectedCount);
+});
 
 function syncBatchTransferPigIds() {
-    const ids = getSelectedPigIds();
-    if (!ids.length) {
+    const selected = getSelectedPigCheckboxes().map((checkbox) => checkbox.value);
+
+    if (selected.length === 0) {
         alert('Select at least one active pig first.');
         return false;
     }
 
-    const input = document.getElementById('batchTransferPigIds');
-    if (input) {
-        input.value = ids.join(',');
-    }
-
+    document.getElementById('batchTransferPigIds').value = selected.join(',');
     return true;
 }
 
 function syncBatchSalePigIds() {
-    const ids = getSelectedPigIds();
-    if (!ids.length) {
+    const selected = getSelectedPigCheckboxes().map((checkbox) => checkbox.value);
+
+    if (selected.length === 0) {
         alert('Select at least one active pig first.');
         return false;
     }
 
-    const input = document.getElementById('batchSalePigIds');
-    if (input) {
-        input.value = ids.join(',');
-    }
-
+    document.getElementById('batchSalePigIds').value = selected.join(',');
     return true;
 }
 
-function toggleBatchTransferOther() {
-    const reasonSelect = document.getElementById('batch_transfer_reason_code');
-    const notesField = document.getElementById('batch_transfer_reason_notes');
-    const isOther = reasonSelect && reasonSelect.value === 'other';
+function showBatchTransfer() {
+    document.getElementById('batchTransferPanel').style.display = 'block';
+    document.getElementById('batchSalePanel').style.display = 'none';
+    toggleBatchTransferOther();
+}
 
-    if (notesField) {
-        notesField.required = !!isOther;
-        notesField.placeholder = isOther
-            ? 'Explain the custom transfer reason'
-            : 'Optional transfer note';
-    }
+function showBatchSale() {
+    document.getElementById('batchSalePanel').style.display = 'block';
+    document.getElementById('batchTransferPanel').style.display = 'none';
+    toggleBatchSalePricingMode();
+    updateBatchSaleRecommendedTotal();
+}
+
+function hideBatchPanels() {
+    document.getElementById('batchTransferPanel').style.display = 'none';
+    document.getElementById('batchSalePanel').style.display = 'none';
+}
+
+function toggleBatchTransferOther() {
+    const reason = document.getElementById('batch_transfer_reason_code');
+    const notes = document.getElementById('batch_transfer_reason_notes');
+
+    if (!reason || !notes) return;
+
+    notes.required = reason.value === 'other';
 }
 
 function toggleBatchSalePricingMode() {
@@ -760,28 +745,102 @@ function toggleBatchSalePricingMode() {
 
     if (!mode || !customGroup || !customInput) return;
 
-    const useCustom = mode.value === 'custom';
-    customGroup.style.display = useCustom ? '' : 'none';
-    customInput.required = useCustom;
+    const showCustom = mode.value === 'custom';
+    customGroup.style.display = showCustom ? '' : 'none';
+    customInput.required = showCustom;
 }
 
-function updateRecommendedBatchTotal() {
-    const selected = Array.from(document.querySelectorAll('.batch-pig-checkbox:checked'));
+function updateBatchSaleRecommendedTotal() {
+    const selected = getSelectedPigCheckboxes();
     const total = selected.reduce((carry, checkbox) => {
         return carry + parseFloat(checkbox.dataset.recommended || '0');
     }, 0);
 
-    const output = document.getElementById('batchSaleRecommendedTotal');
-    if (output) {
-        output.value = `₱ ${total.toFixed(2)}`;
+    const totalInput = document.getElementById('batchSaleRecommendedTotal');
+    if (totalInput) {
+        totalInput.value = `₱ ${total.toFixed(2)}`;
     }
 }
 
-document.querySelectorAll('.batch-pig-checkbox').forEach(cb => {
-    cb.addEventListener('change', updateSelectedPigCount);
-});
+function openPigEditPrompt(url) {
+    const code = prompt('Type the edit access code to continue:');
+    if (code === null) return;
+    if (code !== '12345') {
+        alert('Wrong code');
+        return;
+    }
+    window.location.href = url + '?code=' + encodeURIComponent(code);
+}
+
+function confirmPigPermanentDelete(url) {
+    const code = prompt('Type 12345 to permanently delete this archived pig:');
+    if (code === null) return;
+    if (code !== '12345') {
+        alert('Wrong code');
+        return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = '_token';
+    csrf.value = '{{ csrf_token() }}';
+
+    const method = document.createElement('input');
+    method.type = 'hidden';
+    method.name = '_method';
+    method.value = 'DELETE';
+
+    const codeInput = document.createElement('input');
+    codeInput.type = 'hidden';
+    codeInput.name = 'code';
+    codeInput.value = code;
+
+    form.appendChild(csrf);
+    form.appendChild(method);
+    form.appendChild(codeInput);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function confirmPigRemoveFromRecords(url) {
+    const code = prompt('Type REMOVE to permanently delete this pig and all related records:');
+    if (code === null) return;
+    if (code !== 'REMOVE') {
+        alert('Wrong code');
+        return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = '_token';
+    csrf.value = '{{ csrf_token() }}';
+
+    const method = document.createElement('input');
+    method.type = 'hidden';
+    method.name = '_method';
+    method.value = 'DELETE';
+
+    const codeInput = document.createElement('input');
+    codeInput.type = 'hidden';
+    codeInput.name = 'code';
+    codeInput.value = code;
+
+    form.appendChild(csrf);
+    form.appendChild(method);
+    form.appendChild(codeInput);
+    document.body.appendChild(form);
+    form.submit();
+}
 
 toggleBatchTransferOther();
 toggleBatchSalePricingMode();
-updateSelectedPigCount();
+updateSelectedCount();
 @endsection

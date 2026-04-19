@@ -46,8 +46,12 @@
                     <select id="pen_id" name="pen_id" required>
                         <option value="">Select pen</option>
                         @foreach ($pens as $pen)
-                            <option value="{{ $pen->id }}" {{ old('pen_id') == $pen->id ? 'selected' : '' }}>
-                                {{ $pen->name }} — {{ $pen->type }} (Cap: {{ $pen->capacity }})
+                            @php
+                                $remaining = max((int) $pen->capacity - (int) $pen->pigs_count, 0);
+                                $isFull = $remaining <= 0;
+                            @endphp
+                            <option value="{{ $pen->id }}" {{ old('pen_id') == $pen->id ? 'selected' : '' }} {{ $isFull ? 'disabled' : '' }}>
+                                {{ $pen->name }} — {{ $pen->type }} ({{ $pen->pigs_count }}/{{ $pen->capacity }}){{ $isFull ? ' - FULL' : '' }}
                             </option>
                         @endforeach
                     </select>
@@ -60,6 +64,25 @@
                         <option value="birthed" {{ old('pig_source') === 'birthed' ? 'selected' : '' }}>Birthed</option>
                         <option value="purchased" {{ old('pig_source') === 'purchased' ? 'selected' : '' }}>Purchased</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="age_value">Age Input</label>
+                    <div style="display:grid; grid-template-columns: 1fr 180px; gap:10px;">
+                        <input id="age_value" name="age_value" type="number" min="0" step="0.1" value="{{ old('age_value') }}" required>
+                        <select id="age_unit" name="age_unit" required>
+                            <option value="days" {{ old('age_unit', 'days') === 'days' ? 'selected' : '' }}>Days</option>
+                            <option value="weeks" {{ old('age_unit') === 'weeks' ? 'selected' : '' }}>Weeks</option>
+                            <option value="months" {{ old('age_unit') === 'months' ? 'selected' : '' }}>Months</option>
+                        </select>
+                    </div>
+                    <small class="metric-note">System stores age in days for protocol alerts and scheduling.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="age_days_preview">Stored Age (Days)</label>
+                    <input id="age_days_preview" type="text" readonly value="0 days">
+                    <input id="age" name="age" type="hidden" value="0">
                 </div>
 
                 <div class="form-group">
@@ -104,6 +127,33 @@ function updateAssetValue() {
     previewInput.value = asset.toFixed(2);
 }
 
+function convertAgeToDays(value, unit) {
+    const numeric = parseFloat(value || '0');
+    if (isNaN(numeric) || numeric < 0) return 0;
+
+    if (unit === 'weeks') return Math.round(numeric * 7);
+    if (unit === 'months') return Math.round(numeric * 30);
+    return Math.round(numeric);
+}
+
+function updateAgePreview() {
+    const valueInput = document.getElementById('age_value');
+    const unitInput = document.getElementById('age_unit');
+    const previewInput = document.getElementById('age_days_preview');
+    const hiddenAgeInput = document.getElementById('age');
+
+    if (!valueInput || !unitInput || !previewInput || !hiddenAgeInput) return;
+
+    const days = convertAgeToDays(valueInput.value, unitInput.value);
+
+    hiddenAgeInput.value = days;
+    previewInput.value = `${days} day${days === 1 ? '' : 's'}`;
+}
+
 document.getElementById('latest_weight')?.addEventListener('input', updateAssetValue);
+document.getElementById('age_value')?.addEventListener('input', updateAgePreview);
+document.getElementById('age_unit')?.addEventListener('change', updateAgePreview);
+
 updateAssetValue();
+updateAgePreview();
 @endsection

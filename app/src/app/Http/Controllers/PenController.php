@@ -38,6 +38,40 @@ class PenController extends Controller
         return view('pens.index', compact('pens', 'penTypes', 'penGroups', 'summary'));
     }
 
+    public function show(Pen $pen)
+    {
+        $pen->loadCount(['activePigs as pigs_count']);
+
+        $activePigs = $pen->activePigs()
+            ->with([
+                'healthLogs',
+                'sales',
+                'mortalityLogs',
+            ])
+            ->orderBy('ear_tag')
+            ->get();
+
+        $recentTransfers = PigTransfer::with(['pig', 'fromPen', 'toPen'])
+            ->where(function ($query) use ($pen) {
+                $query->where('from_pen_id', $pen->id)
+                    ->orWhere('to_pen_id', $pen->id);
+            })
+            ->orderByDesc('transfer_date')
+            ->orderByDesc('id')
+            ->take(15)
+            ->get();
+
+        $summary = [
+            'occupied' => $pen->occupiedCount(),
+            'available' => $pen->availableSlots(),
+            'capacity' => (int) $pen->capacity,
+            'occupancy_percent' => $pen->occupancyPercent(),
+            'status' => $pen->occupancyStatus(),
+        ];
+
+        return view('pens.show', compact('pen', 'activePigs', 'recentTransfers', 'summary'));
+    }
+
     public function create()
     {
         $penTypes = Pen::typeOptions();

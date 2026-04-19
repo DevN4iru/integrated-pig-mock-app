@@ -19,6 +19,12 @@ class PigController extends Controller
         $search = trim((string) $request->query('search', ''));
         $status = (string) $request->query('status', 'all');
         $source = (string) $request->query('source', 'all');
+        $penFilter = (string) $request->query('pen', 'all');
+
+        $pensForFilter = Pen::withCount(['activePigs as pigs_count'])
+            ->get()
+            ->sortBy(fn ($pen) => $pen->sortKey())
+            ->values();
 
         $pigs = Pig::withTrashed()
             ->with([
@@ -37,6 +43,7 @@ class PigController extends Controller
                         ->orWhere('sex', 'like', '%' . $search . '%')
                         ->orWhere('pig_source', 'like', '%' . $search . '%')
                         ->orWhere('pen_location', 'like', '%' . $search . '%')
+                        ->orWhere('age', 'like', '%' . $search . '%')
                         ->orWhereHas('pen', function ($penQuery) use ($search) {
                             $penQuery->where('name', 'like', '%' . $search . '%');
                         });
@@ -44,6 +51,9 @@ class PigController extends Controller
             })
             ->when($source !== 'all', function ($query) use ($source) {
                 $query->where('pig_source', $source);
+            })
+            ->when($penFilter !== 'all', function ($query) use ($penFilter) {
+                $query->where('pen_id', $penFilter);
             })
             ->latest()
             ->get();
@@ -87,11 +97,23 @@ class PigController extends Controller
             $deadPigs = collect();
         }
 
-        $destinationPens = Pen::withCount(['activePigs as pigs_count'])
-            ->orderBy('type')
-            ->orderBy('name')
-            ->get();
+        $activePenGroups = $activePigs
+            ->groupBy(fn ($pig) => $pig->pen?->id ? 'pen-' . $pig->pen->id : 'unassigned')
+            ->map(function ($group) {
+                $sample = $group->first();
+                $pen = $sample?->pen;
 
+                return [
+                    'pen' => $pen,
+                    'title' => $pen?->name ?? 'Unassigned',
+                    'type' => $pen?->type,
+                    'pigs' => $group->sortBy(fn ($pig) => strtolower((string) $pig->ear_tag))->values(),
+                ];
+            })
+            ->sortBy(fn ($group) => $group['pen']?->sortKey() ?? '9999-9999-unassigned')
+            ->values();
+
+        $destinationPens = $pensForFilter;
         $reasonOptions = PigTransfer::reasonOptions();
         $pricePerKg = FarmSetting::currentPricePerKg();
 
@@ -100,9 +122,12 @@ class PigController extends Controller
             'soldPigs',
             'deadPigs',
             'archivedPigs',
+            'activePenGroups',
             'search',
             'status',
             'source',
+            'penFilter',
+            'pensForFilter',
             'destinationPens',
             'reasonOptions',
             'pricePerKg'
@@ -112,8 +137,9 @@ class PigController extends Controller
     public function create()
     {
         $pens = Pen::withCount(['activePigs as pigs_count'])
-            ->orderBy('name')
-            ->get();
+            ->get()
+            ->sortBy(fn ($pen) => $pen->sortKey())
+            ->values();
 
         $pricePerKg = FarmSetting::currentPricePerKg();
 
@@ -123,11 +149,13 @@ class PigController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'ear_tag' => ['required', 'unique:pigs,ear_tag'],
-            'breed' => ['required'],
-            'sex' => ['required'],
+            'ear_tag' => ['required', 'string', 'max:255', 'unique:pigs,ear_tag'],
+            'breed' => ['required', 'string', 'max:255'],
+            'sex' => ['required', Rule::in(['male', 'female'])],
             'pen_id' => ['required', 'exists:pens,id'],
-            'pig_source' => ['required'],
+            'pig_source' => ['required', Rule::in(['birthed', 'purchased'])],
+            'age_value' => ['required', 'numeric', 'min:0'],
+            'age_unit' => ['required', Rule::in(['days', 'weeks', 'months'])],
             'date_added' => ['required', 'date'],
             'latest_weight' => ['required', 'numeric', 'min:0'],
         ]);
@@ -137,6 +165,13 @@ class PigController extends Controller
         if ($pen->pigs_count >= $pen->capacity) {
             return back()->withErrors(['pen_id' => 'Pen is FULL'])->withInput();
         }
+
+        $validated['age'] = $this->convertAgeToDays(
+            (float) $validated['age_value'],
+            (string) $validated['age_unit']
+        );
+
+        unset($validated['age_value'], $validated['age_unit']);
 
         $validated['pen_location'] = $pen->name;
         $validated['asset_value'] = (float) $validated['latest_weight'] * FarmSetting::currentPricePerKg();
@@ -245,6 +280,7 @@ class PigController extends Controller
                     'pen_id' => $pen->id,
                     'pen_location' => $pen->name,
                     'pig_source' => 'birthed',
+                    'age' => 0,
                     'mother_sow_id' => $reproductionCycle->sow_id,
                     'reproduction_cycle_id' => $reproductionCycle->id,
                     'date_added' => $birthDate,
@@ -294,11 +330,9 @@ class PigController extends Controller
                 ->with('error', 'Access denied. Type the correct edit code first.');
         }
 
-        $pens = Pen::withCount(['activePigs as pigs_count'])
-            ->orderBy('name')
-            ->get();
+        $pricePerKg = FarmSetting::currentPricePerKg();
 
-        return view('pigs.edit', compact('pig', 'pens'));
+        return view('pigs.edit', compact('pig', 'pricePerKg'));
     }
 
     public function update(Request $request, Pig $pig)
@@ -310,27 +344,30 @@ class PigController extends Controller
         }
 
         $validated = $request->validate([
-            'ear_tag' => ['required', 'unique:pigs,ear_tag,' . $pig->id],
-            'breed' => ['required'],
-            'sex' => ['required'],
-            'pen_id' => ['required', 'exists:pens,id'],
-            'pig_source' => ['required'],
+            'ear_tag' => ['required', 'string', 'max:255', 'unique:pigs,ear_tag,' . $pig->id],
+            'breed' => ['required', 'string', 'max:255'],
+            'sex' => ['required', Rule::in(['male', 'female'])],
+            'pig_source' => ['required', Rule::in(['birthed', 'purchased'])],
+            'age_value' => ['required', 'numeric', 'min:0'],
+            'age_unit' => ['required', Rule::in(['days', 'weeks', 'months'])],
             'date_added' => ['required', 'date'],
             'latest_weight' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $newPen = Pen::withCount(['activePigs as pigs_count'])->findOrFail($validated['pen_id']);
+        $validated['age'] = $this->convertAgeToDays(
+            (float) $validated['age_value'],
+            (string) $validated['age_unit']
+        );
 
-        if ((int) $pig->pen_id !== (int) $newPen->id && $newPen->pigs_count >= $newPen->capacity) {
-            return back()->withErrors(['pen_id' => 'Selected pen is FULL'])->withInput();
-        }
+        unset($validated['age_value'], $validated['age_unit']);
 
-        $validated['pen_location'] = $newPen->name;
+        $validated['pen_id'] = $pig->pen_id;
+        $validated['pen_location'] = $pig->pen?->name ?? $pig->pen_location;
         $validated['asset_value'] = (float) $validated['latest_weight'] * FarmSetting::currentPricePerKg();
 
         $pig->update($validated);
 
-        return redirect()->route('pigs.index')->with('success', 'Pig updated successfully.');
+        return redirect()->route('pigs.show', $pig->id)->with('success', 'Pig updated successfully.');
     }
 
     public function destroy(Pig $pig)
@@ -407,6 +444,17 @@ class PigController extends Controller
         return redirect()
             ->route('pigs.index')
             ->with('success', 'Pig and all related records were permanently removed.');
+    }
+
+    protected function convertAgeToDays(float $value, string $unit): int
+    {
+        $value = max(0, $value);
+
+        return match ($unit) {
+            'weeks' => (int) round($value * 7),
+            'months' => (int) round($value * 30),
+            default => (int) round($value),
+        };
     }
 
     protected function assertCycleCanRegisterBornPiglets(ReproductionCycle $reproductionCycle): void

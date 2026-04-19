@@ -210,6 +210,7 @@
         $weight = is_numeric($pig->computed_weight) ? number_format((float) $pig->computed_weight, 2) : $pig->computed_weight;
         $assetValue = is_numeric($pig->asset_value) ? number_format((float) $pig->asset_value, 2) : $pig->asset_value;
         $penName = $pig->pen?->name ?? '—';
+        $ageDisplay = $pig->age_display;
 
         $isArchived = !is_null($pig->deleted_at);
         $isDead = !$isArchived && $pig->mortalityLogs->isNotEmpty();
@@ -423,6 +424,11 @@
                     </div>
 
                     <div class="form-group">
+                        <label>Age</label>
+                        <input type="text" value="{{ $ageDisplay }}" readonly>
+                    </div>
+
+                    <div class="form-group">
                         <label>Date Added</label>
                         <input type="text" value="{{ $dateAdded }}" readonly>
                     </div>
@@ -436,6 +442,11 @@
                         <label>Asset Value</label>
                         <input type="text" value="₱ {{ $assetValue }}" readonly>
                     </div>
+                </div>
+
+                <div class="flash" style="margin-top: 16px;">
+                    System age is stored in days for schedule-based protocol tracking. Current stored age:
+                    <strong>{{ (int) ($pig->age ?? 0) }} day(s)</strong>.
                 </div>
             </div>
 

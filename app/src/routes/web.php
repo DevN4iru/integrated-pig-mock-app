@@ -164,6 +164,7 @@ Route::delete('/pigs/{pig}/feed-logs/{feedLog}', [FeedLogController::class, 'des
 Route::get('/pens', [PenController::class, 'index'])->name('pens.index');
 Route::get('/pens/create', [PenController::class, 'create'])->name('pens.create');
 Route::post('/pens', [PenController::class, 'store'])->name('pens.store');
+Route::get('/pens/{pen}', [PenController::class, 'show'])->name('pens.show');
 
 Route::get('/pens/{pen}/edit', [PenController::class, 'edit'])->name('pens.edit');
 Route::put('/pens/{pen}', [PenController::class, 'update'])->name('pens.update');
