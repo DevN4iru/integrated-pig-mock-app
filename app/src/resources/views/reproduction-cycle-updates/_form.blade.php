@@ -1,9 +1,6 @@
 @php
-    $today = now()->startOfDay();
-    $todayString = $today->toDateString();
-
     $oldEventType = old('event_type', request('event_type', ''));
-    $oldEventDate = old('event_date', $todayString);
+    $oldEventDate = old('event_date', now()->toDateString());
 
     $projectedExpectedFarrowDate = optional($cycle->expected_farrow_date)->copy()
         ?? optional($cycle->service_date)->copy()?->addDays(114);
@@ -17,7 +14,6 @@
     if (
         $oldEventType === \App\Models\ReproductionCycleUpdate::EVENT_FARROWING_RECORDED
         && $projectedExpectedFarrowDate
-        && $projectedExpectedFarrowDate->lessThanOrEqualTo($today)
     ) {
         $defaultActualFarrowDate = $expectedFarrowDateValue;
     }
@@ -32,7 +28,6 @@
     data-expected-farrow-date="{{ $expectedFarrowDateValue }}"
     data-farrow-window-start="{{ $farrowWindowStartValue }}"
     data-farrow-window-end="{{ $farrowWindowEndValue }}"
-    data-today="{{ $todayString }}"
 >
     @csrf
 
@@ -59,10 +54,9 @@
                 type="date"
                 name="event_date"
                 value="{{ $oldEventDate }}"
-                max="{{ $todayString }}"
                 required
             >
-            <small class="metric-note">This is the system input date. It can be different from the biological farrowing date.</small>
+            <small class="metric-note">Event Date is the timeline date for this update. For farrowing, keep it on the same day as the Actual Farrow Date or later.</small>
             @error('event_date')
                 <div class="error-text">{{ $message }}</div>
             @enderror
@@ -239,8 +233,8 @@
     const expectedFarrowDate = form.dataset.expectedFarrowDate || '';
     const farrowWindowStart = form.dataset.farrowWindowStart || '';
     const farrowWindowEnd = form.dataset.farrowWindowEnd || '';
-    const today = form.dataset.today || '';
 
+    let eventDateTouched = false;
     let actualFarrowDateTouched = actualFarrowDate ? actualFarrowDate.value !== '' : false;
 
     const configs = {
@@ -255,7 +249,7 @@
             notesPlaceholder: 'Describe the observed return-to-heat signs or repeat-service notes.'
         },
         farrowing_recorded: {
-            help: 'Farrowing records only farrowing-specific fields. Actual farrow date can differ from event date because system entry may be delayed.',
+            help: 'Farrowing records only farrowing-specific fields. Actual Farrow Date may differ from Event Date, but it cannot be later than Event Date on submit.',
             notesLabel: 'Farrowing Notes',
             notesPlaceholder: 'Add farrowing observations, complications, or post-farrow notes.'
         },
@@ -323,25 +317,27 @@
             return;
         }
 
-        const expectedIsUsableDefault = expectedFarrowDate && (!today || expectedFarrowDate <= today);
+        if (!eventDateTouched && expectedFarrowDate && eventDate && (!eventDate.value || eventDate.value < expectedFarrowDate)) {
+            eventDate.value = expectedFarrowDate;
+        }
 
         if (actualFarrowWindowNote) {
             actualFarrowWindowNote.style.display = '';
 
-            if (expectedFarrowDate && today && expectedFarrowDate > today) {
+            if (expectedFarrowDate && farrowWindowStart && farrowWindowEnd) {
                 actualFarrowWindowNote.textContent =
-                    `Projected expected farrow date is ${expectedFarrowDate}, which is still in the future, so no default actual farrow date is prefilled yet. Calendar stays fully editable for testing. Allowed biological fallback window: ${farrowWindowStart || '—'} to ${farrowWindowEnd || '—'}. Backend validation still applies on submit.`;
-            } else if (farrowWindowStart && farrowWindowEnd) {
+                    `Default actual farrow date is set from the computed expected farrow date (${expectedFarrowDate}). Allowed biological fallback window: ${farrowWindowStart} to ${farrowWindowEnd}. You may edit both dates, but Actual Farrow Date cannot be later than Event Date on submit.`;
+            } else if (expectedFarrowDate) {
                 actualFarrowWindowNote.textContent =
-                    `Allowed biological fallback window: ${farrowWindowStart} to ${farrowWindowEnd}. Calendar stays fully editable. Backend validation still applies on submit.`;
+                    `Default actual farrow date is set from the computed expected farrow date (${expectedFarrowDate}). You may edit both dates, but Actual Farrow Date cannot be later than Event Date on submit.`;
             } else {
                 actualFarrowWindowNote.textContent =
-                    'Actual farrow date can be entered manually. Calendar stays fully editable. Backend validation still applies on submit.';
+                    'Actual Farrow Date may be entered manually. You may edit both dates, but Actual Farrow Date cannot be later than Event Date on submit.';
             }
         }
 
         if (!actualFarrowDateTouched) {
-            actualFarrowDate.value = expectedIsUsableDefault ? expectedFarrowDate : '';
+            actualFarrowDate.value = expectedFarrowDate || '';
         }
     }
 
@@ -392,6 +388,16 @@
 
         showPregnancyPreview(selected);
         syncActualFarrowDate();
+    }
+
+    if (eventDate) {
+        eventDate.addEventListener('input', function () {
+            eventDateTouched = true;
+        });
+
+        eventDate.addEventListener('change', function () {
+            eventDateTouched = true;
+        });
     }
 
     if (actualFarrowDate) {
