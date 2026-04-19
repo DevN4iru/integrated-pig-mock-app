@@ -17,6 +17,7 @@ class Pig extends Model
         'pen_id',
         'pen_location',
         'pig_source',
+        'age',
         'mother_sow_id',
         'reproduction_cycle_id',
         'date_added',
@@ -24,9 +25,14 @@ class Pig extends Model
         'asset_value',
     ];
 
+    protected $casts = [
+        'age' => 'integer',
+    ];
+
     protected $appends = [
         'computed_weight',
         'computed_asset_value',
+        'age_display',
         'weight_gain',
         'daily_gain',
         'growth_status',
@@ -201,6 +207,29 @@ class Pig extends Model
         }
 
         return (float) $weight * FarmSetting::currentPricePerKg();
+    }
+
+    public function getAgeDisplayAttribute(): string
+    {
+        $days = (int) ($this->age ?? 0);
+
+        if ($days <= 0) {
+            return '0 days';
+        }
+
+        if ($days < 14) {
+            return $days . ' day' . ($days === 1 ? '' : 's');
+        }
+
+        if ($days < 60) {
+            $weeks = $days / 7;
+
+            return $days . ' days (~' . number_format($weeks, 1) . ' weeks)';
+        }
+
+        $months = $days / 30;
+
+        return $days . ' days (~' . number_format($months, 1) . ' months)';
     }
 
     public function getWeightGainAttribute()
