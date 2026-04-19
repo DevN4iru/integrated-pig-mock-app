@@ -1,33 +1,20 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('pigs', function (Blueprint $table) {
-            $table->foreignId('mother_sow_id')
-                ->nullable()
-                ->after('pig_source')
-                ->constrained('pigs')
-                ->nullOnDelete();
-
-            $table->foreignId('reproduction_cycle_id')
-                ->nullable()
-                ->after('mother_sow_id')
-                ->constrained('reproduction_cycles')
-                ->nullOnDelete();
-        });
+        // Historical placeholder.
+        // Birth lineage columns are handled by:
+        // 2026_04_16_163500_add_birth_lineage_to_pigs_table
     }
 
     public function down(): void
     {
-        Schema::table('pigs', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('reproduction_cycle_id');
-            $table->dropConstrainedForeignId('mother_sow_id');
-        });
+        // Intentionally left empty.
+        // Birth lineage rollback is owned by:
+        // 2026_04_16_163500_add_birth_lineage_to_pigs_table
     }
 };

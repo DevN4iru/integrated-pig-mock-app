@@ -38,15 +38,18 @@ class ReproductionCycleUpdateController extends Controller
 
         $validated = $request->validate([
             'event_type' => ['required', Rule::in(array_keys(ReproductionCycleUpdate::eventOptions()))],
-            'event_date' => ['required', 'date', 'after_or_equal:' . $minimumEventDate, 'before_or_equal:today'],
+            'event_date' => ['required', 'date', 'after_or_equal:' . $minimumEventDate],
             'pregnancy_result' => ['nullable', Rule::in(array_keys(ReproductionCycle::pregnancyResultOptions()))],
-            'actual_farrow_date' => ['nullable', 'date', 'after_or_equal:' . $reproductionCycle->service_date->toDateString(), 'before_or_equal:today'],
+            'actual_farrow_date' => ['nullable', 'date', 'after_or_equal:' . $reproductionCycle->service_date->toDateString()],
             'total_born' => ['nullable', 'integer', 'min:0'],
             'born_alive' => ['nullable', 'integer', 'min:0'],
             'stillborn' => ['nullable', 'integer', 'min:0'],
             'mummified' => ['nullable', 'integer', 'min:0'],
             'added_cost' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
+        ], [
+            'event_date.after_or_equal' => 'Event date cannot be earlier than the latest breeding timeline entry.',
+            'actual_farrow_date.after_or_equal' => 'Actual farrowing date cannot be earlier than the service date.',
         ]);
 
         $errors = [];
@@ -116,7 +119,7 @@ class ReproductionCycleUpdateController extends Controller
                     && !empty($validated['event_date'])
                     && Carbon::parse($validated['actual_farrow_date'])->greaterThan(Carbon::parse($validated['event_date']))
                 ) {
-                    $errors['actual_farrow_date'] = 'Actual farrowing date cannot be later than the event date recorded in the system.';
+                    $errors['actual_farrow_date'] = 'Actual farrowing date cannot be later than the event date. If you are testing with a future farrow date, move the event date to the same day or a later day.';
                 }
 
                 $windowStart = $this->farrowWindowStart($reproductionCycle);
