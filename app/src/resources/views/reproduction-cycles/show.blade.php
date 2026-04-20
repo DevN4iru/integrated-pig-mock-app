@@ -275,8 +275,18 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Total Breeding Cost</label>
+                        <label>Total Semen Cost</label>
+                        <input type="text" value="₱ {{ number_format((float) $cycle->total_semen_cost, 2) }}" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Total Service / Handling Cost</label>
                         <input type="text" value="₱ {{ number_format((float) $cycle->breeding_cost, 2) }}" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Total Breeding Exposure</label>
+                        <input type="text" value="₱ {{ number_format((float) $cycle->total_breeding_exposure, 2) }}" readonly>
                     </div>
 
                     <div class="form-group">
@@ -308,7 +318,7 @@
                     </div>
 
                     <div class="flow-note">
-                        Farrowing records only farrowing-specific fields, while actual farrow date stays separate from event date to support delayed user input in real farm operation.
+                        Breeding exposure now follows this rule: <strong>service / handling cost + semen cost</strong>. Progress-update added cost is only the service-side cost, while semen stays tied to service-attempt setup.
                     </div>
 
                     @if($canStartNextAttempt)
@@ -478,7 +488,7 @@
                                 </div>
 
                                 <div class="timeline-field">
-                                    <label>Added Cost</label>
+                                    <label>Added Service Cost</label>
                                     <div>₱ {{ number_format((float) ($update->added_cost ?? 0), 2) }}</div>
                                 </div>
 

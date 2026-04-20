@@ -20,7 +20,7 @@ class DashboardController extends Controller
             'medications',
             'vaccinations',
             'healthLogs',
-            'reproductionCyclesAsSow',
+            'reproductionCyclesAsSow.updates',
         ])->get();
 
         $buildWeightLogs = function ($pig) {

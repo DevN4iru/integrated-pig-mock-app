@@ -71,6 +71,8 @@ class ReproductionCycle extends Model
         'is_due_soon',
         'current_attempt_number',
         'total_attempts',
+        'total_semen_cost',
+        'total_breeding_exposure',
     ];
 
     public function sow()
@@ -258,6 +260,28 @@ class ReproductionCycle extends Model
         return $this->current_attempt_number;
     }
 
+    public function getTotalSemenCostAttribute(): float
+    {
+        if (!$this->supportsAttemptMetadata()) {
+            return (float) ($this->semen_cost ?? 0);
+        }
+
+        if ($this->relationLoaded('updates')) {
+            return (float) $this->updates
+                ->filter(fn ($update) => $update->event_type === ReproductionCycleUpdate::EVENT_SERVICE_STARTED)
+                ->sum(fn ($update) => (float) ($update->semen_cost ?? 0));
+        }
+
+        return (float) $this->updates()
+            ->where('event_type', ReproductionCycleUpdate::EVENT_SERVICE_STARTED)
+            ->sum('semen_cost');
+    }
+
+    public function getTotalBreedingExposureAttribute(): float
+    {
+        return (float) ($this->breeding_cost ?? 0) + (float) $this->total_semen_cost;
+    }
+
     protected function resolveDisplayStatus(): string
     {
         if (
@@ -279,7 +303,7 @@ class ReproductionCycle extends Model
         return $this->status;
     }
 
-    protected function supportsAttemptMetadata(): bool
+    public function supportsAttemptMetadata(): bool
     {
         return Schema::hasColumn('reproduction_cycle_updates', 'attempt_number');
     }
