@@ -8,6 +8,7 @@ class Medication extends Model
 {
     protected $fillable = [
         'pig_id',
+        'protocol_execution_id',
         'medication_name',
         'dosage',
         'cost',
@@ -22,5 +23,10 @@ class Medication extends Model
     public function pig()
     {
         return $this->belongsTo(Pig::class);
+    }
+
+    public function protocolExecution()
+    {
+        return $this->belongsTo(ProtocolExecution::class, 'protocol_execution_id');
     }
 }

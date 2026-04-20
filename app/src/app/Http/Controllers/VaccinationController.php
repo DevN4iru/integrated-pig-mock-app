@@ -92,6 +92,12 @@ class VaccinationController extends Controller
                 ->with('error', $pig->operationalLockMessage('vaccination records'));
         }
 
+        if ($vaccination->protocol_execution_id) {
+            return redirect()
+                ->route('pigs.show', $pig->id)
+                ->with('error', 'This vaccination record is linked to a protocol completion and cannot be deleted directly. Update the protocol item instead.');
+        }
+
         $vaccination->delete();
 
         return redirect()

@@ -34,6 +34,16 @@ class ProtocolExecution extends Model
         return $this->belongsTo(ProtocolRule::class, 'protocol_rule_id');
     }
 
+    public function medication()
+    {
+        return $this->hasOne(Medication::class, 'protocol_execution_id');
+    }
+
+    public function vaccination()
+    {
+        return $this->hasOne(Vaccination::class, 'protocol_execution_id');
+    }
+
     public static function statusOptions(): array
     {
         return [
