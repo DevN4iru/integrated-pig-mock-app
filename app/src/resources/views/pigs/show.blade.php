@@ -433,11 +433,91 @@
     margin-top: 10px;
 }
 
+.protocol-history-panel {
+    border: 2px solid #cfd9e8;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    padding: 16px;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04);
+}
+
+.protocol-history-list {
+    display: grid;
+    gap: 12px;
+}
+
+.protocol-history-item {
+    border: 2px solid #d6e0ee;
+    border-radius: 16px;
+    padding: 14px;
+    background: #ffffff;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+}
+
+.protocol-history-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.protocol-history-title {
+    font-weight: 800;
+    font-size: 16px;
+    color: #0f172a;
+    margin-bottom: 8px;
+}
+
+.protocol-history-meta {
+    display: grid;
+    gap: 5px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.protocol-history-meta strong {
+    color: #334155;
+}
+
+.protocol-history-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.protocol-history-cell {
+    border: 2px solid #d6e0ee;
+    border-radius: 12px;
+    padding: 10px;
+    background: #f8fbff;
+    font-size: 12px;
+    color: #475569;
+}
+
+.protocol-history-cell strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #334155;
+}
+
+.protocol-history-active-note {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--orange-soft);
+    color: var(--orange);
+    font-size: 12px;
+    font-weight: 700;
+}
+
 @media (max-width: 1200px) {
     .profile-grid-two,
     .profile-grid-half,
     .protocol-grid,
-    .protocol-summary-grid {
+    .protocol-summary-grid,
+    .protocol-history-grid {
         grid-template-columns: 1fr;
     }
 
@@ -452,7 +532,13 @@
         use App\Models\ProtocolExecution;
         use App\Models\ReproductionCycle;
 
-        $pig->loadMissing(['pen', 'reproductionCyclesAsSow.boar']);
+        $pig->loadMissing([
+            'pen',
+            'reproductionCyclesAsSow.boar',
+            'protocolExecutions.rule.template',
+            'protocolExecutions.medication',
+            'protocolExecutions.vaccination',
+        ]);
 
         $dateAdded = $pig->date_added ? substr((string) $pig->date_added, 0, 10) : '—';
         $weight = is_numeric($pig->computed_weight) ? number_format((float) $pig->computed_weight, 2) : $pig->computed_weight;
@@ -626,6 +712,7 @@
         $protocolDueToday = collect($protocol['due_today'] ?? []);
         $protocolUpcoming = collect($protocol['upcoming'] ?? []);
         $protocolOverdue = collect($protocol['overdue'] ?? []);
+        $protocolExecutionHistory = collect($pig->protocol_execution_history ?? []);
     @endphp
 
     <div class="profile-stack">
@@ -1018,6 +1105,113 @@
                                                 @endif
                                             </div>
                                         @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+        </div>
+
+        <div class="panel-card">
+            <div class="section-title">
+                <div>
+                    <h3>Protocol Execution History</h3>
+                    <p>Recorded protocol execution outcomes for this pig, including resolved occurrences and linked detailed administration records.</p>
+                </div>
+                <span class="badge blue">{{ $protocolExecutionHistory->count() }}</span>
+            </div>
+
+            @if($protocolExecutionHistory->isEmpty())
+                <div class="empty-state">No protocol execution history yet.</div>
+            @else
+                <div class="protocol-history-panel">
+                    <div class="protocol-history-list">
+                        @foreach($protocolExecutionHistory as $entry)
+                            @php
+                                $historyStatusClass = $entry['status'] ?? 'pending';
+                                $isMedicationHistory = ($entry['type'] ?? null) === 'medication';
+                                $isVaccinationHistory = ($entry['type'] ?? null) === 'vaccination';
+                                $isDetailedHistory = $isMedicationHistory || $isVaccinationHistory;
+                            @endphp
+
+                            <div class="protocol-history-item">
+                                <div class="protocol-history-head">
+                                    <div>
+                                        <div class="protocol-history-title">{{ $entry['action'] ?: 'Protocol Occurrence' }}</div>
+                                        <div class="protocol-history-meta">
+                                            <div><strong>Template:</strong> {{ $entry['template_code'] ?: '—' }}</div>
+                                            <div><strong>Type:</strong> {{ $entry['type'] ? ucfirst(str_replace('_', ' ', $entry['type'])) : '—' }}</div>
+                                            <div><strong>Requirement:</strong> {{ $entry['requirement'] ? ucfirst($entry['requirement']) : '—' }}</div>
+                                            <div><strong>Scheduled For:</strong> {{ $entry['scheduled_for_date'] ?: '—' }}</div>
+                                            <div><strong>Executed Date:</strong> {{ $entry['executed_date'] ?: '—' }}</div>
+                                            <div><strong>Protocol Notes:</strong> {{ $entry['notes'] ?: '—' }}</div>
+                                        </div>
+                                    </div>
+
+                                    <span class="badge protocol-status-badge {{ $historyStatusClass }}">
+                                        {{ $entry['status_label'] ?? ucfirst((string) ($entry['status'] ?? 'pending')) }}
+                                    </span>
+                                </div>
+
+                                <div class="protocol-history-grid">
+                                    <div class="protocol-history-cell">
+                                        <strong>Recommended Product</strong>
+                                        {{ $entry['product_note'] ?: '—' }}
+                                    </div>
+
+                                    <div class="protocol-history-cell">
+                                        <strong>Recommended Dosage</strong>
+                                        {{ $entry['dosage_note'] ?: '—' }}
+                                    </div>
+
+                                    <div class="protocol-history-cell">
+                                        <strong>Administration Note</strong>
+                                        {{ $entry['administration_note'] ?: '—' }}
+                                    </div>
+
+                                    <div class="protocol-history-cell">
+                                        <strong>Alternative / Market Note</strong>
+                                        {{ $entry['market_note'] ?: '—' }}
+                                    </div>
+
+                                    <div class="protocol-history-cell">
+                                        <strong>Condition</strong>
+                                        {{ $entry['condition_note'] ?: '—' }}
+                                    </div>
+
+                                    <div class="protocol-history-cell">
+                                        <strong>Linked Detailed Record</strong>
+                                        {{ $entry['has_linked_admin_log'] ? 'Yes' : 'No' }}
+                                    </div>
+
+                                    @if($isDetailedHistory)
+                                        <div class="protocol-history-cell">
+                                            <strong>Actual Product Used</strong>
+                                            {{ $entry['actual_product_name'] ?: '—' }}
+                                        </div>
+
+                                        <div class="protocol-history-cell">
+                                            <strong>Actual Dose / Dosage</strong>
+                                            {{ $entry['actual_dose'] ?: '—' }}
+                                        </div>
+
+                                        <div class="protocol-history-cell">
+                                            <strong>Actual Cost</strong>
+                                            {{ $entry['actual_cost'] !== null ? '₱ ' . number_format((float) $entry['actual_cost'], 2) : '—' }}
+                                        </div>
+
+                                        <div class="protocol-history-cell">
+                                            <strong>Actual Notes</strong>
+                                            {{ $entry['actual_notes'] ?: '—' }}
+                                        </div>
+                                    @endif
+                                </div>
+
+                                @if(($entry['status'] ?? null) === ProtocolExecution::STATUS_DEFERRED)
+                                    <div class="protocol-history-active-note">
+                                        This occurrence is deferred and remains unresolved, so it can still appear in the active schedule buckets.
                                     </div>
                                 @endif
                             </div>

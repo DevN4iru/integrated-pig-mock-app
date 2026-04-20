@@ -310,6 +310,10 @@ class PigController extends Controller
                 'transfers.toPen',
                 'motherSow',
                 'birthCycle',
+                'reproductionCyclesAsSow.boar',
+                'protocolExecutions.rule.template',
+                'protocolExecutions.medication',
+                'protocolExecutions.vaccination',
             ])
             ->findOrFail($pig);
 
