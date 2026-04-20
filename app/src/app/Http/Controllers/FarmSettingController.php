@@ -39,16 +39,27 @@ class FarmSettingController extends Controller
             $setting->update($validated);
         }
 
-        // 🔥 PHASE 2: RECOMPUTE ALL PIG ASSET VALUES
         $pricePerKg = (float) $validated['price_per_kg'];
 
-        Pig::query()->chunk(100, function ($pigs) use ($pricePerKg) {
-            foreach ($pigs as $pig) {
-                $weight = (float) $pig->latest_weight;
-                $pig->asset_value = $weight * $pricePerKg;
-                $pig->save();
-            }
-        });
+        Pig::query()
+            ->with(['healthLogs' => function ($query) {
+                $query->where('purpose', 'weight_update')
+                    ->whereNotNull('weight')
+                    ->orderByDesc('log_date')
+                    ->orderByDesc('id');
+            }])
+            ->chunk(100, function ($pigs) use ($pricePerKg) {
+                foreach ($pigs as $pig) {
+                    $latestWeightLog = $pig->healthLogs->first();
+
+                    $weight = $latestWeightLog
+                        ? (float) $latestWeightLog->weight
+                        : (float) ($pig->latest_weight ?? 0);
+
+                    $pig->asset_value = $weight * $pricePerKg;
+                    $pig->save();
+                }
+            });
 
         return redirect()
             ->route('settings.farm.edit')
