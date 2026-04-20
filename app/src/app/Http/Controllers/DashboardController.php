@@ -30,6 +30,13 @@ class DashboardController extends Controller
                 ->values();
         };
 
+        $buildAscendingWeightLogs = function ($pig) {
+            return $pig->healthLogs
+                ->filter(fn ($log) => $log->purpose === 'weight_update' && $log->weight !== null)
+                ->sortBy(fn ($log) => sprintf('%s-%010d', (string) ($log->log_date ?? ''), (int) $log->id))
+                ->values();
+        };
+
         $buildMetrics = function ($pig) use ($buildWeightLogs) {
             $weightLogs = $buildWeightLogs($pig);
             $latestLog = $weightLogs->get(0);
@@ -88,6 +95,21 @@ class DashboardController extends Controller
             ];
         };
 
+        $buildPositiveLogOnlyGain = function ($pig) use ($buildAscendingWeightLogs) {
+            $logs = $buildAscendingWeightLogs($pig);
+
+            if ($logs->count() < 2) {
+                return null;
+            }
+
+            $firstLog = $logs->first();
+            $latestLog = $logs->last();
+
+            $gain = (float) $latestLog->weight - (float) $firstLog->weight;
+
+            return $gain > 0 ? $gain : null;
+        };
+
         foreach ($pigs as $pig) {
             $metrics = $buildMetrics($pig);
 
@@ -103,9 +125,9 @@ class DashboardController extends Controller
         $soldPigs = $pigs->filter(fn ($pig) => $pig->sales->isNotEmpty());
         $deadPigs = $pigs->filter(fn ($pig) => $pig->mortalityLogs->isNotEmpty());
 
-        $totalAssetValue = (float) $livePigs->sum('asset_value');
+        $totalAssetValue = (float) $livePigs->sum(fn ($pig) => (float) $pig->computed_asset_value);
         $totalRevenue = (float) $soldPigs->flatMap->sales->sum('price');
-        $totalLossValue = (float) $deadPigs->sum('asset_value');
+        $totalLossValue = (float) $deadPigs->sum(fn ($pig) => (float) $pig->computed_asset_value);
 
         $totalFeedCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_feed_cost);
         $totalMedicationCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_medication_cost);
@@ -116,11 +138,13 @@ class DashboardController extends Controller
 
         $netPosition = $totalAssetValue + $totalRevenue - $totalLossValue - $totalOperatingCost;
 
-        $positiveGainPigs = $pigs->filter(fn ($pig) => $pig->feed_efficiency !== null);
+        $positiveGainPigs = $pigs->filter(function ($pig) use ($buildPositiveLogOnlyGain) {
+            return $pig->total_feed_kg > 0 && $buildPositiveLogOnlyGain($pig) !== null;
+        });
 
         $totalFeedKgForEfficiency = (float) $positiveGainPigs->sum(fn ($pig) => (float) $pig->total_feed_kg);
-        $totalGainForEfficiency = (float) $positiveGainPigs->sum(function ($pig) {
-            return max(0, (float) $pig->dashboard_computed_weight - (float) $pig->latest_weight);
+        $totalGainForEfficiency = (float) $positiveGainPigs->sum(function ($pig) use ($buildPositiveLogOnlyGain) {
+            return (float) ($buildPositiveLogOnlyGain($pig) ?? 0);
         });
 
         $farmFeedEfficiency = $totalFeedKgForEfficiency > 0 && $totalGainForEfficiency > 0

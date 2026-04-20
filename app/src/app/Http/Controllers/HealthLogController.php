@@ -51,7 +51,7 @@ class HealthLogController extends Controller
         return $validated;
     }
 
-    private function syncPigAssetSnapshot(Pig $pig): void
+    private function syncPigWeightAndAssetSnapshots(Pig $pig): void
     {
         $latestWeightLog = $pig->healthLogs()
             ->where('purpose', 'weight_update')
@@ -60,9 +60,12 @@ class HealthLogController extends Controller
             ->orderByDesc('id')
             ->first();
 
-        $currentWeight = $latestWeightLog?->weight ?? $pig->latest_weight ?? 0;
+        $currentWeight = $latestWeightLog
+            ? (float) $latestWeightLog->weight
+            : 0.0;
 
-        $pig->asset_value = (float) $currentWeight * FarmSetting::currentPricePerKg();
+        $pig->latest_weight = $currentWeight;
+        $pig->asset_value = $currentWeight * FarmSetting::currentPricePerKg();
         $pig->save();
     }
 
@@ -90,7 +93,7 @@ class HealthLogController extends Controller
 
         DB::transaction(function () use ($validated, $pig): void {
             HealthLog::create($validated);
-            $this->syncPigAssetSnapshot($pig->fresh());
+            $this->syncPigWeightAndAssetSnapshots($pig->fresh());
         });
 
         return redirect()
@@ -125,7 +128,7 @@ class HealthLogController extends Controller
 
         DB::transaction(function () use ($validated, $healthLog, $pig): void {
             $healthLog->update($validated);
-            $this->syncPigAssetSnapshot($pig->fresh());
+            $this->syncPigWeightAndAssetSnapshots($pig->fresh());
         });
 
         return redirect()
@@ -145,7 +148,7 @@ class HealthLogController extends Controller
 
         DB::transaction(function () use ($healthLog, $pig): void {
             $healthLog->delete();
-            $this->syncPigAssetSnapshot($pig->fresh());
+            $this->syncPigWeightAndAssetSnapshots($pig->fresh());
         });
 
         return redirect()
