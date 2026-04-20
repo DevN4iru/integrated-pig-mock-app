@@ -319,6 +319,80 @@ class Pig extends Model
         ];
     }
 
+    public function getProtocolExecutionHistoryAttribute(): array
+    {
+        if ($this->relationLoaded('protocolExecutions')) {
+            $executions = $this->protocolExecutions;
+            $executions->loadMissing(['rule.template', 'medication', 'vaccination']);
+        } else {
+            $executions = $this->protocolExecutions()
+                ->with(['rule.template', 'medication', 'vaccination'])
+                ->orderByDesc('scheduled_for_date')
+                ->orderByDesc('id')
+                ->get();
+        }
+
+        return $executions
+            ->sortByDesc(fn ($execution) => sprintf(
+                '%s-%010d',
+                optional($execution->scheduled_for_date)->format('Y-m-d') ?? (string) $execution->scheduled_for_date,
+                (int) $execution->id
+            ))
+            ->values()
+            ->map(function ($execution) {
+                $rule = $execution->rule;
+                $linkedMedication = $execution->medication;
+                $linkedVaccination = $execution->vaccination;
+
+                $actualProductName = null;
+                $actualDose = null;
+                $actualCost = null;
+                $actualNotes = null;
+
+                if ($rule?->action_type === ProtocolRule::ACTION_MEDICATION && $linkedMedication) {
+                    $actualProductName = $linkedMedication->medication_name;
+                    $actualDose = $linkedMedication->dosage;
+                    $actualCost = (float) $linkedMedication->cost;
+                    $actualNotes = $linkedMedication->notes;
+                }
+
+                if ($rule?->action_type === ProtocolRule::ACTION_VACCINATION && $linkedVaccination) {
+                    $actualProductName = $linkedVaccination->vaccine_name;
+                    $actualDose = $linkedVaccination->dose;
+                    $actualCost = (float) $linkedVaccination->cost;
+                    $actualNotes = $linkedVaccination->notes;
+                }
+
+                return [
+                    'execution_id' => $execution->id,
+                    'rule_id' => $execution->protocol_rule_id,
+                    'template_code' => $rule?->template?->code,
+                    'action' => $rule?->action_name ?? '—',
+                    'type' => $rule?->action_type,
+                    'requirement' => $rule?->requirement_level,
+                    'scheduled_for_date' => $execution->scheduled_for_date?->toDateString(),
+                    'status' => $execution->status,
+                    'status_label' => $execution->status_label,
+                    'executed_date' => $execution->executed_date?->toDateString(),
+                    'notes' => $execution->notes,
+
+                    'product_note' => $rule?->product_note,
+                    'dosage_note' => $rule?->dosage_note,
+                    'administration_note' => $rule?->administration_note,
+                    'market_note' => $rule?->market_note,
+                    'condition_note' => $rule?->condition_note,
+
+                    'actual_product_name' => $actualProductName,
+                    'actual_dose' => $actualDose,
+                    'actual_cost' => $actualCost,
+                    'actual_notes' => $actualNotes,
+                    'has_linked_admin_log' => (bool) ($linkedMedication || $linkedVaccination),
+                    'is_resolved' => $execution->isResolved(),
+                ];
+            })
+            ->all();
+    }
+
     protected function relationHasAny(string $relation): bool
     {
         if ($this->relationLoaded($relation)) {
