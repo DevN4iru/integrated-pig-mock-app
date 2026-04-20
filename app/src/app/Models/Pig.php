@@ -191,9 +191,14 @@ class Pig extends Model
 
     protected function protocolExecutionMap(): array
     {
-        $executions = $this->relationLoaded('protocolExecutions')
-            ? $this->protocolExecutions
-            : $this->protocolExecutions()->get();
+        if ($this->relationLoaded('protocolExecutions')) {
+            $executions = $this->protocolExecutions;
+            $executions->loadMissing(['medication', 'vaccination']);
+        } else {
+            $executions = $this->protocolExecutions()
+                ->with(['medication', 'vaccination'])
+                ->get();
+        }
 
         $map = [];
 
@@ -249,6 +254,28 @@ class Pig extends Model
                 continue;
             }
 
+            $linkedMedication = $execution?->medication;
+            $linkedVaccination = $execution?->vaccination;
+
+            $actualProductName = null;
+            $actualDose = null;
+            $actualCost = null;
+            $actualNotes = null;
+
+            if ($rule->action_type === ProtocolRule::ACTION_MEDICATION && $linkedMedication) {
+                $actualProductName = $linkedMedication->medication_name;
+                $actualDose = $linkedMedication->dosage;
+                $actualCost = (float) $linkedMedication->cost;
+                $actualNotes = $linkedMedication->notes;
+            }
+
+            if ($rule->action_type === ProtocolRule::ACTION_VACCINATION && $linkedVaccination) {
+                $actualProductName = $linkedVaccination->vaccine_name;
+                $actualDose = $linkedVaccination->dose;
+                $actualCost = (float) $linkedVaccination->cost;
+                $actualNotes = $linkedVaccination->notes;
+            }
+
             $row = [
                 'rule_id' => $rule->id,
                 'action' => $rule->action_name,
@@ -256,11 +283,22 @@ class Pig extends Model
                 'requirement' => $rule->requirement_level,
                 'due_start' => $start->toDateString(),
                 'due_end' => $end->toDateString(),
+
                 'product_note' => $rule->product_note,
+                'dosage_note' => $rule->dosage_note,
+                'administration_note' => $rule->administration_note,
+                'market_note' => $rule->market_note,
                 'condition_note' => $rule->condition_note,
+
                 'execution_status' => $execution?->status,
                 'executed_date' => $execution?->executed_date?->toDateString(),
                 'execution_notes' => $execution?->notes,
+
+                'actual_product_name' => $actualProductName ?? $rule->product_note,
+                'actual_dose' => $actualDose ?? $rule->dosage_note,
+                'actual_cost' => $actualCost,
+                'actual_notes' => $actualNotes,
+                'has_linked_admin_log' => (bool) ($linkedMedication || $linkedVaccination),
             ];
 
             if ($today->between($start, $end)) {

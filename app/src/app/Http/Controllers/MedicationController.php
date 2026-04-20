@@ -92,6 +92,12 @@ class MedicationController extends Controller
                 ->with('error', $pig->operationalLockMessage('medication records'));
         }
 
+        if ($medication->protocol_execution_id) {
+            return redirect()
+                ->route('pigs.show', $pig->id)
+                ->with('error', 'This medication record is linked to a protocol completion and cannot be deleted directly. Update the protocol item instead.');
+        }
+
         $medication->delete();
 
         return redirect()

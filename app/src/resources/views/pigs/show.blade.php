@@ -192,9 +192,256 @@
     font-size: 12px;
 }
 
+.protocol-grid {
+    display: grid;
+    grid-template-columns: 360px minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+}
+
+.protocol-summary-panel {
+    border: 2px solid #cfd9e8;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    padding: 16px;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04);
+}
+
+.protocol-summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.protocol-count-card {
+    border: 2px solid #d6e0ee;
+    border-radius: 14px;
+    background: #ffffff;
+    padding: 12px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.65);
+}
+
+.protocol-count-card label {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+.protocol-count-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.protocol-anchor-note {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.protocol-columns {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+.protocol-column {
+    border: 2px solid #cfd9e8;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    padding: 14px;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04);
+}
+
+.protocol-column.protocol-due-today {
+    border-color: #f3c5c5;
+}
+
+.protocol-column.protocol-upcoming {
+    border-color: #bfd2ff;
+}
+
+.protocol-column.protocol-overdue {
+    border-color: #f3d5a4;
+}
+
+.protocol-column h4 {
+    margin: 0 0 10px;
+    font-size: 15px;
+}
+
+.protocol-list {
+    display: grid;
+    gap: 12px;
+}
+
+.protocol-item {
+    border: 2px solid #d6e0ee;
+    border-radius: 16px;
+    padding: 14px;
+    background: #ffffff;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+}
+
+.protocol-item-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.protocol-item-title {
+    font-weight: 800;
+    font-size: 16px;
+    color: #0f172a;
+}
+
+.protocol-meta {
+    display: grid;
+    gap: 5px;
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 10px;
+}
+
+.protocol-meta strong {
+    color: #334155;
+}
+
+.protocol-empty {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.protocol-form {
+    margin-top: 10px;
+    padding: 12px;
+    border: 2px solid #d6e0ee;
+    border-radius: 14px;
+    background: #f8fbff;
+}
+
+.protocol-form .form-group {
+    margin-bottom: 10px;
+}
+
+.protocol-form label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.protocol-form input,
+.protocol-form select,
+.protocol-form textarea {
+    width: 100% !important;
+    min-width: 0;
+    border: 2px solid #c9d5e7 !important;
+    border-radius: 10px;
+    background: #ffffff !important;
+    box-sizing: border-box;
+}
+
+.protocol-form textarea {
+    resize: vertical;
+}
+
+.protocol-action-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.protocol-action-submit {
+    margin-top: 4px;
+}
+
+.protocol-action-submit .btn {
+    width: 100%;
+    justify-content: center;
+}
+
+.protocol-note {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.protocol-status-badge.pending {
+    background: #eef2ff;
+    color: #4f46e5;
+    border: 1px solid #c7d2fe;
+}
+
+.protocol-status-badge.completed {
+    background: var(--green-soft);
+    color: var(--green);
+    border: 1px solid #bde7cb;
+}
+
+.protocol-status-badge.skipped {
+    background: var(--red-soft);
+    color: var(--red);
+    border: 1px solid #f4c4c4;
+}
+
+.protocol-status-badge.deferred {
+    background: var(--orange-soft);
+    color: var(--orange);
+    border: 1px solid #f5d6a4;
+}
+
+.protocol-bucket-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: -4px;
+    margin-bottom: 10px;
+}
+
+.protocol-guide-box {
+    margin-top: 10px;
+    padding: 12px;
+    border: 2px dashed #c9d5e7;
+    border-radius: 14px;
+    background: #f8fbff;
+}
+
+.protocol-guide-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: #334155;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.protocol-guide-grid {
+    display: grid;
+    gap: 5px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.protocol-guide-grid strong {
+    color: #334155;
+}
+
+.protocol-inline-error {
+    margin-top: 10px;
+}
+
 @media (max-width: 1200px) {
     .profile-grid-two,
-    .profile-grid-half {
+    .profile-grid-half,
+    .protocol-grid,
+    .protocol-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .protocol-action-row {
         grid-template-columns: 1fr;
     }
 }
@@ -202,6 +449,7 @@
 
 @section('content')
     @php
+        use App\Models\ProtocolExecution;
         use App\Models\ReproductionCycle;
 
         $pig->loadMissing(['pen', 'reproductionCyclesAsSow.boar']);
@@ -371,6 +619,13 @@
                 default => 'orange',
             };
         };
+
+        $protocol = $pig->protocol_summary;
+        $protocolTemplateCode = $protocol['template_code'] ?? null;
+        $protocolAnchorDate = $protocol['anchor_date'] ?? null;
+        $protocolDueToday = collect($protocol['due_today'] ?? []);
+        $protocolUpcoming = collect($protocol['upcoming'] ?? []);
+        $protocolOverdue = collect($protocol['overdue'] ?? []);
     @endphp
 
     <div class="profile-stack">
@@ -487,6 +742,291 @@
             </div>
         </div>
 
+        <div class="panel-card">
+            <div class="section-title">
+                <div>
+                    <h3>Protocol Schedule</h3>
+                    <p>Template, anchor date, and current due/upcoming/overdue protocol items for this pig.</p>
+                </div>
+                @if ($protocolTemplateCode)
+                    <span class="badge blue">{{ $protocolTemplateCode }}</span>
+                @endif
+            </div>
+
+            @if (!$protocol)
+                <div class="empty-state">No protocol template currently applies to this pig.</div>
+            @else
+                <div class="protocol-grid">
+                    <div class="protocol-summary-panel">
+                        <div class="form-grid" style="margin-bottom: 14px;">
+                            <div class="form-group">
+                                <label>Template Code</label>
+                                <input type="text" value="{{ $protocolTemplateCode }}" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Anchor Date</label>
+                                <input type="text" value="{{ $protocolAnchorDate ?? '—' }}" readonly>
+                            </div>
+                        </div>
+
+                        <div class="protocol-summary-grid">
+                            <div class="protocol-count-card">
+                                <label>Due Today</label>
+                                <div class="protocol-count-value">{{ $protocolDueToday->count() }}</div>
+                            </div>
+
+                            <div class="protocol-count-card">
+                                <label>Upcoming</label>
+                                <div class="protocol-count-value">{{ $protocolUpcoming->count() }}</div>
+                            </div>
+
+                            <div class="protocol-count-card">
+                                <label>Overdue</label>
+                                <div class="protocol-count-value">{{ $protocolOverdue->count() }}</div>
+                            </div>
+
+                            <div class="protocol-count-card">
+                                <label>Current Anchor Rule</label>
+                                <div class="protocol-anchor-note">
+                                    Birthed pigs use the birth anchor from <strong>Date Added</strong> in the current MVP.
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (
+                            $errors->has('status')
+                            || $errors->has('executed_date')
+                            || $errors->has('notes')
+                            || $errors->has('protocol_rule_id')
+                            || $errors->has('actual_product_name')
+                            || $errors->has('actual_dose')
+                            || $errors->has('actual_cost')
+                        )
+                            <div class="flash error" style="margin-top: 14px;">
+                                @if ($errors->has('status'))
+                                    {{ $errors->first('status') }}
+                                @elseif ($errors->has('executed_date'))
+                                    {{ $errors->first('executed_date') }}
+                                @elseif ($errors->has('actual_product_name'))
+                                    {{ $errors->first('actual_product_name') }}
+                                @elseif ($errors->has('actual_dose'))
+                                    {{ $errors->first('actual_dose') }}
+                                @elseif ($errors->has('actual_cost'))
+                                    {{ $errors->first('actual_cost') }}
+                                @elseif ($errors->has('notes'))
+                                    {{ $errors->first('notes') }}
+                                @else
+                                    {{ $errors->first('protocol_rule_id') }}
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="protocol-columns">
+                        @php
+                            $protocolBuckets = [
+                                'Due Today' => [$protocolDueToday, 'red', 'protocol-due-today', 'Items that are due inside the current active window.'],
+                                'Upcoming' => [$protocolUpcoming, 'blue', 'protocol-upcoming', 'Future scheduled items based on the current birth anchor.'],
+                                'Overdue' => [$protocolOverdue, 'orange', 'protocol-overdue', 'Items whose window has passed without a resolved execution.'],
+                            ];
+                        @endphp
+
+                        @foreach ($protocolBuckets as $bucketTitle => [$bucketItems, $bucketBadge, $bucketClass, $bucketNote])
+                            <div class="protocol-column {{ $bucketClass }}">
+                                <div class="section-title" style="margin-bottom: 10px;">
+                                    <div>
+                                        <h4>{{ $bucketTitle }}</h4>
+                                        <p class="section-subtle">{{ $bucketItems->count() }} item(s)</p>
+                                    </div>
+                                    <span class="badge {{ $bucketBadge }}">{{ $bucketItems->count() }}</span>
+                                </div>
+
+                                <div class="protocol-bucket-note">{{ $bucketNote }}</div>
+
+                                @if ($bucketItems->isEmpty())
+                                    <div class="protocol-empty">No items in this bucket.</div>
+                                @else
+                                    <div class="protocol-list">
+                                        @foreach ($bucketItems as $item)
+                                            @php
+                                                $executionStatus = $item['execution_status'] ?? null;
+                                                $executionStatusLabel = $executionStatus ? ucfirst($executionStatus) : 'Pending';
+                                                $executionStatusClass = $executionStatus ?: 'pending';
+
+                                                $isMedicationProtocol = ($item['type'] ?? null) === 'medication';
+                                                $isVaccinationProtocol = ($item['type'] ?? null) === 'vaccination';
+                                                $isDetailedAdminType = $isMedicationProtocol || $isVaccinationProtocol;
+
+                                                $isCurrentOldForm = (string) old('protocol_rule_id') === (string) $item['rule_id']
+                                                    && (string) old('scheduled_for_date') === (string) $item['due_start'];
+
+                                                $defaultStatus = $executionStatus ?: ProtocolExecution::STATUS_COMPLETED;
+                                                $prefillStatus = $isCurrentOldForm
+                                                    ? old('status', $defaultStatus)
+                                                    : $defaultStatus;
+
+                                                $prefillExecutedDate = $isCurrentOldForm
+                                                    ? old('executed_date', $item['executed_date'] ?? '')
+                                                    : ($item['executed_date'] ?? '');
+
+                                                $prefillNotes = $isCurrentOldForm
+                                                    ? old('notes', $item['execution_notes'] ?? '')
+                                                    : ($item['execution_notes'] ?? '');
+
+                                                $prefillActualProductName = $isCurrentOldForm
+                                                    ? old('actual_product_name', $item['actual_product_name'] ?? '')
+                                                    : ($item['actual_product_name'] ?? '');
+
+                                                $prefillActualDose = $isCurrentOldForm
+                                                    ? old('actual_dose', $item['actual_dose'] ?? '')
+                                                    : ($item['actual_dose'] ?? '');
+
+                                                $prefillActualCost = $isCurrentOldForm
+                                                    ? old('actual_cost', $item['actual_cost'] ?? '')
+                                                    : ($item['actual_cost'] ?? '');
+
+                                                $actualProductLabel = $isVaccinationProtocol ? 'Actual Vaccine Used' : 'Actual Product Used';
+                                                $actualDoseLabel = $isVaccinationProtocol ? 'Actual Dose' : 'Actual Dosage';
+                                            @endphp
+
+                                            <div class="protocol-item">
+                                                <div class="protocol-item-head">
+                                                    <div class="protocol-item-title">{{ $item['action'] }}</div>
+                                                    <span class="badge protocol-status-badge {{ $executionStatusClass }}">
+                                                        {{ $executionStatusLabel }}
+                                                    </span>
+                                                </div>
+
+                                                <div class="protocol-meta">
+                                                    <div><strong>Type:</strong> {{ ucfirst(str_replace('_', ' ', $item['type'])) }}</div>
+                                                    <div><strong>Requirement:</strong> {{ ucfirst($item['requirement']) }}</div>
+                                                    <div><strong>Window:</strong> {{ $item['due_start'] }} to {{ $item['due_end'] }}</div>
+                                                    <div><strong>Recommended Product:</strong> {{ $item['product_note'] ?: '—' }}</div>
+                                                    <div><strong>Recommended Dosage:</strong> {{ $item['dosage_note'] ?: '—' }}</div>
+                                                    <div><strong>Administration Note:</strong> {{ $item['administration_note'] ?: '—' }}</div>
+                                                    <div><strong>Alternatives / Market Note:</strong> {{ $item['market_note'] ?: '—' }}</div>
+                                                    <div><strong>Condition:</strong> {{ $item['condition_note'] ?: '—' }}</div>
+                                                    <div><strong>Executed Date:</strong> {{ $item['executed_date'] ?: '—' }}</div>
+                                                    <div><strong>Protocol Notes:</strong> {{ $item['execution_notes'] ?: '—' }}</div>
+                                                    @if ($isDetailedAdminType)
+                                                        <div><strong>Linked Detailed Record:</strong> {{ $item['has_linked_admin_log'] ? 'Yes' : 'No' }}</div>
+                                                        <div><strong>Current Actual Product:</strong> {{ $item['has_linked_admin_log'] ? ($item['actual_product_name'] ?: '—') : '—' }}</div>
+                                                        <div><strong>Current Actual Dose:</strong> {{ $item['has_linked_admin_log'] ? ($item['actual_dose'] ?: '—') : '—' }}</div>
+                                                        <div><strong>Current Actual Cost:</strong> {{ $item['actual_cost'] !== null ? '₱ ' . number_format((float) $item['actual_cost'], 2) : '—' }}</div>
+                                                        <div><strong>Current Actual Notes:</strong> {{ $item['actual_notes'] ?: '—' }}</div>
+                                                    @endif
+                                                </div>
+
+                                                @if ($isDetailedAdminType)
+                                                    <div class="protocol-guide-box">
+                                                        <div class="protocol-guide-title">Protocol Guide</div>
+                                                        <div class="protocol-guide-grid">
+                                                            <div><strong>Recommended Product:</strong> {{ $item['product_note'] ?: '—' }}</div>
+                                                            <div><strong>Recommended Dosage:</strong> {{ $item['dosage_note'] ?: '—' }}</div>
+                                                            <div><strong>Administration Note:</strong> {{ $item['administration_note'] ?: '—' }}</div>
+                                                            <div><strong>Alternative / Market Note:</strong> {{ $item['market_note'] ?: '—' }}</div>
+                                                        </div>
+                                                    </div>
+                                                @endif
+
+                                                @if (!$isOperationalLocked)
+                                                    <form method="POST" action="{{ route('protocol-executions.upsert', $pig) }}" class="protocol-form">
+                                                        @csrf
+                                                        <input type="hidden" name="protocol_rule_id" value="{{ $item['rule_id'] }}">
+                                                        <input type="hidden" name="scheduled_for_date" value="{{ $item['due_start'] }}">
+
+                                                        @if (
+                                                            $isCurrentOldForm
+                                                            && (
+                                                                $errors->has('status')
+                                                                || $errors->has('executed_date')
+                                                                || $errors->has('notes')
+                                                                || $errors->has('actual_product_name')
+                                                                || $errors->has('actual_dose')
+                                                                || $errors->has('actual_cost')
+                                                                || $errors->has('protocol_rule_id')
+                                                            )
+                                                        )
+                                                            <div class="flash error protocol-inline-error">
+                                                                @if ($errors->has('status'))
+                                                                    {{ $errors->first('status') }}
+                                                                @elseif ($errors->has('executed_date'))
+                                                                    {{ $errors->first('executed_date') }}
+                                                                @elseif ($errors->has('actual_product_name'))
+                                                                    {{ $errors->first('actual_product_name') }}
+                                                                @elseif ($errors->has('actual_dose'))
+                                                                    {{ $errors->first('actual_dose') }}
+                                                                @elseif ($errors->has('actual_cost'))
+                                                                    {{ $errors->first('actual_cost') }}
+                                                                @elseif ($errors->has('notes'))
+                                                                    {{ $errors->first('notes') }}
+                                                                @else
+                                                                    {{ $errors->first('protocol_rule_id') }}
+                                                                @endif
+                                                            </div>
+                                                        @endif
+
+                                                        <div class="protocol-action-row">
+                                                            <div class="form-group">
+                                                                <label>Status</label>
+                                                                <select name="status">
+                                                                    <option value="{{ ProtocolExecution::STATUS_COMPLETED }}" {{ $prefillStatus === ProtocolExecution::STATUS_COMPLETED ? 'selected' : '' }}>Completed</option>
+                                                                    <option value="{{ ProtocolExecution::STATUS_SKIPPED }}" {{ $prefillStatus === ProtocolExecution::STATUS_SKIPPED ? 'selected' : '' }}>Skipped</option>
+                                                                    <option value="{{ ProtocolExecution::STATUS_DEFERRED }}" {{ $prefillStatus === ProtocolExecution::STATUS_DEFERRED ? 'selected' : '' }}>Deferred</option>
+                                                                </select>
+                                                            </div>
+
+                                                            <div class="form-group">
+                                                                <label>Executed Date</label>
+                                                                <input type="date" name="executed_date" value="{{ $prefillExecutedDate }}">
+                                                            </div>
+                                                        </div>
+
+                                                        @if ($isDetailedAdminType)
+                                                            <div class="protocol-action-row">
+                                                                <div class="form-group">
+                                                                    <label>{{ $actualProductLabel }}</label>
+                                                                    <input type="text" name="actual_product_name" value="{{ $prefillActualProductName }}">
+                                                                </div>
+
+                                                                <div class="form-group">
+                                                                    <label>{{ $actualDoseLabel }}</label>
+                                                                    <input type="text" name="actual_dose" value="{{ $prefillActualDose }}">
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="form-group">
+                                                                <label>Actual Cost</label>
+                                                                <input type="number" name="actual_cost" step="0.01" min="0" value="{{ $prefillActualCost }}">
+                                                            </div>
+                                                        @endif
+
+                                                        <div class="form-group">
+                                                            <label>Notes</label>
+                                                            <textarea name="notes" rows="2" placeholder="{{ $isDetailedAdminType ? 'Optional for completed. Required for skipped or deferred.' : 'Required for skipped or deferred.' }}">{{ $prefillNotes }}</textarea>
+                                                        </div>
+
+                                                        <div class="protocol-action-submit">
+                                                            <button type="submit" class="btn primary">Save Execution</button>
+                                                        </div>
+                                                    </form>
+                                                @else
+                                                    <div class="flash error" style="margin-top: 10px;">
+                                                        Protocol execution updates are locked for this pig.
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+        </div>
+
         <div class="profile-grid-half">
             <div class="panel-card">
                 <div class="section-title">
@@ -568,7 +1108,7 @@
                     @if (!$isOperationalLocked)
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
                             <a href="{{ route('reproduction-cycles.create', $pig) }}" class="btn primary">Add Breeding Record</a>
-                            <a href="{{ route('reproduction-cycles.index') }}" class="btn">All Breeding Records</a>
+                            <a href="{{ route('reproduction-cycles.index', $pig) }}" class="btn">All Breeding Records</a>
                         </div>
                     @endif
                 </div>
