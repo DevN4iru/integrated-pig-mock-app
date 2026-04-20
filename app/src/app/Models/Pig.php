@@ -48,6 +48,7 @@ class Pig extends Model
         'feed_efficiency',
         'cost_per_kg_gain',
         'performance_status',
+        'protocol_summary',
     ];
 
     public function pen()
@@ -121,6 +122,163 @@ class Pig extends Model
         return $this->hasMany(ReproductionCycle::class, 'boar_id')
             ->orderByDesc('service_date')
             ->orderByDesc('id');
+    }
+
+    public function protocolExecutions()
+    {
+        return $this->hasMany(ProtocolExecution::class)
+            ->orderBy('scheduled_for_date')
+            ->orderBy('id');
+    }
+
+    protected function resolveProtocolTemplate(): ?ProtocolTemplate
+    {
+        if ($this->pig_source === 'birthed') {
+            return ProtocolTemplate::where('target_type', ProtocolTemplate::TARGET_PIGLET)
+                ->where('is_active', true)
+                ->first();
+        }
+
+        $cycle = $this->reproductionCyclesAsSow()
+            ->whereNotNull('actual_farrow_date')
+            ->latest('actual_farrow_date')
+            ->first();
+
+        if ($cycle) {
+            return ProtocolTemplate::where('target_type', ProtocolTemplate::TARGET_LACTATING_SOW)
+                ->where('is_active', true)
+                ->first();
+        }
+
+        return null;
+    }
+
+    protected function resolveProtocolAnchorDate(?ProtocolTemplate $template): ?Carbon
+    {
+        if (!$template) {
+            return null;
+        }
+
+        if ($template->anchor_event === ProtocolTemplate::ANCHOR_BIRTH) {
+            return $this->date_added ? Carbon::parse($this->date_added) : null;
+        }
+
+        if ($template->anchor_event === ProtocolTemplate::ANCHOR_FARROWING) {
+            $cycle = $this->reproductionCyclesAsSow()
+                ->whereNotNull('actual_farrow_date')
+                ->latest('actual_farrow_date')
+                ->first();
+
+            return $cycle?->actual_farrow_date
+                ? Carbon::parse($cycle->actual_farrow_date)
+                : null;
+        }
+
+        return null;
+    }
+
+    protected function evaluateProtocolCondition(ProtocolRule $rule): bool
+    {
+        if (!$rule->condition_key) {
+            return true;
+        }
+
+        return match ($rule->condition_key) {
+            ProtocolRule::CONDITION_SEX_MALE => $this->sex === 'male',
+            default => true,
+        };
+    }
+
+    protected function protocolExecutionMap(): array
+    {
+        $executions = $this->relationLoaded('protocolExecutions')
+            ? $this->protocolExecutions
+            : $this->protocolExecutions()->get();
+
+        $map = [];
+
+        foreach ($executions as $execution) {
+            $key = $execution->protocol_rule_id . '|' . $execution->scheduled_for_date?->toDateString();
+            $map[$key] = $execution;
+        }
+
+        return $map;
+    }
+
+    public function getProtocolSummaryAttribute(): ?array
+    {
+        $template = $this->resolveProtocolTemplate();
+
+        if (!$template) {
+            return null;
+        }
+
+        $template->loadMissing(['rules' => function ($query) {
+            $query->where('is_active', true)
+                ->orderBy('sequence_order')
+                ->orderBy('id');
+        }]);
+
+        $anchorDate = $this->resolveProtocolAnchorDate($template);
+
+        if (!$anchorDate) {
+            return null;
+        }
+
+        $today = Carbon::today();
+        $executionMap = $this->protocolExecutionMap();
+
+        $dueToday = [];
+        $upcoming = [];
+        $overdue = [];
+
+        foreach ($template->rules as $rule) {
+            if (!$this->evaluateProtocolCondition($rule)) {
+                continue;
+            }
+
+            $start = $anchorDate->copy()->addDays((int) $rule->day_offset_start);
+            $end = $rule->day_offset_end !== null
+                ? $anchorDate->copy()->addDays((int) $rule->day_offset_end)
+                : $start;
+
+            $occurrenceKey = $rule->id . '|' . $start->toDateString();
+            $execution = $executionMap[$occurrenceKey] ?? null;
+
+            if ($execution && $execution->isResolved()) {
+                continue;
+            }
+
+            $row = [
+                'rule_id' => $rule->id,
+                'action' => $rule->action_name,
+                'type' => $rule->action_type,
+                'requirement' => $rule->requirement_level,
+                'due_start' => $start->toDateString(),
+                'due_end' => $end->toDateString(),
+                'product_note' => $rule->product_note,
+                'condition_note' => $rule->condition_note,
+                'execution_status' => $execution?->status,
+                'executed_date' => $execution?->executed_date?->toDateString(),
+                'execution_notes' => $execution?->notes,
+            ];
+
+            if ($today->between($start, $end)) {
+                $dueToday[] = $row;
+            } elseif ($today->lt($start)) {
+                $upcoming[] = $row;
+            } elseif ($today->gt($end)) {
+                $overdue[] = $row;
+            }
+        }
+
+        return [
+            'template_code' => $template->code,
+            'anchor_date' => $anchorDate->toDateString(),
+            'due_today' => $dueToday,
+            'upcoming' => $upcoming,
+            'overdue' => $overdue,
+        ];
     }
 
     protected function relationHasAny(string $relation): bool

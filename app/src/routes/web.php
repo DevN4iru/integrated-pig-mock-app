@@ -9,6 +9,7 @@ use App\Http\Controllers\MortalityLogController;
 use App\Http\Controllers\PenController;
 use App\Http\Controllers\PigController;
 use App\Http\Controllers\PigTransferController;
+use App\Http\Controllers\ProtocolExecutionController;
 use App\Http\Controllers\ReproductionCycleController;
 use App\Http\Controllers\ReproductionCycleUpdateController;
 use App\Http\Controllers\SaleController;
@@ -93,6 +94,15 @@ Route::post('/pigs/{pig}/health-logs', [HealthLogController::class, 'store'])->n
 Route::get('/pigs/{pig}/health-logs/{healthLog}/edit', [HealthLogController::class, 'edit'])->name('health-logs.edit');
 Route::put('/pigs/{pig}/health-logs/{healthLog}', [HealthLogController::class, 'update'])->name('health-logs.update');
 Route::delete('/pigs/{pig}/health-logs/{healthLog}', [HealthLogController::class, 'destroy'])->name('health-logs.destroy');
+
+/*
+|--------------------------------------------------------------------------
+| Protocol Executions
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/pigs/{pig}/protocol-executions', [ProtocolExecutionController::class, 'upsert'])
+    ->name('protocol-executions.upsert');
 
 /*
 |--------------------------------------------------------------------------
