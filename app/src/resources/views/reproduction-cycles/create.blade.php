@@ -174,13 +174,14 @@
                         step="0.01"
                         value="{{ $defaults['semen_cost'] }}"
                     >
+                    <small class="metric-note">Tracked separately from service / handling cost.</small>
                     @error('semen_cost')
                         <div class="error-text">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="form-group">
-                    <label for="breeding_cost">{{ $formMode === 'retry' ? 'Attempt Cost to Add' : 'Initial Attempt Cost' }}</label>
+                    <label for="breeding_cost">{{ $formMode === 'retry' ? 'Attempt Service / Handling Cost to Add' : 'Initial Service / Handling Cost' }}</label>
                     <input
                         id="breeding_cost"
                         name="breeding_cost"
@@ -189,7 +190,7 @@
                         step="0.01"
                         value="{{ $defaults['breeding_cost'] }}"
                     >
-                    <small class="metric-note">This amount will be added to the breeding case's cumulative cost tracking.</small>
+                    <small class="metric-note">This excludes purchased semen cost. Total breeding exposure = semen cost + service / handling cost.</small>
                     @error('breeding_cost')
                         <div class="error-text">{{ $message }}</div>
                     @enderror
@@ -209,7 +210,7 @@
             </div>
 
             <div class="flash" style="margin-top: 16px;">
-                The projected farrow date is still computed from <strong>service date + 114 days</strong>, but it stays hidden until the pregnancy check is recorded as <strong>pregnant</strong>.
+                The projected farrow date is still computed from <strong>service date + 114 days</strong>, but it stays hidden until the pregnancy check is recorded as <strong>pregnant</strong>. Breeding accounting follows <strong>service / handling cost + semen cost</strong>.
             </div>
 
             <div class="form-actions">

@@ -73,7 +73,7 @@
         <div class="section-title">
             <div>
                 <h3>Editable Current Attempt Metadata</h3>
-                <p>You can still correct service date, donor boar, AI source details, cumulative breeding cost, and notes here.</p>
+                <p>You can still correct service date, donor boar, AI source details, cumulative service cost, semen cost, and notes here.</p>
             </div>
         </div>
 
@@ -158,7 +158,7 @@
                 </div>
 
                 <div id="semen_cost_group" class="form-group">
-                    <label for="semen_cost">Purchased Semen Cost</label>
+                    <label for="semen_cost">Current Attempt Semen Cost</label>
                     <input
                         id="semen_cost"
                         name="semen_cost"
@@ -167,13 +167,14 @@
                         min="0"
                         value="{{ old('semen_cost', number_format((float) $cycle->semen_cost, 2, '.', '')) }}"
                     >
+                    <small class="metric-note">Tracked separately from cumulative service / handling cost.</small>
                     @error('semen_cost')
                         <div class="error-text">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="form-group">
-                    <label for="breeding_cost">Cumulative Breeding Cost</label>
+                    <label for="breeding_cost">Cumulative Service / Handling Cost</label>
                     <input
                         id="breeding_cost"
                         name="breeding_cost"
@@ -182,7 +183,7 @@
                         min="0"
                         value="{{ old('breeding_cost', number_format((float) $cycle->breeding_cost, 2, '.', '')) }}"
                     >
-                    <small class="metric-note">This is the total accumulated breeding cost across all attempts already recorded in this parent case.</small>
+                    <small class="metric-note">This excludes semen. Total breeding exposure is calculated from cumulative service / handling cost plus cumulative semen cost.</small>
                     @error('breeding_cost')
                         <div class="error-text">{{ $message }}</div>
                     @enderror
@@ -198,7 +199,7 @@
             </div>
 
             <div class="flash" style="margin-top: 16px;">
-                The projected farrow date remains hidden until the case is on the pregnant path. If this case is already pregnant or farrowed, the saved expected farrow date still stays derived from <strong>service date + 114 days</strong>.
+                The projected farrow date remains hidden until the case is on the pregnant path. If this case is already pregnant or farrowed, the saved expected farrow date still stays derived from <strong>service date + 114 days</strong>. Accounting uses <strong>service / handling cost + semen cost</strong>.
             </div>
 
             <div class="form-actions">

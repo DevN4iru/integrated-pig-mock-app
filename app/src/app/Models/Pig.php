@@ -39,6 +39,8 @@ class Pig extends Model
         'total_feed_cost',
         'total_medication_cost',
         'total_vaccination_cost',
+        'total_semen_cost',
+        'total_breeding_service_cost',
         'total_breeding_cost',
         'total_care_liability',
         'total_operating_cost',
@@ -333,13 +335,37 @@ class Pig extends Model
         return (float) $this->vaccinations()->sum('cost');
     }
 
-    public function getTotalBreedingCostAttribute()
+    public function getTotalSemenCostAttribute()
+    {
+        if (
+            $this->relationLoaded('reproductionCyclesAsSow')
+            && $this->reproductionCyclesAsSow->every(
+                fn ($cycle) => !$cycle->supportsAttemptMetadata() || $cycle->relationLoaded('updates')
+            )
+        ) {
+            return (float) $this->reproductionCyclesAsSow->sum(fn ($cycle) => (float) $cycle->total_semen_cost);
+        }
+
+        return (float) ReproductionCycleUpdate::query()
+            ->where('event_type', ReproductionCycleUpdate::EVENT_SERVICE_STARTED)
+            ->whereHas('cycle', function ($query) {
+                $query->where('sow_id', $this->id);
+            })
+            ->sum('semen_cost');
+    }
+
+    public function getTotalBreedingServiceCostAttribute()
     {
         if ($this->relationLoaded('reproductionCyclesAsSow')) {
             return (float) $this->reproductionCyclesAsSow->sum(fn ($cycle) => (float) ($cycle->breeding_cost ?? 0));
         }
 
         return (float) $this->reproductionCyclesAsSow()->sum('breeding_cost');
+    }
+
+    public function getTotalBreedingCostAttribute()
+    {
+        return (float) $this->total_breeding_service_cost + (float) $this->total_semen_cost;
     }
 
     public function getTotalCareLiabilityAttribute()

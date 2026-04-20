@@ -100,7 +100,7 @@
         </div>
 
         <div class="form-group event-specific" data-events="pregnancy_checked,farrowing_recorded">
-            <label for="added_cost">Added Cost</label>
+            <label for="added_cost">Added Service / Handling Cost</label>
             <input
                 id="added_cost"
                 type="number"
@@ -111,6 +111,7 @@
                 placeholder="0.00"
                 disabled
             >
+            <small class="metric-note">This excludes semen cost. Semen stays tied to service-attempt setup.</small>
             @error('added_cost')
                 <div class="error-text">{{ $message }}</div>
             @enderror
