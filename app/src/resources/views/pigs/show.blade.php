@@ -877,8 +877,8 @@
                                 <label>Current Anchor Rule</label>
                                 <div class="protocol-anchor-note">
                                     Protocol assignment currently follows template eligibility plus coverage window in this MVP.
-                                    Piglet schedules use <strong>Date Added</strong> as the birth anchor, while lactating sow schedules use the latest
-                                    <strong>actual farrowing date</strong>.
+                                    Piglet schedules use an estimated <strong>birth anchor</strong> from the pig's stored age and date added,
+                                    while lactating sow schedules use the latest <strong>actual farrowing date</strong>.
                                 </div>
                             </div>
                         </div>
@@ -916,7 +916,7 @@
                         @php
                             $protocolBuckets = [
                                 'Due Today' => [$protocolDueToday, 'red', 'protocol-due-today', 'Items that are due inside the current active window.'],
-                                'Upcoming' => [$protocolUpcoming, 'blue', 'protocol-upcoming', 'Future scheduled items based on the current birth anchor.'],
+                                'Upcoming' => [$protocolUpcoming, 'blue', 'protocol-upcoming', 'Future scheduled items based on the current protocol anchor.'],
                                 'Overdue' => [$protocolOverdue, 'orange', 'protocol-overdue', 'Items whose window has passed without a resolved execution.'],
                             ];
                         @endphp
