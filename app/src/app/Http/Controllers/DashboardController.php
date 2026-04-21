@@ -110,6 +110,26 @@ class DashboardController extends Controller
             return $gain > 0 ? $gain : null;
         };
 
+        $resolveFrozenMortalityLoss = function ($pig): float {
+            $mortalityLog = $pig->mortalityLogs
+                ->sortByDesc(fn ($log) => sprintf(
+                    '%s-%010d',
+                    $log->death_date?->format('Y-m-d') ?? (string) ($log->death_date ?? ''),
+                    (int) $log->id
+                ))
+                ->first();
+
+            if (!$mortalityLog) {
+                return 0.0;
+            }
+
+            if ($mortalityLog->loss_value !== null) {
+                return (float) $mortalityLog->loss_value;
+            }
+
+            return (float) ($pig->asset_value ?? 0);
+        };
+
         foreach ($pigs as $pig) {
             $metrics = $buildMetrics($pig);
 
@@ -127,7 +147,7 @@ class DashboardController extends Controller
 
         $totalAssetValue = (float) $livePigs->sum(fn ($pig) => (float) $pig->computed_asset_value);
         $totalRevenue = (float) $soldPigs->flatMap->sales->sum('price');
-        $totalLossValue = (float) $deadPigs->sum(fn ($pig) => (float) $pig->computed_asset_value);
+        $totalLossValue = (float) $deadPigs->sum(fn ($pig) => $resolveFrozenMortalityLoss($pig));
 
         $totalFeedCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_feed_cost);
         $totalMedicationCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_medication_cost);

@@ -522,6 +522,42 @@ class Pig extends Model
         return $this->{$relation}()->exists();
     }
 
+    protected function latestMortalityRecord(): ?MortalityLog
+    {
+        if ($this->relationLoaded('mortalityLogs')) {
+            return $this->mortalityLogs
+                ->sortByDesc(fn ($log) => sprintf(
+                    '%s-%010d',
+                    optional($log->death_date)->format('Y-m-d') ?? (string) $log->death_date,
+                    (int) $log->id
+                ))
+                ->first();
+        }
+
+        return $this->mortalityLogs()
+            ->orderByDesc('death_date')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    protected function latestSaleRecord(): ?Sale
+    {
+        if ($this->relationLoaded('sales')) {
+            return $this->sales
+                ->sortByDesc(fn ($sale) => sprintf(
+                    '%s-%010d',
+                    optional($sale->sold_date)->format('Y-m-d') ?? (string) $sale->sold_date,
+                    (int) $sale->id
+                ))
+                ->first();
+        }
+
+        return $this->sales()
+            ->orderByDesc('sold_date')
+            ->orderByDesc('id')
+            ->first();
+    }
+
     public function isOperationallyLocked(): bool
     {
         return $this->trashed()
@@ -599,6 +635,58 @@ class Pig extends Model
         }
 
         return (float) $weight * FarmSetting::currentPricePerKg();
+    }
+
+    public function getFrozenMortalityValueAttribute(): float
+    {
+        $mortality = $this->latestMortalityRecord();
+
+        if (!$mortality) {
+            return (float) ($this->asset_value ?? 0);
+        }
+
+        if ($mortality->loss_value !== null) {
+            return (float) $mortality->loss_value;
+        }
+
+        return (float) ($this->asset_value ?? 0);
+    }
+
+    public function getFrozenSaleValueAttribute(): float
+    {
+        $sale = $this->latestSaleRecord();
+
+        if (!$sale) {
+            return (float) ($this->asset_value ?? 0);
+        }
+
+        return (float) $sale->price;
+    }
+
+    public function getDisplayValueLabelAttribute(): string
+    {
+        if ($this->relationHasAny('mortalityLogs')) {
+            return 'Frozen Loss Value';
+        }
+
+        if ($this->relationHasAny('sales')) {
+            return 'Sale Value';
+        }
+
+        return 'Asset Value';
+    }
+
+    public function getDisplayValueAmountAttribute(): float
+    {
+        if ($this->relationHasAny('mortalityLogs')) {
+            return $this->frozen_mortality_value;
+        }
+
+        if ($this->relationHasAny('sales')) {
+            return $this->frozen_sale_value;
+        }
+
+        return (float) ($this->asset_value ?? 0);
     }
 
     public function getAgeDisplayAttribute(): string

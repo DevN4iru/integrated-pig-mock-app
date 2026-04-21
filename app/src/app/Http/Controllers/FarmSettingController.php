@@ -42,13 +42,15 @@ class FarmSettingController extends Controller
         $pricePerKg = (float) $validated['price_per_kg'];
 
         Pig::query()
+            ->whereDoesntHave('sales')
+            ->whereDoesntHave('mortalityLogs')
             ->with(['healthLogs' => function ($query) {
                 $query->where('purpose', 'weight_update')
                     ->whereNotNull('weight')
                     ->orderByDesc('log_date')
                     ->orderByDesc('id');
             }])
-            ->chunk(100, function ($pigs) use ($pricePerKg) {
+            ->chunkById(100, function ($pigs) use ($pricePerKg) {
                 foreach ($pigs as $pig) {
                     $latestWeightLog = $pig->healthLogs->first();
 
@@ -63,6 +65,6 @@ class FarmSettingController extends Controller
 
         return redirect()
             ->route('settings.farm.edit')
-            ->with('success', 'Farm pricing updated and all pig asset values recalculated.');
+            ->with('success', 'Farm pricing updated and active pig asset values recalculated.');
     }
 }
