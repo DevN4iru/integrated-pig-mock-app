@@ -168,6 +168,18 @@ class Pig extends Model
         return $this->reproductionCyclesAsSow()->exists();
     }
 
+    protected function approximateBirthAnchorDate(): ?Carbon
+    {
+        if (!$this->date_added) {
+            return null;
+        }
+
+        $dateAdded = Carbon::parse($this->date_added)->startOfDay();
+        $storedAgeDays = max(0, (int) ($this->age ?? 0));
+
+        return $dateAdded->copy()->subDays($storedAgeDays);
+    }
+
     protected function protocolCoverageEndDay(?ProtocolTemplate $template): ?int
     {
         if (!$template) {
@@ -232,8 +244,6 @@ class Pig extends Model
             return false;
         }
 
-        // Once a pig has entered the sow reproduction lifecycle,
-        // it must never fall back to the piglet program.
         if ($this->hasSowReproductionHistory()) {
             return false;
         }
@@ -273,7 +283,7 @@ class Pig extends Model
         }
 
         if ($template->anchor_event === ProtocolTemplate::ANCHOR_BIRTH) {
-            return $this->date_added ? Carbon::parse($this->date_added) : null;
+            return $this->approximateBirthAnchorDate();
         }
 
         if ($template->anchor_event === ProtocolTemplate::ANCHOR_FARROWING) {
