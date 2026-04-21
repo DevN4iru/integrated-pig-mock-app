@@ -876,7 +876,9 @@
                             <div class="protocol-count-card">
                                 <label>Current Anchor Rule</label>
                                 <div class="protocol-anchor-note">
-                                    Birthed pigs use the birth anchor from <strong>Date Added</strong> in the current MVP.
+                                    Protocol assignment currently follows template eligibility plus coverage window in this MVP.
+                                    Piglet schedules use <strong>Date Added</strong> as the birth anchor, while lactating sow schedules use the latest
+                                    <strong>actual farrowing date</strong>.
                                 </div>
                             </div>
                         </div>
