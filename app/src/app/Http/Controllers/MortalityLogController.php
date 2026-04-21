@@ -2,18 +2,40 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pig;
+use App\Models\FarmSetting;
 use App\Models\MortalityLog;
+use App\Models\Pig;
 use Illuminate\Http\Request;
 
 class MortalityLogController extends Controller
 {
-    public function create(Pig $pig)
+    protected function ensurePigCanReceiveMortality(Pig $pig)
     {
+        if ($pig->trashed()) {
+            return redirect()
+                ->route('pigs.show', $pig)
+                ->with('error', 'Cannot record mortality for an archived pig.');
+        }
+
         if ($pig->sales()->exists()) {
             return redirect()
                 ->route('pigs.show', $pig)
                 ->with('error', 'Cannot record mortality for a pig that already has a sale record.');
+        }
+
+        if ($pig->mortalityLogs()->exists()) {
+            return redirect()
+                ->route('pigs.show', $pig)
+                ->with('error', 'Cannot record mortality for a pig that already has a mortality record.');
+        }
+
+        return null;
+    }
+
+    public function create(Pig $pig)
+    {
+        if ($redirect = $this->ensurePigCanReceiveMortality($pig)) {
+            return $redirect;
         }
 
         return view('mortality-logs.create', compact('pig'));
@@ -21,10 +43,8 @@ class MortalityLogController extends Controller
 
     public function store(Request $request, Pig $pig)
     {
-        if ($pig->sales()->exists()) {
-            return redirect()
-                ->route('pigs.show', $pig)
-                ->with('error', 'Cannot record mortality for a pig that already has a sale record.');
+        if ($redirect = $this->ensurePigCanReceiveMortality($pig)) {
+            return $redirect;
         }
 
         $validated = $request->validate([
@@ -33,9 +53,21 @@ class MortalityLogController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        $validated['pig_id'] = $pig->id;
+        $weightAtDeath = (float) ($pig->computed_weight ?? 0);
+        $pricePerKgAtDeath = FarmSetting::currentPricePerKg();
+        $lossValue = $weightAtDeath * $pricePerKgAtDeath;
 
-        MortalityLog::create($validated);
+        MortalityLog::create([
+            'pig_id' => $pig->id,
+            'death_date' => $validated['death_date'],
+            'cause' => trim((string) $validated['cause']),
+            'notes' => isset($validated['notes']) && trim((string) $validated['notes']) !== ''
+                ? trim((string) $validated['notes'])
+                : null,
+            'weight_at_death' => $weightAtDeath,
+            'price_per_kg_at_death' => $pricePerKgAtDeath,
+            'loss_value' => $lossValue,
+        ]);
 
         return redirect()
             ->route('pigs.show', $pig)
@@ -59,7 +91,13 @@ class MortalityLogController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        $mortalityLog->update($validated);
+        $mortalityLog->update([
+            'death_date' => $validated['death_date'],
+            'cause' => trim((string) $validated['cause']),
+            'notes' => isset($validated['notes']) && trim((string) $validated['notes']) !== ''
+                ? trim((string) $validated['notes'])
+                : null,
+        ]);
 
         return redirect()
             ->route('pigs.show', $pig)

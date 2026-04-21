@@ -542,7 +542,6 @@
 
         $dateAdded = $pig->date_added ? substr((string) $pig->date_added, 0, 10) : '—';
         $weight = is_numeric($pig->computed_weight) ? number_format((float) $pig->computed_weight, 2) : $pig->computed_weight;
-        $assetValue = is_numeric($pig->asset_value) ? number_format((float) $pig->asset_value, 2) : $pig->asset_value;
         $penName = $pig->pen?->name ?? '—';
         $ageDisplay = $pig->age_display;
 
@@ -551,6 +550,17 @@
         $isSold = !$isArchived && $pig->sales->isNotEmpty();
         $isOperationalLocked = $isArchived || $isDead || $isSold;
         $isFemale = strtolower((string) $pig->sex) === 'female';
+
+        $displayValueLabel = $pig->display_value_label;
+        $displayValueAmount = is_numeric($pig->display_value_amount)
+            ? number_format((float) $pig->display_value_amount, 2)
+            : $pig->display_value_amount;
+
+        $displayValueNote = match (true) {
+            $isDead => 'This dead-pig value is frozen from the recorded mortality snapshot and will not change when the global price per kilo changes later.',
+            $isSold => 'This sold-pig value is locked to the recorded sale amount and will not change when the global price per kilo changes later.',
+            default => null,
+        };
 
         if ($isArchived) {
             $statusLabel = 'Archived';
@@ -781,10 +791,14 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Asset Value</label>
-                        <input type="text" value="₱ {{ $assetValue }}" readonly>
+                        <label>{{ $displayValueLabel }}</label>
+                        <input type="text" value="₱ {{ $displayValueAmount }}" readonly>
                     </div>
                 </div>
+
+                @if ($displayValueNote)
+                    <div class="metric-note">{{ $displayValueNote }}</div>
+                @endif
 
                 <div class="flash" style="margin-top: 16px;">
                     System age is stored in days for schedule-based protocol tracking. Current stored age:
