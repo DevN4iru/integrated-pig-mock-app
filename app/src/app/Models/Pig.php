@@ -131,23 +131,136 @@ class Pig extends Model
             ->orderBy('id');
     }
 
-    protected function resolveProtocolTemplate(): ?ProtocolTemplate
+    protected function activeProtocolTemplateByTarget(string $targetType): ?ProtocolTemplate
     {
-        if ($this->pig_source === 'birthed') {
-            return ProtocolTemplate::where('target_type', ProtocolTemplate::TARGET_PIGLET)
-                ->where('is_active', true)
+        return ProtocolTemplate::query()
+            ->where('target_type', $targetType)
+            ->where('is_active', true)
+            ->first();
+    }
+
+    protected function latestFarrowingCycle(): ?ReproductionCycle
+    {
+        if ($this->relationLoaded('reproductionCyclesAsSow')) {
+            return $this->reproductionCyclesAsSow
+                ->filter(fn ($cycle) => $cycle->actual_farrow_date !== null)
+                ->sortByDesc(fn ($cycle) => sprintf(
+                    '%s-%010d',
+                    optional($cycle->actual_farrow_date)->format('Y-m-d') ?? '',
+                    (int) $cycle->id
+                ))
                 ->first();
         }
 
-        $cycle = $this->reproductionCyclesAsSow()
+        return $this->reproductionCyclesAsSow()
             ->whereNotNull('actual_farrow_date')
-            ->latest('actual_farrow_date')
+            ->orderByDesc('actual_farrow_date')
+            ->orderByDesc('id')
             ->first();
+    }
 
-        if ($cycle) {
-            return ProtocolTemplate::where('target_type', ProtocolTemplate::TARGET_LACTATING_SOW)
-                ->where('is_active', true)
-                ->first();
+    protected function hasSowReproductionHistory(): bool
+    {
+        if ($this->relationLoaded('reproductionCyclesAsSow')) {
+            return $this->reproductionCyclesAsSow->isNotEmpty();
+        }
+
+        return $this->reproductionCyclesAsSow()->exists();
+    }
+
+    protected function protocolCoverageEndDay(?ProtocolTemplate $template): ?int
+    {
+        if (!$template) {
+            return null;
+        }
+
+        $rules = $template->relationLoaded('rules')
+            ? $template->rules->where('is_active', true)->values()
+            : $template->rules()->where('is_active', true)->get();
+
+        if ($rules->isEmpty()) {
+            return null;
+        }
+
+        return $rules->max(function ($rule) {
+            return $rule->day_offset_end !== null
+                ? (int) $rule->day_offset_end
+                : (int) $rule->day_offset_start;
+        });
+    }
+
+    protected function isWithinProtocolCoverageWindow(?ProtocolTemplate $template, ?Carbon $anchorDate): bool
+    {
+        if (!$template || !$anchorDate) {
+            return false;
+        }
+
+        $coverageEndDay = $this->protocolCoverageEndDay($template);
+
+        if ($coverageEndDay === null) {
+            return false;
+        }
+
+        $today = Carbon::today();
+        $windowStart = $anchorDate->copy()->startOfDay();
+        $windowEnd = $anchorDate->copy()->addDays($coverageEndDay)->startOfDay();
+
+        return $today->greaterThanOrEqualTo($windowStart)
+            && $today->lessThanOrEqualTo($windowEnd);
+    }
+
+    protected function qualifiesForLactatingSowProtocol(?ProtocolTemplate $template = null): bool
+    {
+        if ($this->sex !== 'female') {
+            return false;
+        }
+
+        $template = $template ?: $this->activeProtocolTemplateByTarget(ProtocolTemplate::TARGET_LACTATING_SOW);
+
+        if (!$template) {
+            return false;
+        }
+
+        $anchorDate = $this->resolveProtocolAnchorDate($template);
+
+        return $this->isWithinProtocolCoverageWindow($template, $anchorDate);
+    }
+
+    protected function qualifiesForPigletProtocol(?ProtocolTemplate $template = null): bool
+    {
+        if ($this->qualifiesForLactatingSowProtocol()) {
+            return false;
+        }
+
+        // Once a pig has entered the sow reproduction lifecycle,
+        // it must never fall back to the piglet program.
+        if ($this->hasSowReproductionHistory()) {
+            return false;
+        }
+
+        $template = $template ?: $this->activeProtocolTemplateByTarget(ProtocolTemplate::TARGET_PIGLET);
+
+        if (!$template) {
+            return false;
+        }
+
+        $anchorDate = $this->resolveProtocolAnchorDate($template);
+
+        return $this->isWithinProtocolCoverageWindow($template, $anchorDate);
+    }
+
+    protected function resolveProtocolTemplate(): ?ProtocolTemplate
+    {
+        $lactatingSowTemplate = $this->activeProtocolTemplateByTarget(ProtocolTemplate::TARGET_LACTATING_SOW);
+
+        if ($this->qualifiesForLactatingSowProtocol($lactatingSowTemplate)) {
+            return $lactatingSowTemplate;
+        }
+
+        $pigletTemplate = $this->activeProtocolTemplateByTarget(ProtocolTemplate::TARGET_PIGLET);
+
+        if ($this->qualifiesForPigletProtocol($pigletTemplate)) {
+            return $pigletTemplate;
         }
 
         return null;
@@ -164,10 +277,7 @@ class Pig extends Model
         }
 
         if ($template->anchor_event === ProtocolTemplate::ANCHOR_FARROWING) {
-            $cycle = $this->reproductionCyclesAsSow()
-                ->whereNotNull('actual_farrow_date')
-                ->latest('actual_farrow_date')
-                ->first();
+            $cycle = $this->latestFarrowingCycle();
 
             return $cycle?->actual_farrow_date
                 ? Carbon::parse($cycle->actual_farrow_date)
