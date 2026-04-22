@@ -54,10 +54,7 @@ class Pen extends Model
 
     public function activePigs(): HasMany
     {
-        return $this->hasMany(Pig::class)
-            ->whereNull('deleted_at')
-            ->whereDoesntHave('sales')
-            ->whereDoesntHave('mortalityLogs');
+        return $this->hasMany(Pig::class)->activeLifecycle();
     }
 
     public function occupiedCount(): int

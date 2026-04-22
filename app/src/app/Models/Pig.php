@@ -32,6 +32,13 @@ class Pig extends Model
     protected $appends = [
         'computed_weight',
         'computed_asset_value',
+        'latest_weight_log_date',
+        'positive_gain_from_start',
+        'lifecycle_state',
+        'is_archived_lifecycle',
+        'is_dead_lifecycle',
+        'is_sold_lifecycle',
+        'is_active_lifecycle',
         'age_display',
         'weight_gain',
         'daily_gain',
@@ -129,6 +136,34 @@ class Pig extends Model
         return $this->hasMany(ProtocolExecution::class)
             ->orderBy('scheduled_for_date')
             ->orderBy('id');
+    }
+
+    public function scopeActiveLifecycle($query)
+    {
+        return $query
+            ->whereNull($this->qualifyColumn('deleted_at'))
+            ->whereDoesntHave('sales')
+            ->whereDoesntHave('mortalityLogs');
+    }
+
+    public function scopeSoldLifecycle($query)
+    {
+        return $query
+            ->whereNull($this->qualifyColumn('deleted_at'))
+            ->whereDoesntHave('mortalityLogs')
+            ->whereHas('sales');
+    }
+
+    public function scopeDeadLifecycle($query)
+    {
+        return $query
+            ->whereNull($this->qualifyColumn('deleted_at'))
+            ->whereHas('mortalityLogs');
+    }
+
+    public function scopeArchivedLifecycle($query)
+    {
+        return $query->onlyTrashed();
     }
 
     protected function activeProtocolTemplateByTarget(string $targetType): ?ProtocolTemplate
@@ -522,6 +557,43 @@ class Pig extends Model
         return $this->{$relation}()->exists();
     }
 
+    public function getLifecycleStateAttribute(): string
+    {
+        if ($this->trashed()) {
+            return 'archived';
+        }
+
+        if ($this->relationHasAny('mortalityLogs')) {
+            return 'dead';
+        }
+
+        if ($this->relationHasAny('sales')) {
+            return 'sold';
+        }
+
+        return 'active';
+    }
+
+    public function getIsArchivedLifecycleAttribute(): bool
+    {
+        return $this->lifecycle_state === 'archived';
+    }
+
+    public function getIsDeadLifecycleAttribute(): bool
+    {
+        return $this->lifecycle_state === 'dead';
+    }
+
+    public function getIsSoldLifecycleAttribute(): bool
+    {
+        return $this->lifecycle_state === 'sold';
+    }
+
+    public function getIsActiveLifecycleAttribute(): bool
+    {
+        return $this->lifecycle_state === 'active';
+    }
+
     protected function latestMortalityRecord(): ?MortalityLog
     {
         if ($this->relationLoaded('mortalityLogs')) {
@@ -560,26 +632,14 @@ class Pig extends Model
 
     public function isOperationallyLocked(): bool
     {
-        return $this->trashed()
-            || $this->relationHasAny('mortalityLogs')
-            || $this->relationHasAny('sales');
+        return !$this->is_active_lifecycle;
     }
 
     public function operationalLockState(): ?string
     {
-        if ($this->trashed()) {
-            return 'archived';
-        }
-
-        if ($this->relationHasAny('mortalityLogs')) {
-            return 'dead';
-        }
-
-        if ($this->relationHasAny('sales')) {
-            return 'sold';
-        }
-
-        return null;
+        return $this->is_active_lifecycle
+            ? null
+            : $this->lifecycle_state;
     }
 
     public function operationalLockMessage(string $moduleLabel = 'records'): string
@@ -612,6 +672,30 @@ class Pig extends Model
             ->orderBy('id');
     }
 
+    protected function loadedOrderedWeightLogs()
+    {
+        return $this->healthLogs
+            ->filter(fn ($log) => $log->purpose === 'weight_update' && $log->weight !== null)
+            ->sortByDesc(fn ($log) => sprintf(
+                '%s-%010d',
+                (string) ($log->log_date ?? ''),
+                (int) $log->id
+            ))
+            ->values();
+    }
+
+    protected function loadedChronologicalWeightLogs()
+    {
+        return $this->healthLogs
+            ->filter(fn ($log) => $log->purpose === 'weight_update' && $log->weight !== null)
+            ->sortBy(fn ($log) => sprintf(
+                '%s-%010d',
+                (string) ($log->log_date ?? ''),
+                (int) $log->id
+            ))
+            ->values();
+    }
+
     protected function currentBaselineWeight(): ?float
     {
         return $this->latest_weight !== null && $this->latest_weight !== ''
@@ -621,7 +705,9 @@ class Pig extends Model
 
     public function getComputedWeightAttribute()
     {
-        $latestLog = $this->orderedWeightLogs()->first();
+        $latestLog = $this->relationLoaded('healthLogs')
+            ? $this->loadedOrderedWeightLogs()->first()
+            : $this->orderedWeightLogs()->first();
 
         return $latestLog?->weight ?? $this->latest_weight;
     }
@@ -635,6 +721,33 @@ class Pig extends Model
         }
 
         return (float) $weight * FarmSetting::currentPricePerKg();
+    }
+
+    public function getLatestWeightLogDateAttribute()
+    {
+        $latestLog = $this->relationLoaded('healthLogs')
+            ? $this->loadedOrderedWeightLogs()->first()
+            : $this->orderedWeightLogs()->first();
+
+        return $latestLog?->log_date;
+    }
+
+    public function getPositiveGainFromStartAttribute(): ?float
+    {
+        $logs = $this->relationLoaded('healthLogs')
+            ? $this->loadedChronologicalWeightLogs()
+            : $this->chronologicalWeightLogs()->get()->values();
+
+        if ($logs->count() < 2) {
+            return null;
+        }
+
+        $firstLog = $logs->first();
+        $latestLog = $logs->last();
+
+        $gain = (float) $latestLog->weight - (float) $firstLog->weight;
+
+        return $gain > 0 ? $gain : null;
     }
 
     public function getFrozenMortalityValueAttribute(): float
@@ -665,11 +778,11 @@ class Pig extends Model
 
     public function getDisplayValueLabelAttribute(): string
     {
-        if ($this->relationHasAny('mortalityLogs')) {
+        if ($this->is_dead_lifecycle) {
             return 'Frozen Loss Value';
         }
 
-        if ($this->relationHasAny('sales')) {
+        if ($this->is_sold_lifecycle) {
             return 'Sale Value';
         }
 
@@ -678,11 +791,11 @@ class Pig extends Model
 
     public function getDisplayValueAmountAttribute(): float
     {
-        if ($this->relationHasAny('mortalityLogs')) {
+        if ($this->is_dead_lifecycle) {
             return $this->frozen_mortality_value;
         }
 
-        if ($this->relationHasAny('sales')) {
+        if ($this->is_sold_lifecycle) {
             return $this->frozen_sale_value;
         }
 
@@ -714,10 +827,9 @@ class Pig extends Model
 
     public function getWeightGainAttribute()
     {
-        $logs = $this->orderedWeightLogs()
-            ->take(2)
-            ->get()
-            ->values();
+        $logs = $this->relationLoaded('healthLogs')
+            ? $this->loadedOrderedWeightLogs()
+            : $this->orderedWeightLogs()->take(2)->get()->values();
 
         if ($logs->count() >= 2) {
             return (float) $logs[0]->weight - (float) $logs[1]->weight;
@@ -732,10 +844,9 @@ class Pig extends Model
 
     public function getDailyGainAttribute()
     {
-        $logs = $this->orderedWeightLogs()
-            ->take(2)
-            ->get()
-            ->values();
+        $logs = $this->relationLoaded('healthLogs')
+            ? $this->loadedOrderedWeightLogs()
+            : $this->orderedWeightLogs()->take(2)->get()->values();
 
         if ($logs->count() >= 2) {
             $latest = $logs[0];
@@ -875,7 +986,10 @@ class Pig extends Model
     {
         $feedKg = (float) $this->total_feed_kg;
 
-        $logs = $this->chronologicalWeightLogs()->get()->values();
+        $logs = $this->relationLoaded('healthLogs')
+            ? $this->loadedChronologicalWeightLogs()
+            : $this->chronologicalWeightLogs()->get()->values();
+
         $firstLog = $logs->first();
         $latestLog = $logs->last();
 
@@ -896,7 +1010,10 @@ class Pig extends Model
 
     public function getCostPerKgGainAttribute()
     {
-        $logs = $this->chronologicalWeightLogs()->get()->values();
+        $logs = $this->relationLoaded('healthLogs')
+            ? $this->loadedChronologicalWeightLogs()
+            : $this->chronologicalWeightLogs()->get()->values();
+
         $firstLog = $logs->first();
         $latestLog = $logs->last();
 

@@ -58,26 +58,14 @@ class PigController extends Controller
             ->latest()
             ->get();
 
-        $activePigs = $pigs->filter(function ($pig) {
-            return !$pig->trashed()
-                && $pig->mortalityLogs->isEmpty()
-                && $pig->sales->isEmpty();
-        })->values();
+        $groupedPigs = $pigs
+            ->groupBy(fn ($pig) => $pig->lifecycle_state)
+            ->map(fn ($group) => $group->values());
 
-        $soldPigs = $pigs->filter(function ($pig) {
-            return !$pig->trashed()
-                && $pig->mortalityLogs->isEmpty()
-                && $pig->sales->isNotEmpty();
-        })->values();
-
-        $deadPigs = $pigs->filter(function ($pig) {
-            return !$pig->trashed()
-                && $pig->mortalityLogs->isNotEmpty();
-        })->values();
-
-        $archivedPigs = $pigs->filter(function ($pig) {
-            return $pig->trashed();
-        })->values();
+        $activePigs = $groupedPigs->get('active', collect());
+        $soldPigs = $groupedPigs->get('sold', collect());
+        $deadPigs = $groupedPigs->get('dead', collect());
+        $archivedPigs = $groupedPigs->get('archived', collect());
 
         if ($status === 'active') {
             $soldPigs = collect();
