@@ -593,7 +593,7 @@
                             @foreach($bestPerformers as $pig)
                                 <tr>
                                     <td>{{ $pig->ear_tag }}</td>
-                                    <td>{{ number_format((float) $pig->dashboard_computed_weight, 2) }} kg</td>
+                                    <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
                                     <td>₱ {{ number_format((float) $pig->total_operating_cost, 2) }}</td>
                                     <td>₱ {{ number_format((float) $pig->cost_per_kg_gain, 2) }}</td>
                                     <td>
@@ -652,7 +652,7 @@
                             @foreach($riskPigs as $pig)
                                 <tr>
                                     <td>{{ $pig->ear_tag }}</td>
-                                    <td>{{ number_format((float) $pig->dashboard_computed_weight, 2) }} kg</td>
+                                    <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
                                     <td>₱ {{ number_format((float) $pig->total_operating_cost, 2) }}</td>
                                     <td>{{ $pig->cost_per_kg_gain !== null ? '₱ ' . number_format((float) $pig->cost_per_kg_gain, 2) : '—' }}</td>
                                     <td>
@@ -701,9 +701,9 @@
                             @foreach($growthGroups['good'] as $pig)
                                 <tr>
                                     <td>{{ $pig->ear_tag }}</td>
-                                    <td>{{ number_format((float) $pig->dashboard_computed_weight, 2) }} kg</td>
-                                    <td>{{ $pig->dashboard_weight_gain !== null ? number_format((float) $pig->dashboard_weight_gain, 2) . ' kg' : '—' }}</td>
-                                    <td>{{ $pig->dashboard_daily_gain !== null ? number_format((float) $pig->dashboard_daily_gain, 2) . ' kg/day' : '—' }}</td>
+                                    <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
+                                    <td>{{ $pig->weight_gain !== null ? number_format((float) $pig->weight_gain, 2) . ' kg' : '—' }}</td>
+                                    <td>{{ $pig->daily_gain !== null ? number_format((float) $pig->daily_gain, 2) . ' kg/day' : '—' }}</td>
                                     <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
                                     <td>
                                         <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
@@ -744,9 +744,9 @@
                             @foreach($growthGroups['declining'] as $pig)
                                 <tr>
                                     <td>{{ $pig->ear_tag }}</td>
-                                    <td>{{ number_format((float) $pig->dashboard_computed_weight, 2) }} kg</td>
-                                    <td>{{ $pig->dashboard_weight_gain !== null ? number_format((float) $pig->dashboard_weight_gain, 2) . ' kg' : '—' }}</td>
-                                    <td>{{ $pig->dashboard_daily_gain !== null ? number_format((float) $pig->dashboard_daily_gain, 2) . ' kg/day' : '—' }}</td>
+                                    <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
+                                    <td>{{ $pig->weight_gain !== null ? number_format((float) $pig->weight_gain, 2) . ' kg' : '—' }}</td>
+                                    <td>{{ $pig->daily_gain !== null ? number_format((float) $pig->daily_gain, 2) . ' kg/day' : '—' }}</td>
                                     <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
                                     <td>
                                         <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
@@ -789,9 +789,9 @@
                             @foreach($growthGroups['stagnant'] as $pig)
                                 <tr>
                                     <td>{{ $pig->ear_tag }}</td>
-                                    <td>{{ number_format((float) $pig->dashboard_computed_weight, 2) }} kg</td>
-                                    <td>{{ $pig->dashboard_weight_gain !== null ? number_format((float) $pig->dashboard_weight_gain, 2) . ' kg' : '—' }}</td>
-                                    <td>{{ $pig->dashboard_daily_gain !== null ? number_format((float) $pig->dashboard_daily_gain, 2) . ' kg/day' : '—' }}</td>
+                                    <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
+                                    <td>{{ $pig->weight_gain !== null ? number_format((float) $pig->weight_gain, 2) . ' kg' : '—' }}</td>
+                                    <td>{{ $pig->daily_gain !== null ? number_format((float) $pig->daily_gain, 2) . ' kg/day' : '—' }}</td>
                                     <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
                                     <td>
                                         <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
@@ -831,7 +831,7 @@
                             @foreach($growthGroups['no_data'] as $pig)
                                 <tr>
                                     <td>{{ $pig->ear_tag }}</td>
-                                    <td>{{ number_format((float) $pig->dashboard_computed_weight, 2) }} kg</td>
+                                    <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
                                     <td><span class="badge blue">No Data</span></td>
                                     <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
                                     <td>

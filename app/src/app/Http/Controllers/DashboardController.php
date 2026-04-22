@@ -30,86 +30,6 @@ class DashboardController extends Controller
                 ->values();
         };
 
-        $buildAscendingWeightLogs = function ($pig) {
-            return $pig->healthLogs
-                ->filter(fn ($log) => $log->purpose === 'weight_update' && $log->weight !== null)
-                ->sortBy(fn ($log) => sprintf('%s-%010d', (string) ($log->log_date ?? ''), (int) $log->id))
-                ->values();
-        };
-
-        $buildMetrics = function ($pig) use ($buildWeightLogs) {
-            $weightLogs = $buildWeightLogs($pig);
-            $latestLog = $weightLogs->get(0);
-            $previousLog = $weightLogs->get(1);
-
-            $baselineWeight = $pig->latest_weight !== null && $pig->latest_weight !== ''
-                ? (float) $pig->latest_weight
-                : null;
-
-            $computedWeight = $latestLog
-                ? (float) $latestLog->weight
-                : (float) ($baselineWeight ?? 0);
-
-            $weightGain = null;
-            $dailyGain = null;
-
-            if ($latestLog && $previousLog) {
-                $weightGain = (float) $latestLog->weight - (float) $previousLog->weight;
-
-                $days = max(
-                    1,
-                    now()->parse($latestLog->log_date)->diffInDays(now()->parse($previousLog->log_date))
-                );
-
-                $dailyGain = $weightGain / $days;
-            } elseif ($latestLog && $baselineWeight !== null) {
-                $weightGain = (float) $latestLog->weight - $baselineWeight;
-
-                $baselineDate = $pig->date_added ? now()->parse($pig->date_added) : null;
-                $days = $baselineDate
-                    ? max(1, now()->parse($latestLog->log_date)->diffInDays($baselineDate))
-                    : 1;
-
-                $dailyGain = $weightGain / $days;
-            }
-
-            $growthStatus = 'no_data';
-
-            if ($weightGain !== null) {
-                if ($weightGain > 0) {
-                    $growthStatus = 'good';
-                } elseif ($weightGain < 0) {
-                    $growthStatus = 'declining';
-                } else {
-                    $growthStatus = 'stagnant';
-                }
-            }
-
-            return [
-                'weight_logs' => $weightLogs,
-                'latest_log_date' => $latestLog?->log_date,
-                'computed_weight' => $computedWeight,
-                'weight_gain' => $weightGain,
-                'daily_gain' => $dailyGain,
-                'growth_status' => $growthStatus,
-            ];
-        };
-
-        $buildPositiveLogOnlyGain = function ($pig) use ($buildAscendingWeightLogs) {
-            $logs = $buildAscendingWeightLogs($pig);
-
-            if ($logs->count() < 2) {
-                return null;
-            }
-
-            $firstLog = $logs->first();
-            $latestLog = $logs->last();
-
-            $gain = (float) $latestLog->weight - (float) $firstLog->weight;
-
-            return $gain > 0 ? $gain : null;
-        };
-
         $resolveFrozenMortalityLoss = function ($pig): float {
             $mortalityLog = $pig->mortalityLogs
                 ->sortByDesc(fn ($log) => sprintf(
@@ -130,20 +50,13 @@ class DashboardController extends Controller
             return (float) ($pig->asset_value ?? 0);
         };
 
-        foreach ($pigs as $pig) {
-            $metrics = $buildMetrics($pig);
+        $groupedPigs = $pigs
+            ->groupBy(fn ($pig) => $pig->lifecycle_state)
+            ->map(fn ($group) => $group->values());
 
-            $pig->dashboard_weight_logs = $metrics['weight_logs'];
-            $pig->dashboard_latest_log_date = $metrics['latest_log_date'];
-            $pig->dashboard_computed_weight = $metrics['computed_weight'];
-            $pig->dashboard_weight_gain = $metrics['weight_gain'];
-            $pig->dashboard_daily_gain = $metrics['daily_gain'];
-            $pig->dashboard_growth_status = $metrics['growth_status'];
-        }
-
-        $livePigs = $pigs->filter(fn ($pig) => $pig->sales->isEmpty() && $pig->mortalityLogs->isEmpty());
-        $soldPigs = $pigs->filter(fn ($pig) => $pig->sales->isNotEmpty());
-        $deadPigs = $pigs->filter(fn ($pig) => $pig->mortalityLogs->isNotEmpty());
+        $livePigs = $groupedPigs->get('active', collect());
+        $soldPigs = $groupedPigs->get('sold', collect());
+        $deadPigs = $groupedPigs->get('dead', collect());
 
         $totalAssetValue = (float) $livePigs->sum(fn ($pig) => (float) $pig->computed_asset_value);
         $totalRevenue = (float) $soldPigs->flatMap->sales->sum('price');
@@ -158,14 +71,12 @@ class DashboardController extends Controller
 
         $netPosition = $totalAssetValue + $totalRevenue - $totalLossValue - $totalOperatingCost;
 
-        $positiveGainPigs = $pigs->filter(function ($pig) use ($buildPositiveLogOnlyGain) {
-            return $pig->total_feed_kg > 0 && $buildPositiveLogOnlyGain($pig) !== null;
+        $positiveGainPigs = $pigs->filter(function ($pig) {
+            return $pig->total_feed_kg > 0 && $pig->positive_gain_from_start !== null;
         });
 
         $totalFeedKgForEfficiency = (float) $positiveGainPigs->sum(fn ($pig) => (float) $pig->total_feed_kg);
-        $totalGainForEfficiency = (float) $positiveGainPigs->sum(function ($pig) use ($buildPositiveLogOnlyGain) {
-            return (float) ($buildPositiveLogOnlyGain($pig) ?? 0);
-        });
+        $totalGainForEfficiency = (float) $positiveGainPigs->sum(fn ($pig) => (float) ($pig->positive_gain_from_start ?? 0));
 
         $farmFeedEfficiency = $totalFeedKgForEfficiency > 0 && $totalGainForEfficiency > 0
             ? $totalFeedKgForEfficiency / $totalGainForEfficiency
@@ -242,16 +153,17 @@ class DashboardController extends Controller
         $pendingPregnancyChecks = $normalizeCycleStatuses($pendingPregnancyChecks);
 
         $staleWeightPigs = $pigs->filter(function ($pig) {
-            if (!$pig->dashboard_latest_log_date) {
+            if (!$pig->latest_weight_log_date) {
                 return true;
             }
 
-            return now()->diffInDays($pig->dashboard_latest_log_date) > 7;
+            return now()->diffInDays($pig->latest_weight_log_date) > 7;
         });
 
-        $weightAlertRows = $staleWeightPigs->map(function ($pig) {
-            $latest = $pig->dashboard_weight_logs->get(0);
-            $previous = $pig->dashboard_weight_logs->get(1);
+        $weightAlertRows = $staleWeightPigs->map(function ($pig) use ($buildWeightLogs) {
+            $weightLogs = $buildWeightLogs($pig);
+            $latest = $weightLogs->get(0);
+            $previous = $weightLogs->get(1);
 
             $trendSymbol = '—';
             $trendLabel = 'No change baseline';
@@ -274,7 +186,7 @@ class DashboardController extends Controller
 
             return [
                 'pig' => $pig,
-                'latest_weight' => $pig->dashboard_computed_weight,
+                'latest_weight' => $pig->computed_weight,
                 'trend_symbol' => $trendSymbol,
                 'trend_label' => $trendLabel,
             ];
@@ -288,7 +200,7 @@ class DashboardController extends Controller
         ];
 
         foreach ($pigs as $pig) {
-            $growthGroups[$pig->dashboard_growth_status]->push($pig);
+            $growthGroups[$pig->growth_status]->push($pig);
         }
 
         $growthSummary = [
