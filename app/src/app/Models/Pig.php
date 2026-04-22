@@ -801,7 +801,10 @@ class Pig extends Model
             return null;
         }
 
-        return Carbon::today()->diffInDays(Carbon::parse($this->latest_weight_log_date));
+        $latestWeightDate = Carbon::parse($this->latest_weight_log_date)->startOfDay();
+        $today = Carbon::today()->startOfDay();
+
+        return max(0, $latestWeightDate->diffInDays($today, false));
     }
 
     public function getHasStaleWeightAttribute(): bool
