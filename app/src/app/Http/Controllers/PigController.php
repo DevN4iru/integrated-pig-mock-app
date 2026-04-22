@@ -162,7 +162,7 @@ class PigController extends Controller
         unset($validated['age_value'], $validated['age_unit']);
 
         $validated['pen_location'] = $pen->name;
-        $validated['asset_value'] = (float) $validated['latest_weight'] * FarmSetting::currentPricePerKg();
+        $validated['asset_value'] = Pig::preservedAssetValueSeedFromWeight((float) $validated['latest_weight']);
 
         Pig::create($validated);
 
@@ -247,10 +247,9 @@ class PigController extends Controller
             throw ValidationException::withMessages($capacityErrors);
         }
 
-        $pricePerKg = FarmSetting::currentPricePerKg();
         $birthDate = $reproductionCycle->actual_farrow_date->toDateString();
 
-        DB::transaction(function () use ($validated, $pens, $pricePerKg, $birthDate, $reproductionCycle): void {
+        DB::transaction(function () use ($validated, $pens, $birthDate, $reproductionCycle): void {
             if ($reproductionCycle->bornPiglets()->exists()) {
                 throw ValidationException::withMessages([
                     'piglets' => 'This litter already has registered piglets. Duplicate registration is blocked.',
@@ -273,7 +272,7 @@ class PigController extends Controller
                     'reproduction_cycle_id' => $reproductionCycle->id,
                     'date_added' => $birthDate,
                     'latest_weight' => $weight,
-                    'asset_value' => $weight * $pricePerKg,
+                    'asset_value' => Pig::preservedAssetValueSeedFromWeight($weight),
                 ]);
             }
         });
@@ -355,7 +354,6 @@ class PigController extends Controller
 
         $validated['pen_id'] = $pig->pen_id;
         $validated['pen_location'] = $pig->pen?->name ?? $pig->pen_location;
-        $validated['asset_value'] = (float) $validated['latest_weight'] * FarmSetting::currentPricePerKg();
 
         $pig->update($validated);
 
@@ -368,6 +366,7 @@ class PigController extends Controller
             return redirect()->route('pigs.index')->with('error', 'Pig is already archived.');
         }
 
+        $pig->preserveCurrentDisplayValueForArchive();
         $pig->delete();
 
         return redirect()->route('pigs.index')->with('success', 'Pig archived successfully.');

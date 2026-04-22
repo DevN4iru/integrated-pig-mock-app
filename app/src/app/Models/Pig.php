@@ -172,6 +172,18 @@ class Pig extends Model
         return $query->onlyTrashed();
     }
 
+    public static function preservedAssetValueSeedFromWeight(float $weight): float
+    {
+        return max(0, $weight) * FarmSetting::currentPricePerKg();
+    }
+
+    public function preserveCurrentDisplayValueForArchive(): void
+    {
+        $this->forceFill([
+            'asset_value' => (float) $this->display_value_amount,
+        ])->save();
+    }
+
     protected function activeProtocolTemplateByTarget(string $targetType): ?ProtocolTemplate
     {
         return ProtocolTemplate::query()
