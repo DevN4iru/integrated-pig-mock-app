@@ -894,6 +894,10 @@ class Pig extends Model
             return $this->frozen_sale_value;
         }
 
+        if ($this->is_archived_lifecycle) {
+            return (float) ($this->asset_value ?? 0);
+        }
+
         return $this->active_live_value;
     }
 
