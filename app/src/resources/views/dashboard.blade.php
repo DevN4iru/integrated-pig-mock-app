@@ -1002,7 +1002,7 @@
             <a href="{{ route('pigs.index') }}" class="btn">View Pigs</a>
         </div>
 
-        @if($weightAlertRows->isEmpty())
+        @if($staleWeightPigs->isEmpty())
             <div class="empty-state">All pigs have recent weight updates.</div>
         @else
             <div class="table-wrap">
@@ -1016,21 +1016,21 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($weightAlertRows as $row)
+                        @foreach($staleWeightPigs as $pig)
                             <tr>
-                                <td>{{ $row['pig']->ear_tag }}</td>
-                                <td>{{ number_format((float) $row['latest_weight'], 2) }} kg</td>
+                                <td>{{ $pig->ear_tag }}</td>
+                                <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
                                 <td>
-                                    @if($row['trend_symbol'] === '↑')
-                                        <span class="trend-up">↑ Increasing</span>
-                                    @elseif($row['trend_symbol'] === '↓')
-                                        <span class="trend-down">↓ Dropping</span>
+                                    @if($pig->recent_weight_trend_direction === 'up')
+                                        <span class="trend-up">{{ $pig->recent_weight_trend_symbol }} {{ $pig->recent_weight_trend_label }}</span>
+                                    @elseif($pig->recent_weight_trend_direction === 'down')
+                                        <span class="trend-down">{{ $pig->recent_weight_trend_symbol }} {{ $pig->recent_weight_trend_label }}</span>
                                     @else
-                                        <span class="trend-flat">{{ $row['trend_symbol'] }} {{ $row['trend_label'] }}</span>
+                                        <span class="trend-flat">{{ $pig->recent_weight_trend_symbol }} {{ $pig->recent_weight_trend_label }}</span>
                                     @endif
                                 </td>
                                 <td>
-                                    <a href="{{ route('pigs.show', $row['pig']->id) }}" class="btn">Go to Pig</a>
+                                    <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
                                 </td>
                             </tr>
                         @endforeach

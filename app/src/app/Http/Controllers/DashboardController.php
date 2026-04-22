@@ -23,33 +23,6 @@ class DashboardController extends Controller
             'reproductionCyclesAsSow.updates',
         ])->get();
 
-        $buildWeightLogs = function ($pig) {
-            return $pig->healthLogs
-                ->filter(fn ($log) => $log->purpose === 'weight_update' && $log->weight !== null)
-                ->sortByDesc(fn ($log) => sprintf('%s-%010d', (string) ($log->log_date ?? ''), (int) $log->id))
-                ->values();
-        };
-
-        $resolveFrozenMortalityLoss = function ($pig): float {
-            $mortalityLog = $pig->mortalityLogs
-                ->sortByDesc(fn ($log) => sprintf(
-                    '%s-%010d',
-                    $log->death_date?->format('Y-m-d') ?? (string) ($log->death_date ?? ''),
-                    (int) $log->id
-                ))
-                ->first();
-
-            if (!$mortalityLog) {
-                return 0.0;
-            }
-
-            if ($mortalityLog->loss_value !== null) {
-                return (float) $mortalityLog->loss_value;
-            }
-
-            return (float) ($pig->asset_value ?? 0);
-        };
-
         $groupedPigs = $pigs
             ->groupBy(fn ($pig) => $pig->lifecycle_state)
             ->map(fn ($group) => $group->values());
@@ -58,9 +31,9 @@ class DashboardController extends Controller
         $soldPigs = $groupedPigs->get('sold', collect());
         $deadPigs = $groupedPigs->get('dead', collect());
 
-        $totalAssetValue = (float) $livePigs->sum(fn ($pig) => (float) $pig->computed_asset_value);
+        $totalAssetValue = (float) $livePigs->sum(fn ($pig) => (float) $pig->active_live_value);
         $totalRevenue = (float) $soldPigs->flatMap->sales->sum('price');
-        $totalLossValue = (float) $deadPigs->sum(fn ($pig) => $resolveFrozenMortalityLoss($pig));
+        $totalLossValue = (float) $deadPigs->sum(fn ($pig) => (float) $pig->frozen_mortality_value);
 
         $totalFeedCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_feed_cost);
         $totalMedicationCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_medication_cost);
@@ -120,45 +93,9 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        $staleWeightPigs = $pigs->filter(function ($pig) {
-            if (!$pig->latest_weight_log_date) {
-                return true;
-            }
-
-            return now()->diffInDays($pig->latest_weight_log_date) > 7;
-        });
-
-        $weightAlertRows = $staleWeightPigs->map(function ($pig) use ($buildWeightLogs) {
-            $weightLogs = $buildWeightLogs($pig);
-            $latest = $weightLogs->get(0);
-            $previous = $weightLogs->get(1);
-
-            $trendSymbol = '—';
-            $trendLabel = 'No change baseline';
-
-            if ($latest && $previous) {
-                if ((float) $latest->weight > (float) $previous->weight) {
-                    $trendSymbol = '↑';
-                    $trendLabel = 'Increasing';
-                } elseif ((float) $latest->weight < (float) $previous->weight) {
-                    $trendSymbol = '↓';
-                    $trendLabel = 'Dropping';
-                } else {
-                    $trendSymbol = '→';
-                    $trendLabel = 'Stable';
-                }
-            } elseif ($latest) {
-                $trendSymbol = '→';
-                $trendLabel = 'Only one record';
-            }
-
-            return [
-                'pig' => $pig,
-                'latest_weight' => $pig->computed_weight,
-                'trend_symbol' => $trendSymbol,
-                'trend_label' => $trendLabel,
-            ];
-        });
+        $staleWeightPigs = $pigs
+            ->filter(fn ($pig) => $pig->has_stale_weight)
+            ->values();
 
         $growthGroups = [
             'good' => collect(),
@@ -216,7 +153,7 @@ class DashboardController extends Controller
             'dueSoonCycles',
             'returnedToHeatCycles',
             'pendingPregnancyChecks',
-            'weightAlertRows',
+            'staleWeightPigs',
             'growthGroups',
             'growthSummary',
             'bestPerformers',

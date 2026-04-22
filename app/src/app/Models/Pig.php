@@ -32,8 +32,14 @@ class Pig extends Model
     protected $appends = [
         'computed_weight',
         'computed_asset_value',
+        'active_live_value',
         'latest_weight_log_date',
+        'days_since_latest_weight',
+        'has_stale_weight',
         'positive_gain_from_start',
+        'recent_weight_trend_direction',
+        'recent_weight_trend_symbol',
+        'recent_weight_trend_label',
         'lifecycle_state',
         'is_archived_lifecycle',
         'is_dead_lifecycle',
@@ -703,6 +709,54 @@ class Pig extends Model
             : null;
     }
 
+    protected function recentWeightTrendSnapshot(): array
+    {
+        $logs = $this->relationLoaded('healthLogs')
+            ? $this->loadedOrderedWeightLogs()
+            : $this->orderedWeightLogs()->take(2)->get()->values();
+
+        $latest = $logs->get(0);
+        $previous = $logs->get(1);
+
+        if ($latest && $previous) {
+            if ((float) $latest->weight > (float) $previous->weight) {
+                return [
+                    'direction' => 'up',
+                    'symbol' => '↑',
+                    'label' => 'Increasing',
+                ];
+            }
+
+            if ((float) $latest->weight < (float) $previous->weight) {
+                return [
+                    'direction' => 'down',
+                    'symbol' => '↓',
+                    'label' => 'Dropping',
+                ];
+            }
+
+            return [
+                'direction' => 'flat',
+                'symbol' => '→',
+                'label' => 'Stable',
+            ];
+        }
+
+        if ($latest) {
+            return [
+                'direction' => 'flat',
+                'symbol' => '→',
+                'label' => 'Only one record',
+            ];
+        }
+
+        return [
+            'direction' => 'flat',
+            'symbol' => '—',
+            'label' => 'No recent weight data',
+        ];
+    }
+
     public function getComputedWeightAttribute()
     {
         $latestLog = $this->relationLoaded('healthLogs')
@@ -723,6 +777,15 @@ class Pig extends Model
         return (float) $weight * FarmSetting::currentPricePerKg();
     }
 
+    public function getActiveLiveValueAttribute(): float
+    {
+        if (!$this->is_active_lifecycle) {
+            return 0.0;
+        }
+
+        return (float) $this->computed_asset_value;
+    }
+
     public function getLatestWeightLogDateAttribute()
     {
         $latestLog = $this->relationLoaded('healthLogs')
@@ -730,6 +793,20 @@ class Pig extends Model
             : $this->orderedWeightLogs()->first();
 
         return $latestLog?->log_date;
+    }
+
+    public function getDaysSinceLatestWeightAttribute(): ?int
+    {
+        if (!$this->latest_weight_log_date) {
+            return null;
+        }
+
+        return Carbon::today()->diffInDays(Carbon::parse($this->latest_weight_log_date));
+    }
+
+    public function getHasStaleWeightAttribute(): bool
+    {
+        return $this->days_since_latest_weight === null || $this->days_since_latest_weight > 7;
     }
 
     public function getPositiveGainFromStartAttribute(): ?float
@@ -748,6 +825,21 @@ class Pig extends Model
         $gain = (float) $latestLog->weight - (float) $firstLog->weight;
 
         return $gain > 0 ? $gain : null;
+    }
+
+    public function getRecentWeightTrendDirectionAttribute(): string
+    {
+        return $this->recentWeightTrendSnapshot()['direction'];
+    }
+
+    public function getRecentWeightTrendSymbolAttribute(): string
+    {
+        return $this->recentWeightTrendSnapshot()['symbol'];
+    }
+
+    public function getRecentWeightTrendLabelAttribute(): string
+    {
+        return $this->recentWeightTrendSnapshot()['label'];
     }
 
     public function getFrozenMortalityValueAttribute(): float
@@ -799,7 +891,7 @@ class Pig extends Model
             return $this->frozen_sale_value;
         }
 
-        return (float) ($this->asset_value ?? 0);
+        return $this->active_live_value;
     }
 
     public function getAgeDisplayAttribute(): string
