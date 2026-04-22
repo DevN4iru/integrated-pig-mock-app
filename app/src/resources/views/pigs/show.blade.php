@@ -6,10 +6,10 @@
 
 @section('top_actions')
     @php
-        $isArchivedTop = !is_null($pig->deleted_at);
-        $isDeadTop = !$isArchivedTop && $pig->mortalityLogs->isNotEmpty();
-        $isSoldTop = !$isArchivedTop && $pig->sales->isNotEmpty();
-        $isOperationalLockedTop = $isArchivedTop || $isDeadTop || $isSoldTop;
+        $isArchivedTop = $pig->is_archived_lifecycle;
+        $isDeadTop = $pig->is_dead_lifecycle;
+        $isSoldTop = $pig->is_sold_lifecycle;
+        $isOperationalLockedTop = $pig->isOperationallyLocked();
         $isFemaleTop = strtolower((string) $pig->sex) === 'female';
     @endphp
 
@@ -545,10 +545,11 @@
         $penName = $pig->pen?->name ?? '—';
         $ageDisplay = $pig->age_display;
 
-        $isArchived = !is_null($pig->deleted_at);
-        $isDead = !$isArchived && $pig->mortalityLogs->isNotEmpty();
-        $isSold = !$isArchived && $pig->sales->isNotEmpty();
-        $isOperationalLocked = $isArchived || $isDead || $isSold;
+        $lifecycleState = $pig->lifecycle_state;
+        $isArchived = $pig->is_archived_lifecycle;
+        $isDead = $pig->is_dead_lifecycle;
+        $isSold = $pig->is_sold_lifecycle;
+        $isOperationalLocked = $pig->isOperationallyLocked();
         $isFemale = strtolower((string) $pig->sex) === 'female';
 
         $displayValueLabel = $pig->display_value_label;
@@ -562,19 +563,12 @@
             default => null,
         };
 
-        if ($isArchived) {
-            $statusLabel = 'Archived';
-            $statusBadgeClass = 'blue';
-        } elseif ($isDead) {
-            $statusLabel = 'Dead';
-            $statusBadgeClass = 'red';
-        } elseif ($isSold) {
-            $statusLabel = 'Sold';
-            $statusBadgeClass = 'orange';
-        } else {
-            $statusLabel = 'Active';
-            $statusBadgeClass = 'green';
-        }
+        [$statusLabel, $statusBadgeClass] = match ($lifecycleState) {
+            'archived' => ['Archived', 'blue'],
+            'dead' => ['Dead', 'red'],
+            'sold' => ['Sold', 'orange'],
+            default => ['Active', 'green'],
+        };
 
         $purposeLabels = [
             'weight_update' => 'Weight Update',
@@ -631,15 +625,9 @@
             $trendText = 'Stable';
         }
 
-        if ($isArchived) {
-            $lockMessage = 'This pig is archived. Operational records are locked until the pig is restored.';
-        } elseif ($isDead) {
-            $lockMessage = 'This pig has a mortality record. Health, feed, medication, vaccination, transfer, and breeding records are locked.';
-        } elseif ($isSold) {
-            $lockMessage = 'This pig has a sale record. Health, feed, medication, vaccination, transfer, and breeding records are locked.';
-        } else {
-            $lockMessage = null;
-        }
+        $lockMessage = $isOperationalLocked
+            ? $pig->operationalLockMessage('records')
+            : null;
 
         $feedKg = $pig->total_feed_kg;
         $feedEfficiency = $pig->feed_efficiency;
@@ -1725,12 +1713,12 @@
                         <h3>Mortality</h3>
                         <p>Mortality records for this pig.</p>
                     </div>
-                    @if(!$isArchived && $pig->sales->isEmpty())
+                    @if(!$isArchived && !$isSold)
                         <a href="{{ route('mortality.create', $pig) }}" class="btn primary">Record Mortality</a>
                     @endif
                 </div>
 
-                @if($pig->sales->isNotEmpty() && !$isArchived)
+                @if($isSold && !$isArchived)
                     <div class="flash error">
                         Mortality recording is locked because this pig already has a sale record.
                     </div>
@@ -1779,12 +1767,12 @@
                         <h3>Sold Records</h3>
                         <p>Sale records for this pig.</p>
                     </div>
-                    @if(!$isArchived && $pig->mortalityLogs->isEmpty())
+                    @if(!$isArchived && !$isDead)
                         <a href="{{ route('sales.create', $pig) }}" class="btn primary">Record Sale</a>
                     @endif
                 </div>
 
-                @if($pig->mortalityLogs->isNotEmpty() && !$isArchived)
+                @if($isDead && !$isArchived)
                     <div class="flash error">
                         Sale recording is locked because this pig already has a mortality record.
                     </div>
