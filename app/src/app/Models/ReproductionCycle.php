@@ -104,6 +104,72 @@ class ReproductionCycle extends Model
         return $query->whereIn('status', static::activeStatuses());
     }
 
+    public function scopeWithDashboardRelations($query)
+    {
+        return $query->with(['sow.pen', 'boar']);
+    }
+
+    public function scopeUpcomingFarrowingAlerts($query, int $days = 14)
+    {
+        return $query
+            ->whereIn('status', [
+                self::STATUS_PREGNANT,
+                self::STATUS_DUE_SOON,
+            ])
+            ->where('pregnancy_result', self::PREGNANCY_RESULT_PREGNANT)
+            ->whereNotNull('expected_farrow_date')
+            ->whereNull('actual_farrow_date')
+            ->whereBetween('expected_farrow_date', [
+                now()->toDateString(),
+                now()->copy()->addDays($days)->toDateString(),
+            ])
+            ->orderBy('expected_farrow_date');
+    }
+
+    public function scopeActiveDashboardCycles($query)
+    {
+        return $query
+            ->active()
+            ->orderByDesc('service_date')
+            ->orderByDesc('id');
+    }
+
+    public function scopeDueSoonDashboardCycles($query)
+    {
+        return $query
+            ->whereIn('status', [
+                self::STATUS_PREGNANT,
+                self::STATUS_DUE_SOON,
+            ])
+            ->where('pregnancy_result', self::PREGNANCY_RESULT_PREGNANT)
+            ->whereNotNull('expected_farrow_date')
+            ->whereNull('actual_farrow_date')
+            ->whereBetween('expected_farrow_date', [
+                now()->toDateString(),
+                now()->copy()->addDays(static::dueSoonThresholdDays())->toDateString(),
+            ])
+            ->orderBy('expected_farrow_date')
+            ->orderBy('id');
+    }
+
+    public function scopeReturnedToHeatDashboardCycles($query)
+    {
+        return $query
+            ->where('status', self::STATUS_RETURNED_TO_HEAT)
+            ->orderByDesc('pregnancy_check_date')
+            ->orderByDesc('service_date')
+            ->orderByDesc('id');
+    }
+
+    public function scopePendingPregnancyChecksDashboardCycles($query)
+    {
+        return $query
+            ->where('status', self::STATUS_SERVICED)
+            ->where('pregnancy_result', self::PREGNANCY_RESULT_PENDING)
+            ->orderByDesc('service_date')
+            ->orderByDesc('id');
+    }
+
     public static function breedingTypeOptions(): array
     {
         return [
