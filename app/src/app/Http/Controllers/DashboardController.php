@@ -90,67 +90,35 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        $normalizeCycleStatuses = function ($cycles) {
-            return $cycles->map(function ($cycle) {
-                $cycle->status = $cycle->display_status;
-                return $cycle;
-            })->values();
-        };
-
-        $upcomingFarrowings = ReproductionCycle::with(['sow.pen', 'boar'])
-            ->whereIn('status', [
-                ReproductionCycle::STATUS_PREGNANT,
-                ReproductionCycle::STATUS_DUE_SOON,
-            ])
-            ->where('pregnancy_result', ReproductionCycle::PREGNANCY_RESULT_PREGNANT)
-            ->whereNotNull('expected_farrow_date')
-            ->whereBetween('expected_farrow_date', [
-                now()->toDateString(),
-                now()->copy()->addDays(14)->toDateString(),
-            ])
-            ->orderBy('expected_farrow_date')
+        $upcomingFarrowings = ReproductionCycle::query()
+            ->withDashboardRelations()
+            ->upcomingFarrowingAlerts()
             ->take(5)
             ->get();
 
-        $activeBreedingCycles = ReproductionCycle::with(['sow.pen', 'boar'])
-            ->whereIn('status', ReproductionCycle::activeStatuses())
-            ->orderByDesc('service_date')
+        $activeBreedingCycles = ReproductionCycle::query()
+            ->withDashboardRelations()
+            ->activeDashboardCycles()
             ->take(5)
             ->get();
 
-        $dueSoonCycles = ReproductionCycle::with(['sow.pen', 'boar'])
-            ->whereIn('status', [
-                ReproductionCycle::STATUS_PREGNANT,
-                ReproductionCycle::STATUS_DUE_SOON,
-            ])
-            ->where('pregnancy_result', ReproductionCycle::PREGNANCY_RESULT_PREGNANT)
-            ->whereNotNull('expected_farrow_date')
-            ->whereNull('actual_farrow_date')
-            ->orderBy('expected_farrow_date')
-            ->get()
-            ->filter(fn ($cycle) => $cycle->is_due_soon)
-            ->take(5)
-            ->values();
-
-        $returnedToHeatCycles = ReproductionCycle::with(['sow.pen', 'boar'])
-            ->where('status', ReproductionCycle::STATUS_RETURNED_TO_HEAT)
-            ->orderByDesc('pregnancy_check_date')
-            ->orderByDesc('service_date')
+        $dueSoonCycles = ReproductionCycle::query()
+            ->withDashboardRelations()
+            ->dueSoonDashboardCycles()
             ->take(5)
             ->get();
 
-        $pendingPregnancyChecks = ReproductionCycle::with(['sow.pen', 'boar'])
-            ->where('status', ReproductionCycle::STATUS_SERVICED)
-            ->where('pregnancy_result', ReproductionCycle::PREGNANCY_RESULT_PENDING)
-            ->orderByDesc('service_date')
+        $returnedToHeatCycles = ReproductionCycle::query()
+            ->withDashboardRelations()
+            ->returnedToHeatDashboardCycles()
             ->take(5)
             ->get();
 
-        $upcomingFarrowings = $normalizeCycleStatuses($upcomingFarrowings);
-        $activeBreedingCycles = $normalizeCycleStatuses($activeBreedingCycles);
-        $dueSoonCycles = $normalizeCycleStatuses($dueSoonCycles);
-        $returnedToHeatCycles = $normalizeCycleStatuses($returnedToHeatCycles);
-        $pendingPregnancyChecks = $normalizeCycleStatuses($pendingPregnancyChecks);
+        $pendingPregnancyChecks = ReproductionCycle::query()
+            ->withDashboardRelations()
+            ->pendingPregnancyChecksDashboardCycles()
+            ->take(5)
+            ->get();
 
         $staleWeightPigs = $pigs->filter(function ($pig) {
             if (!$pig->latest_weight_log_date) {

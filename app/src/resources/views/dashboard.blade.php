@@ -108,8 +108,8 @@
 @php
     use App\Models\ReproductionCycle;
 
-    $cycleBadgeClass = function (string $status) {
-        return match ($status) {
+    $cycleBadgeClass = function (string $displayStatus) {
+        return match ($displayStatus) {
             ReproductionCycle::STATUS_PREGNANT => 'green',
             ReproductionCycle::STATUS_DUE_SOON => 'blue',
             ReproductionCycle::STATUS_FARROWED => 'blue',
@@ -382,7 +382,7 @@
                                 <tr>
                                     <td>{{ $cycle->sow?->ear_tag ?? '—' }}</td>
                                     <td>
-                                        <span class="badge {{ $cycleBadgeClass($cycle->status) }}">
+                                        <span class="badge {{ $cycleBadgeClass($cycle->display_status) }}">
                                             {{ $cycle->status_label }}
                                         </span>
                                     </td>
@@ -440,7 +440,7 @@
                                 <tr>
                                     <td>{{ $cycle->sow?->ear_tag ?? '—' }}</td>
                                     <td>
-                                        <span class="badge {{ $cycleBadgeClass($cycle->status) }}">
+                                        <span class="badge {{ $cycleBadgeClass($cycle->display_status) }}">
                                             {{ $cycle->status_label }}
                                         </span>
                                     </td>
@@ -543,7 +543,7 @@
                                     <td>{{ $cycle->sow?->ear_tag ?? '—' }}</td>
                                     <td>{{ $cycle->service_date?->format('Y-m-d') ?? '—' }}</td>
                                     <td>
-                                        <span class="badge {{ $cycleBadgeClass($cycle->status) }}">
+                                        <span class="badge {{ $cycleBadgeClass($cycle->display_status) }}">
                                             {{ $cycle->status_label }}
                                         </span>
                                     </td>
