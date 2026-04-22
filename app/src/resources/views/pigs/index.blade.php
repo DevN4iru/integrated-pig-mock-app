@@ -98,43 +98,6 @@
 @section('content')
 
 @php
-    $buildTrend = function ($pig) {
-        $logs = $pig->healthLogs
-            ->whereNotNull('weight')
-            ->sortByDesc(fn ($l) => sprintf('%s-%010d', (string) ($l->log_date ?? ''), (int) $l->id))
-            ->values();
-
-        $latest = $logs->get(0);
-        $prev = $logs->get(1);
-
-        if (!$latest || !$prev) {
-            return ['symbol' => '—', 'class' => 'trend-flat'];
-        }
-
-        if ((float) $latest->weight > (float) $prev->weight) {
-            return ['symbol' => '↑', 'class' => 'trend-up'];
-        }
-
-        if ((float) $latest->weight < (float) $prev->weight) {
-            return ['symbol' => '↓', 'class' => 'trend-down'];
-        }
-
-        return ['symbol' => '→', 'class' => 'trend-flat'];
-    };
-
-    $isStale = function ($pig) {
-        $latest = $pig->healthLogs
-            ->whereNotNull('weight')
-            ->sortByDesc(fn ($log) => sprintf('%s-%010d', (string) ($log->log_date ?? ''), (int) $log->id))
-            ->first();
-
-        if (!$latest) {
-            return true;
-        }
-
-        return \Carbon\Carbon::parse($latest->log_date)->diffInDays(now()) > 7;
-    };
-
     $showActiveSection = in_array($status, ['all', 'active'], true);
     $showSoldSection = in_array($status, ['all', 'sold'], true);
     $showDeadSection = in_array($status, ['all', 'dead'], true);
@@ -403,15 +366,17 @@
                                 <tbody>
                                     @foreach ($group['pigs'] as $pig)
                                         @php
-                                            $trend = $buildTrend($pig);
-                                            $stale = $isStale($pig);
+                                            $trendDirection = $pig->recent_weight_trend_direction;
+                                            $trendSymbol = $pig->recent_weight_trend_symbol;
+                                            $trendLabel = $pig->recent_weight_trend_label;
+                                            $trendClass = match ($trendDirection) {
+                                                'up' => 'trend-up',
+                                                'down' => 'trend-down',
+                                                default => 'trend-flat',
+                                            };
 
-                                            $latestLog = $pig->healthLogs
-                                                ->whereNotNull('weight')
-                                                ->sortByDesc(fn ($log) => sprintf('%s-%010d', (string) ($log->log_date ?? ''), (int) $log->id))
-                                                ->first();
-
-                                            $displayWeight = $latestLog?->weight ?? $pig->latest_weight;
+                                            $stale = $pig->has_stale_weight;
+                                            $displayWeight = $pig->computed_weight;
                                             $recommendedValue = (float) $pig->computed_asset_value;
                                         @endphp
 
@@ -438,8 +403,8 @@
                                             <td>{{ $pig->breed }}</td>
                                             <td>{{ $pig->age_display }}</td>
                                             <td>{{ ucfirst($pig->pig_source) }}</td>
-                                            <td>{{ $displayWeight ? number_format((float) $displayWeight, 2) . ' kg' : '—' }}</td>
-                                            <td class="{{ $trend['class'] }}">{{ $trend['symbol'] }}</td>
+                                            <td>{{ $displayWeight !== null ? number_format((float) $displayWeight, 2) . ' kg' : '—' }}</td>
+                                            <td class="{{ $trendClass }}" title="{{ $trendLabel }}">{{ $trendSymbol }}</td>
                                             <td>₱ {{ number_format((float) $pig->computed_asset_value, 2) }}</td>
                                             <td>
                                                 <div class="inline-actions">
