@@ -610,7 +610,7 @@
                             <td>{{ $pig->age_display }}</td>
                             <td>{{ $pig->pen?->name ?? $pig->pen_location ?? '—' }}</td>
                             <td>{{ ucfirst($pig->pig_source) }}</td>
-                            <td>₱ {{ number_format((float) $pig->computed_asset_value, 2) }}</td>
+                            <td>₱ {{ number_format((float) $pig->display_value_amount, 2) }}</td>
                             <td>
                                 <div class="inline-actions">
                                     <a href="{{ route('pigs.show', $pig) }}" class="btn">View</a>
