@@ -6,6 +6,7 @@ use App\Http\Controllers\FeedLogController;
 use App\Http\Controllers\HealthLogController;
 use App\Http\Controllers\MedicationController;
 use App\Http\Controllers\MortalityLogController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PenController;
 use App\Http\Controllers\PigController;
 use App\Http\Controllers\PigTransferController;
@@ -23,6 +24,16 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+/*
+|--------------------------------------------------------------------------
+| Notifications
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
+Route::post('/notifications/{notification}/dismiss', [NotificationController::class, 'dismiss'])->name('notifications.dismiss');
 
 /*
 |--------------------------------------------------------------------------

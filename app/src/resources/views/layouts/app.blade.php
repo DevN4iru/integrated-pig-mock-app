@@ -628,6 +628,16 @@
     @endif
 </head>
 <body>
+    @php
+        $notificationsEnabled = \Illuminate\Support\Facades\Route::has('notifications.index')
+            && class_exists(\App\Models\Notification::class)
+            && \Illuminate\Support\Facades\Schema::hasTable('notifications');
+
+        $unreadNotificationCount = $notificationsEnabled
+            ? \App\Models\Notification::query()->active()->unread()->count()
+            : 0;
+    @endphp
+
     <div class="app">
         <aside class="sidebar">
             <div class="brand">
@@ -683,6 +693,19 @@
                     </div>
 
                     <div class="actions">
+                        @if ($notificationsEnabled)
+                            <a
+                                href="{{ route('notifications.index') }}"
+                                class="btn {{ request()->routeIs('notifications.*') ? 'primary' : '' }}"
+                            >
+                                <span>Notifications</span>
+
+                                @if ($unreadNotificationCount > 0)
+                                    <span class="badge red">{{ $unreadNotificationCount }}</span>
+                                @endif
+                            </a>
+                        @endif
+
                         @yield('top_actions')
                     </div>
                 </header>
