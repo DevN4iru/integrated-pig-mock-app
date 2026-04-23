@@ -9,14 +9,7 @@ class FarmSettingController extends Controller
 {
     public function edit()
     {
-        $setting = FarmSetting::query()->find(1);
-
-        if (!$setting) {
-            $setting = FarmSetting::query()->create([
-                'id' => 1,
-                'price_per_kg' => 0,
-            ]);
-        }
+        $setting = FarmSetting::current();
 
         return view('settings.farm', compact('setting'));
     }
@@ -25,21 +18,16 @@ class FarmSettingController extends Controller
     {
         $validated = $request->validate([
             'price_per_kg' => ['required', 'numeric', 'min:0'],
+            'alert_recipient_email' => ['nullable', 'email:rfc'],
+            'server_close_reminder_time' => ['nullable', 'date_format:H:i'],
+            'feed_reminder_time' => ['nullable', 'date_format:H:i'],
         ]);
 
-        $setting = FarmSetting::query()->find(1);
-
-        if (!$setting) {
-            $setting = FarmSetting::query()->create([
-                'id' => 1,
-                'price_per_kg' => $validated['price_per_kg'],
-            ]);
-        } else {
-            $setting->update($validated);
-        }
+        $setting = FarmSetting::current();
+        $setting->update($validated);
 
         return redirect()
             ->route('settings.farm.edit')
-            ->with('success', 'Farm pricing updated. Active pig live values now reflect the new price dynamically.');
+            ->with('success', 'Farm settings updated. Pricing and email reminder settings are now saved.');
     }
 }
