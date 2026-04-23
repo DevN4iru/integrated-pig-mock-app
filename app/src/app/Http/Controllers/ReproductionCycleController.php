@@ -54,9 +54,13 @@ class ReproductionCycleController extends Controller
         $this->assertSowEligible($pig);
         $this->assertNoOtherActiveCycle($pig);
 
+        $boars = $this->availableBoars($pig);
+
         return view('reproduction-cycles.create', [
             'pig' => $pig->loadMissing('pen'),
-            'boars' => $this->availableBoars($pig),
+            'boars' => $boars,
+            'boarRiskMap' => $this->buildBoarRiskMap($pig, $boars),
+            'initialSelectedBoarId' => (string) old('boar_id', ''),
             'breedingTypeOptions' => ReproductionCycle::breedingTypeOptions(),
             'semenSourceOptions' => ReproductionCycle::semenSourceOptions(),
             'cycle' => null,
@@ -106,10 +110,13 @@ class ReproductionCycleController extends Controller
 
         $defaults = $this->nextAttemptDefaults($reproductionCycle);
         $attemptNumber = $reproductionCycle->current_attempt_number + 1;
+        $boars = $this->availableBoars($reproductionCycle->sow);
 
         return view('reproduction-cycles.create', [
             'pig' => $reproductionCycle->sow,
-            'boars' => $this->availableBoars($reproductionCycle->sow),
+            'boars' => $boars,
+            'boarRiskMap' => $this->buildBoarRiskMap($reproductionCycle->sow, $boars),
+            'initialSelectedBoarId' => (string) old('boar_id', $defaults['boar_id']),
             'breedingTypeOptions' => ReproductionCycle::breedingTypeOptions(),
             'semenSourceOptions' => ReproductionCycle::semenSourceOptions(),
             'cycle' => $reproductionCycle,
@@ -152,10 +159,14 @@ class ReproductionCycleController extends Controller
         $reproductionCycle->load(['sow.pen', 'boar']);
         $this->assertSowEligible($reproductionCycle->sow, $reproductionCycle);
 
+        $boars = $this->availableBoars($reproductionCycle->sow);
+
         return view('reproduction-cycles.edit', [
             'cycle' => $reproductionCycle,
             'pig' => $reproductionCycle->sow,
-            'boars' => $this->availableBoars($reproductionCycle->sow),
+            'boars' => $boars,
+            'boarRiskMap' => $this->buildBoarRiskMap($reproductionCycle->sow, $boars),
+            'initialSelectedBoarId' => (string) old('boar_id', $reproductionCycle->boar_id),
             'breedingTypeOptions' => ReproductionCycle::breedingTypeOptions(),
             'semenSourceOptions' => ReproductionCycle::semenSourceOptions(),
         ]);
@@ -513,6 +524,41 @@ class ReproductionCycleController extends Controller
             ->whereDoesntHave('mortalityLogs')
             ->orderBy('ear_tag')
             ->get();
+    }
+
+    protected function buildBoarRiskMap(Pig $sow, $boars): array
+    {
+        return collect($boars)
+            ->mapWithKeys(function (Pig $boar) use ($sow) {
+                $guard = $sow->breedingPairingGuardWith($boar);
+
+                $reasonLabel = match ($guard['code']) {
+                    'self_pairing' => 'Same Pig',
+                    'parent_offspring' => 'Parent-Offspring',
+                    'full_siblings' => 'Full Siblings',
+                    'half_siblings' => 'Shared Proven Parent',
+                    'grandparent_grandchild' => 'Grandparent Line',
+                    default => 'No Proven Dangerous Relation',
+                };
+
+                return [
+                    (string) $boar->id => [
+                        'blocked' => (bool) $guard['blocked'],
+                        'code' => $guard['code'],
+                        'status_label' => $guard['blocked'] ? 'Blocked' : 'Allowed',
+                        'status_badge_class' => $guard['blocked'] ? 'red' : 'green',
+                        'reason_label' => $reasonLabel,
+                        'message' => $guard['blocked']
+                            ? $guard['message']
+                            : 'No proven dangerous relation found in stored lineage truth for this sow and boar.',
+                        'boar_ear_tag' => $boar->ear_tag,
+                        'boar_breed' => $boar->breed,
+                        'dam_ear_tag' => $boar->motherSow?->ear_tag ?? 'Unknown',
+                        'sire_ear_tag' => $boar->sireBoar?->ear_tag ?? 'Unknown',
+                    ],
+                ];
+            })
+            ->all();
     }
 
     protected function availableUpdateEvents(ReproductionCycle $cycle): array
