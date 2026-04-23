@@ -188,9 +188,9 @@ class EmailAlertDispatchService
 
     protected function dispatchOperationalReminders(string $recipient, Carbon $now, FarmSetting $settings): void
     {
-        if ($now->format('H:i') === '05:00') {
-            $dateKey = $now->toDateString();
+        $dateKey = $now->toDateString();
 
+        if ($this->isDailyReminderDue($now, '05:00')) {
             $this->sendEmail(
                 fingerprint: 'email:ops:server_ready:' . $dateKey,
                 alertType: 'ops.server_ready',
@@ -205,15 +205,15 @@ class EmailAlertDispatchService
                 actionUrl: $this->safeRoute('dashboard'),
                 payload: [
                     'date' => $dateKey,
+                    'scheduled_time' => '05:00',
+                    'catch_up_enabled' => true,
                 ],
             );
         }
 
         $serverCloseTime = $this->normalizeTimeString($settings->server_close_reminder_time);
 
-        if ($serverCloseTime !== null && $now->format('H:i') === $serverCloseTime) {
-            $dateKey = $now->toDateString();
-
+        if ($this->isDailyReminderDue($now, $serverCloseTime)) {
             $this->sendEmail(
                 fingerprint: 'email:ops:server_close:' . $dateKey,
                 alertType: 'ops.server_close',
@@ -230,15 +230,14 @@ class EmailAlertDispatchService
                     'date' => $dateKey,
                     'close_time' => $serverCloseTime,
                     'resume_time' => '05:00',
+                    'catch_up_enabled' => true,
                 ],
             );
         }
 
         $feedReminderTime = $this->normalizeTimeString($settings->feed_reminder_time);
 
-        if ($feedReminderTime !== null && $now->format('H:i') === $feedReminderTime) {
-            $dateKey = $now->toDateString();
-
+        if ($this->isDailyReminderDue($now, $feedReminderTime)) {
             $this->sendEmail(
                 fingerprint: 'email:ops:feed:' . $dateKey,
                 alertType: 'ops.feed',
@@ -254,9 +253,24 @@ class EmailAlertDispatchService
                 payload: [
                     'date' => $dateKey,
                     'feed_time' => $feedReminderTime,
+                    'catch_up_enabled' => true,
                 ],
             );
         }
+    }
+
+    protected function isDailyReminderDue(Carbon $now, ?string $scheduledTime): bool
+    {
+        if ($scheduledTime === null) {
+            return false;
+        }
+
+        $scheduledMoment = $now->copy()->startOfDay();
+        [$hour, $minute] = array_map('intval', explode(':', $scheduledTime));
+
+        $scheduledMoment->setTime($hour, $minute, 0);
+
+        return $now->greaterThanOrEqualTo($scheduledMoment);
     }
 
     protected function sendEmail(
