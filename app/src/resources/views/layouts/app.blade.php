@@ -72,10 +72,14 @@
             display: block;
         }
 
-        .app {
+        .layout-app {
             display: grid;
-            grid-template-columns: 280px 1fr;
+            grid-template-columns: 280px minmax(0, 1fr);
             min-height: 100vh;
+        }
+
+        .sidebar-overlay {
+            display: none;
         }
 
         .sidebar {
@@ -90,6 +94,7 @@
             position: sticky;
             top: 0;
             height: 100vh;
+            overflow-y: auto;
             border-right: 1px solid rgba(255,255,255,0.06);
         }
 
@@ -191,6 +196,7 @@
         }
 
         .content {
+            min-width: 0;
             padding: 28px;
         }
 
@@ -575,42 +581,97 @@
             }
         }
 
-        @media (max-width: 980px) {
-            .app {
-                grid-template-columns: 1fr;
-            }
+        /* Hamburger button (hidden on desktop) */
+        .menu-toggle {
+            display: none;
+            font-size: 26px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text);
+        }
 
-            .sidebar {
-                position: static;
-                height: auto;
+        /* Mobile sidebar behavior */
+        @media (max-width: 980px) {
+
+            body.menu-open .menu-toggle {
+                display: none;
+            }
+            .layout-app {
+                display: block;
             }
 
             .content {
-                padding: 18px;
+                padding: 20px;
             }
 
             .topbar {
-                flex-direction: column;
-                align-items: flex-start;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+
+            .menu-toggle {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 44px;
+                height: 44px;
+                flex: 0 0 auto;
+                border-radius: 12px;
+                background: #fff;
+                border: 1px solid var(--line);
+                box-shadow: var(--shadow-sm);
+                line-height: 1;
+                z-index: 1001;
+            }
+
+            .page-title {
+                flex: 1 1 calc(100% - 64px);
+                min-width: 0;
             }
 
             .actions {
+                width: 100%;
                 justify-content: flex-start;
             }
 
-            .stats,
-            .stats-grid {
-                grid-template-columns: 1fr 1fr;
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 280px;
+                max-width: 85vw;
+                height: 100vh;
+                z-index: 1000;
+                transform: translateX(-100%);
+                transition: transform 0.25s ease;
+                box-shadow: var(--shadow);
             }
 
-            .form-grid {
-                grid-template-columns: 1fr;
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .sidebar-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, 0.45);
+                z-index: 999;
+            }
+
+            .sidebar-overlay.active {
+                display: block;
             }
         }
 
         @media (max-width: 640px) {
+            .content {
+                padding: 16px;
+            }
+
             .stats,
-            .stats-grid {
+            .stats-grid,
+            .form-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -638,8 +699,9 @@
             : 0;
     @endphp
 
-    <div class="app">
-        <aside class="sidebar">
+    <div class="layout-app">
+        <div class="sidebar-overlay" id="sidebarOverlay" hidden></div>
+        <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
             <div class="brand">
                 <h1>Pigstep</h1>
                 <p>Pig Health & Lifecycle Tracking System</p>
@@ -687,6 +749,7 @@
         <main class="content">
             <div class="page-shell">
                 <header class="topbar">
+                    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open navigation menu" aria-controls="sidebar" aria-expanded="false">☰</button>
                     <div class="page-title">
                         <h1>@yield('page_title')</h1>
                         <p>@yield('page_subtitle')</p>
@@ -745,5 +808,44 @@
             @yield('scripts')
         </script>
     @endif
+
+    <script>
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        function openMenu() {
+            sidebar.classList.add('open');
+            overlay.classList.add('active');
+            overlay.hidden = false;
+            menuToggle.setAttribute('aria-expanded', 'true');
+        }
+
+        function closeMenu() {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+            overlay.hidden = true;
+            menuToggle.setAttribute('aria-expanded', 'false');
+        }
+
+        function toggleMenu() {
+            sidebar.classList.contains('open') ? closeMenu() : openMenu();
+            overlay.classList.toggle('active');
+            document.body.classList.toggle('menu-open');
+        }
+
+        menuToggle?.addEventListener('click', toggleMenu);
+        overlay?.addEventListener('click', closeMenu);
+
+        document.querySelectorAll('.sidebar a').forEach(link => {
+            link.addEventListener('click', closeMenu);
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 980) {
+                closeMenu();
+            }
+        });
+    </script>
 </body>
 </html>
