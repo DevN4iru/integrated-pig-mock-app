@@ -287,6 +287,12 @@ class ReproductionCycleController extends Controller
                 $errors['boar_id'] = 'Selected boar must be a male pig.';
             } elseif ($boar->isOperationallyLocked()) {
                 $errors['boar_id'] = $boar->operationalLockMessage('breeding records');
+            } else {
+                $pairingGuard = $sow->breedingPairingGuardWith($boar);
+
+                if ($pairingGuard['blocked']) {
+                    $errors['boar_id'] = $pairingGuard['message'];
+                }
             }
         }
 
