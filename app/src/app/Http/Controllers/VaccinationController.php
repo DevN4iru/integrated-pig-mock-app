@@ -41,7 +41,7 @@ class VaccinationController extends Controller
 
         return redirect()
             ->route('pigs.show', $pig->id)
-            ->with('success', 'Vaccination record added.');
+            ->with('success', 'Manual vaccination record added.');
     }
 
     public function edit(Pig $pig, Vaccination $vaccination)
@@ -52,6 +52,12 @@ class VaccinationController extends Controller
             return redirect()
                 ->route('pigs.show', $pig->id)
                 ->with('error', $pig->operationalLockMessage('vaccination records'));
+        }
+
+        if ($vaccination->protocol_execution_id) {
+            return redirect()
+                ->route('pigs.show', $pig->id)
+                ->with('error', 'This vaccination record is managed by a protocol completion and cannot be edited directly. Update the protocol item instead.');
         }
 
         return view('vaccinations.edit', compact('pig', 'vaccination'));
@@ -67,6 +73,12 @@ class VaccinationController extends Controller
                 ->with('error', $pig->operationalLockMessage('vaccination records'));
         }
 
+        if ($vaccination->protocol_execution_id) {
+            return redirect()
+                ->route('pigs.show', $pig->id)
+                ->with('error', 'This vaccination record is managed by a protocol completion and cannot be updated directly. Update the protocol item instead.');
+        }
+
         $validated = $request->validate([
             'vaccine_name' => ['required', 'string', 'max:255'],
             'dose' => ['required', 'string', 'max:255'],
@@ -79,7 +91,7 @@ class VaccinationController extends Controller
 
         return redirect()
             ->route('pigs.show', $pig->id)
-            ->with('success', 'Vaccination record updated.');
+            ->with('success', 'Manual vaccination record updated.');
     }
 
     public function destroy(Pig $pig, Vaccination $vaccination)
@@ -102,6 +114,6 @@ class VaccinationController extends Controller
 
         return redirect()
             ->route('pigs.show', $pig->id)
-            ->with('success', 'Vaccination record deleted.');
+            ->with('success', 'Manual vaccination record deleted.');
     }
 }

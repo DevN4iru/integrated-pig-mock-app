@@ -549,6 +549,8 @@
             'protocolExecutions.rule.template',
             'protocolExecutions.medication',
             'protocolExecutions.vaccination',
+            'medications',
+            'vaccinations',
         ]);
 
         $dateAdded = $pig->date_added ? substr((string) $pig->date_added, 0, 10) : '—';
@@ -764,6 +766,14 @@
         $protocolUpcoming = collect($protocol['upcoming'] ?? []);
         $protocolOverdue = collect($protocol['overdue'] ?? []);
         $protocolExecutionHistory = collect($pig->protocol_execution_history ?? []);
+
+        $manualMedications = $pig->medications
+            ->filter(fn ($medication) => $medication->protocol_execution_id === null)
+            ->values();
+
+        $manualVaccinations = $pig->vaccinations
+            ->filter(fn ($vaccination) => $vaccination->protocol_execution_id === null)
+            ->values();
     @endphp
 
     <div class="profile-stack">
@@ -1704,20 +1714,24 @@
             @endif
         </div>
 
+        <div class="flash">
+            Protocol-scheduled medication and vaccination must be completed from <strong>Protocol Schedule</strong> above. The sections below are only for <strong>manual non-protocol care</strong>. Protocol-managed detailed records remain visible in <strong>Protocol Execution History</strong> and still count in the medication and vaccination cost totals.
+        </div>
+
         <div class="profile-grid-half">
             <div class="panel-card">
                 <div class="section-title">
                     <div>
-                        <h3>Medication</h3>
-                        <p>Treatments and administered medicines for this pig.</p>
+                        <h3>Manual Medication</h3>
+                        <p>Unscheduled or ad hoc medication records for this pig only.</p>
                     </div>
                     @if (!$isOperationalLocked)
-                        <a href="{{ route('medications.create', $pig) }}" class="btn primary">Add Medication</a>
+                        <a href="{{ route('medications.create', $pig) }}" class="btn primary">Add Manual Medication</a>
                     @endif
                 </div>
 
-                @if($pig->medications->isEmpty())
-                    <div class="empty-state">No medication records yet.</div>
+                @if($manualMedications->isEmpty())
+                    <div class="empty-state">No manual medication records yet.</div>
                 @else
                     <div class="table-wrap">
                         <table class="data-table">
@@ -1732,7 +1746,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($pig->medications as $med)
+                                @foreach($manualMedications as $med)
                                     <tr>
                                         <td>{{ $med->administered_at }}</td>
                                         <td>{{ $med->medication_name }}</td>
@@ -1743,7 +1757,7 @@
                                             @if (!$isOperationalLocked)
                                                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
                                                     <a href="{{ route('medications.edit', [$pig, $med]) }}" class="btn">Edit</a>
-                                                    <form method="POST" action="{{ route('medications.destroy', [$pig, $med]) }}" onsubmit="return confirm('Delete this medication record?');">
+                                                    <form method="POST" action="{{ route('medications.destroy', [$pig, $med]) }}" onsubmit="return confirm('Delete this manual medication record?');">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="btn btn-danger">Delete</button>
@@ -1764,16 +1778,16 @@
             <div class="panel-card">
                 <div class="section-title">
                     <div>
-                        <h3>Vaccination</h3>
-                        <p>Vaccination records and immunization history for this pig.</p>
+                        <h3>Manual Vaccination</h3>
+                        <p>Unscheduled or ad hoc vaccination records for this pig only.</p>
                     </div>
                     @if (!$isOperationalLocked)
-                        <a href="{{ route('vaccinations.create', $pig) }}" class="btn primary">Add Vaccination</a>
+                        <a href="{{ route('vaccinations.create', $pig) }}" class="btn primary">Add Manual Vaccination</a>
                     @endif
                 </div>
 
-                @if($pig->vaccinations->isEmpty())
-                    <div class="empty-state">No vaccination records yet.</div>
+                @if($manualVaccinations->isEmpty())
+                    <div class="empty-state">No manual vaccination records yet.</div>
                 @else
                     <div class="table-wrap">
                         <table class="data-table">
@@ -1788,7 +1802,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($pig->vaccinations as $vac)
+                                @foreach($manualVaccinations as $vac)
                                     <tr>
                                         <td>{{ $vac->vaccinated_at }}</td>
                                         <td>{{ $vac->vaccine_name }}</td>
@@ -1799,7 +1813,7 @@
                                             @if (!$isOperationalLocked)
                                                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
                                                     <a href="{{ route('vaccinations.edit', [$pig, $vac]) }}" class="btn">Edit</a>
-                                                    <form method="POST" action="{{ route('vaccinations.destroy', [$pig, $vac]) }}" onsubmit="return confirm('Delete this vaccination record?');">
+                                                    <form method="POST" action="{{ route('vaccinations.destroy', [$pig, $vac]) }}" onsubmit="return confirm('Delete this manual vaccination record?');">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="btn btn-danger">Delete</button>

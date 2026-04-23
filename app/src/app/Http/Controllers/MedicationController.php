@@ -41,7 +41,7 @@ class MedicationController extends Controller
 
         return redirect()
             ->route('pigs.show', $pig->id)
-            ->with('success', 'Medication record added.');
+            ->with('success', 'Manual medication record added.');
     }
 
     public function edit(Pig $pig, Medication $medication)
@@ -52,6 +52,12 @@ class MedicationController extends Controller
             return redirect()
                 ->route('pigs.show', $pig->id)
                 ->with('error', $pig->operationalLockMessage('medication records'));
+        }
+
+        if ($medication->protocol_execution_id) {
+            return redirect()
+                ->route('pigs.show', $pig->id)
+                ->with('error', 'This medication record is managed by a protocol completion and cannot be edited directly. Update the protocol item instead.');
         }
 
         return view('medications.edit', compact('pig', 'medication'));
@@ -67,6 +73,12 @@ class MedicationController extends Controller
                 ->with('error', $pig->operationalLockMessage('medication records'));
         }
 
+        if ($medication->protocol_execution_id) {
+            return redirect()
+                ->route('pigs.show', $pig->id)
+                ->with('error', 'This medication record is managed by a protocol completion and cannot be updated directly. Update the protocol item instead.');
+        }
+
         $validated = $request->validate([
             'medication_name' => ['required', 'string', 'max:255'],
             'dosage' => ['required', 'string', 'max:255'],
@@ -79,7 +91,7 @@ class MedicationController extends Controller
 
         return redirect()
             ->route('pigs.show', $pig->id)
-            ->with('success', 'Medication record updated.');
+            ->with('success', 'Manual medication record updated.');
     }
 
     public function destroy(Pig $pig, Medication $medication)
@@ -102,6 +114,6 @@ class MedicationController extends Controller
 
         return redirect()
             ->route('pigs.show', $pig->id)
-            ->with('success', 'Medication record deleted.');
+            ->with('success', 'Manual medication record deleted.');
     }
 }
