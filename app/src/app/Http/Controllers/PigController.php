@@ -269,6 +269,7 @@ class PigController extends Controller
                     'pig_source' => 'birthed',
                     'age' => 0,
                     'mother_sow_id' => $reproductionCycle->sow_id,
+                    'sire_boar_id' => $reproductionCycle->boar_id,
                     'reproduction_cycle_id' => $reproductionCycle->id,
                     'date_added' => $birthDate,
                     'latest_weight' => $weight,

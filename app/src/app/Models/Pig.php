@@ -19,6 +19,7 @@ class Pig extends Model
         'pig_source',
         'age',
         'mother_sow_id',
+        'sire_boar_id',
         'reproduction_cycle_id',
         'date_added',
         'latest_weight',
@@ -74,6 +75,11 @@ class Pig extends Model
         return $this->belongsTo(Pig::class, 'mother_sow_id');
     }
 
+    public function sireBoar()
+    {
+        return $this->belongsTo(Pig::class, 'sire_boar_id');
+    }
+
     public function birthCycle()
     {
         return $this->belongsTo(ReproductionCycle::class, 'reproduction_cycle_id');
@@ -82,6 +88,13 @@ class Pig extends Model
     public function birthedPiglets()
     {
         return $this->hasMany(Pig::class, 'mother_sow_id')
+            ->orderBy('date_added')
+            ->orderBy('id');
+    }
+
+    public function siredPiglets()
+    {
+        return $this->hasMany(Pig::class, 'sire_boar_id')
             ->orderBy('date_added')
             ->orderBy('id');
     }
