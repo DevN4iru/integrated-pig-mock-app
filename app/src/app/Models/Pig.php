@@ -99,6 +99,138 @@ class Pig extends Model
             ->orderBy('id');
     }
 
+    protected function loadLineageAncestors(): void
+    {
+        $this->loadMissing([
+            'motherSow',
+            'sireBoar',
+            'motherSow.motherSow',
+            'motherSow.sireBoar',
+            'sireBoar.motherSow',
+            'sireBoar.sireBoar',
+        ]);
+    }
+
+    protected function lineageParentIds(): array
+    {
+        return collect([
+            $this->mother_sow_id,
+            $this->sire_boar_id,
+        ])
+            ->filter(fn ($id) => $id !== null)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    protected function lineageGrandparentIds(): array
+    {
+        $this->loadLineageAncestors();
+
+        return collect([
+            $this->motherSow?->mother_sow_id,
+            $this->motherSow?->sire_boar_id,
+            $this->sireBoar?->mother_sow_id,
+            $this->sireBoar?->sire_boar_id,
+        ])
+            ->filter(fn ($id) => $id !== null)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function hasProvenDirectParentOffspringRelationWith(Pig $other): bool
+    {
+        return in_array((int) $other->id, $this->lineageParentIds(), true)
+            || in_array((int) $this->id, $other->lineageParentIds(), true);
+    }
+
+    public function hasProvenFullSiblingRelationWith(Pig $other): bool
+    {
+        if ($this->mother_sow_id === null || $this->sire_boar_id === null) {
+            return false;
+        }
+
+        if ($other->mother_sow_id === null || $other->sire_boar_id === null) {
+            return false;
+        }
+
+        return (int) $this->mother_sow_id === (int) $other->mother_sow_id
+            && (int) $this->sire_boar_id === (int) $other->sire_boar_id;
+    }
+
+    public function hasProvenHalfSiblingRelationWith(Pig $other): bool
+    {
+        if ($this->hasProvenFullSiblingRelationWith($other)) {
+            return false;
+        }
+
+        return !empty(array_intersect(
+            $this->lineageParentIds(),
+            $other->lineageParentIds()
+        ));
+    }
+
+    public function hasProvenGrandparentGrandchildRelationWith(Pig $other): bool
+    {
+        return in_array((int) $other->id, $this->lineageGrandparentIds(), true)
+            || in_array((int) $this->id, $other->lineageGrandparentIds(), true);
+    }
+
+    public function breedingPairingGuardWith(Pig $other): array
+    {
+        $this->loadLineageAncestors();
+        $other->loadLineageAncestors();
+
+        if ((int) $this->id === (int) $other->id) {
+            return [
+                'blocked' => true,
+                'code' => 'self_pairing',
+                'message' => 'This sow and boar are the same pig. Self pairing is blocked.',
+            ];
+        }
+
+        if ($this->hasProvenDirectParentOffspringRelationWith($other)) {
+            return [
+                'blocked' => true,
+                'code' => 'parent_offspring',
+                'message' => 'This pairing is blocked because the sow and boar have a proven parent-offspring relationship.',
+            ];
+        }
+
+        if ($this->hasProvenFullSiblingRelationWith($other)) {
+            return [
+                'blocked' => true,
+                'code' => 'full_siblings',
+                'message' => 'This pairing is blocked because the sow and boar are proven full siblings.',
+            ];
+        }
+
+        if ($this->hasProvenHalfSiblingRelationWith($other)) {
+            return [
+                'blocked' => true,
+                'code' => 'half_siblings',
+                'message' => 'This pairing is blocked because the sow and boar share a proven parent.',
+            ];
+        }
+
+        if ($this->hasProvenGrandparentGrandchildRelationWith($other)) {
+            return [
+                'blocked' => true,
+                'code' => 'grandparent_grandchild',
+                'message' => 'This pairing is blocked because the sow and boar have a proven grandparent-grandchild relationship.',
+            ];
+        }
+
+        return [
+            'blocked' => false,
+            'code' => null,
+            'message' => null,
+        ];
+    }
+
     public function healthLogs()
     {
         return $this->hasMany(HealthLog::class);
