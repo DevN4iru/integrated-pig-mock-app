@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Mail\PigstepAlertMail;
 use App\Models\EmailAlertDelivery;
 use App\Models\FarmSetting;
-use App\Models\Notification;
 use App\Models\Pig;
 use App\Models\ReproductionCycle;
 use Carbon\Carbon;
@@ -90,7 +89,6 @@ class EmailAlertDispatchService
     protected function dispatchProtocolAlerts(string $recipient, Carbon $now): void
     {
         $targetT3Date = $now->copy()->startOfDay()->addDays(3)->toDateString();
-        $targetTodayDate = $now->copy()->startOfDay()->toDateString();
 
         $pigs = Pig::query()
             ->activeLifecycle()
@@ -131,7 +129,7 @@ class EmailAlertDispatchService
             foreach ($summary['due_today'] ?? [] as $row) {
                 $scheduledDate = $this->normalizeDateString($row['due_start'] ?? null);
 
-                if ($scheduledDate !== $targetTodayDate) {
+                if ($scheduledDate === null) {
                     continue;
                 }
 
