@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Medication')
-@section('page_title', 'Edit Medication')
-@section('page_subtitle', 'Update medication record for this pig.')
+@section('title', 'Edit Manual Medication')
+@section('page_title', 'Edit Manual Medication')
+@section('page_subtitle', 'Update an unscheduled or ad hoc medication record for this pig.')
 
 @section('top_actions')
     <a href="{{ route('pigs.show', $pig) }}" class="btn">Back</a>
@@ -10,7 +10,11 @@
 
 @section('content')
 <div class="panel-card">
-    <h3>Edit Medication</h3>
+    <h3>Edit Manual Medication</h3>
+
+    <div class="flash" style="margin: 14px 0 18px;">
+        This screen is for <strong>manual non-protocol care</strong> only. Protocol-scheduled medication must be updated from <strong>Protocol Schedule</strong> on the pig profile.
+    </div>
 
     <form method="POST" action="{{ route('medications.update', [$pig, $medication]) }}">
         @csrf
@@ -44,7 +48,7 @@
         </div>
 
         <div class="form-actions">
-            <button class="btn primary">Save Changes</button>
+            <button class="btn primary">Save Manual Medication</button>
             <a href="{{ route('pigs.show', $pig) }}" class="btn">Cancel</a>
         </div>
     </form>

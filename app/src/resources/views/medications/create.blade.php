@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Add Medication')
-@section('page_title', 'Add Medication')
-@section('page_subtitle', 'Record medication for this pig.')
+@section('title', 'Add Manual Medication')
+@section('page_title', 'Add Manual Medication')
+@section('page_subtitle', 'Record unscheduled or ad hoc medication for this pig.')
 
 @section('top_actions')
     <a href="{{ route('pigs.show', $pig) }}" class="btn">Back</a>
@@ -10,7 +10,11 @@
 
 @section('content')
 <div class="panel-card">
-    <h3>Add Medication</h3>
+    <h3>Add Manual Medication</h3>
+
+    <div class="flash" style="margin: 14px 0 18px;">
+        Use this page only for <strong>manual non-protocol care</strong>. If this medication belongs to a scheduled protocol item, complete it from <strong>Protocol Schedule</strong> on the pig profile instead.
+    </div>
 
     <form method="POST" action="{{ route('medications.store', $pig) }}">
         @csrf
@@ -43,7 +47,7 @@
         </div>
 
         <div class="form-actions">
-            <button class="btn primary">Save Medication</button>
+            <button class="btn primary">Save Manual Medication</button>
             <a href="{{ route('pigs.show', $pig) }}" class="btn">Cancel</a>
         </div>
     </form>
