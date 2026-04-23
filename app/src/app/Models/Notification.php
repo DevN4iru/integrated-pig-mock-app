@@ -55,6 +55,17 @@ class Notification extends Model
         'resolved_at' => 'datetime',
     ];
 
+    public static function firstWaveTypeCodes(): array
+    {
+        return [
+            self::TYPE_PROTOCOL_OVERDUE,
+            self::TYPE_PROTOCOL_DUE_TODAY,
+            self::TYPE_PIG_STALE_WEIGHT,
+            self::TYPE_BREEDING_DUE_SOON,
+            self::TYPE_BREEDING_PIGLETS_UNREGISTERED,
+        ];
+    }
+
     public function pig(): BelongsTo
     {
         return $this->belongsTo(Pig::class);
@@ -63,6 +74,11 @@ class Notification extends Model
     public function reproductionCycle(): BelongsTo
     {
         return $this->belongsTo(ReproductionCycle::class);
+    }
+
+    public function scopeFirstWaveGenerated(Builder $query): Builder
+    {
+        return $query->whereIn('type_code', static::firstWaveTypeCodes());
     }
 
     public function scopeActive(Builder $query): Builder
@@ -177,6 +193,17 @@ class Notification extends Model
         return $this->resolved_at !== null;
     }
 
+    public function syncFromFirstWaveSource(array $attributes): void
+    {
+        $this->fill($attributes);
+
+        if ($this->resolved_at !== null) {
+            $this->resolved_at = null;
+        }
+
+        $this->save();
+    }
+
     public function markAsRead(): void
     {
         if ($this->read_at !== null) {
@@ -202,5 +229,14 @@ class Notification extends Model
             'read_at' => $this->read_at ?? now(),
             'resolved_at' => $this->resolved_at ?? now(),
         ])->save();
+    }
+
+    public function markResolvedFromMissingSource(): void
+    {
+        if ($this->resolved_at !== null) {
+            return;
+        }
+
+        $this->resolve();
     }
 }
