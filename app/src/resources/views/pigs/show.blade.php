@@ -127,6 +127,10 @@
     background: #2563eb;
 }
 
+#lineageBirthCycleLink {
+    text-decoration: none;
+}
+
 #weightChart {
     width: 100%;
     display: block;
@@ -534,6 +538,13 @@
 
         $pig->loadMissing([
             'pen',
+            'motherSow',
+            'sireBoar',
+            'birthCycle',
+            'motherSow.motherSow',
+            'motherSow.sireBoar',
+            'sireBoar.motherSow',
+            'sireBoar.sireBoar',
             'reproductionCyclesAsSow.boar',
             'protocolExecutions.rule.template',
             'protocolExecutions.medication',
@@ -578,6 +589,48 @@
             'injury' => 'Injury',
             'observation' => 'Observation',
         ];
+
+        $lineagePigLabel = function ($relatedPig, string $missingLabel = 'Unknown') {
+            if (!$relatedPig) {
+                return $missingLabel;
+            }
+
+            $parts = [$relatedPig->ear_tag];
+
+            if (!empty($relatedPig->breed)) {
+                $parts[] = '— ' . $relatedPig->breed;
+            }
+
+            return implode(' ', $parts);
+        };
+
+        $damLabel = $lineagePigLabel($pig->motherSow, 'Not recorded yet');
+        $sireLabel = $lineagePigLabel($pig->sireBoar, 'Not recorded yet');
+        $birthCycleLabel = $pig->birthCycle
+            ? 'Case #' . $pig->birthCycle->id . ' — ' . ($pig->birthCycle->status_label ?? 'Recorded')
+            : 'Not recorded yet';
+
+        $maternalGrandmotherLabel = $pig->motherSow
+            ? $lineagePigLabel($pig->motherSow->motherSow, 'Unknown')
+            : 'Not recorded yet';
+
+        $maternalGrandfatherLabel = $pig->motherSow
+            ? $lineagePigLabel($pig->motherSow->sireBoar, 'Unknown')
+            : 'Not recorded yet';
+
+        $paternalGrandmotherLabel = $pig->sireBoar
+            ? $lineagePigLabel($pig->sireBoar->motherSow, 'Unknown')
+            : 'Not recorded yet';
+
+        $paternalGrandfatherLabel = $pig->sireBoar
+            ? $lineagePigLabel($pig->sireBoar->sireBoar, 'Unknown')
+            : 'Not recorded yet';
+
+        $lineageContextNote = match (true) {
+            !$pig->motherSow && !$pig->sireBoar => 'Dam and sire have not been recorded yet for this pig.',
+            !$pig->motherSow || !$pig->sireBoar => 'Stored lineage is partial. Missing ancestry fields are not recorded yet.',
+            default => 'Stored dam and sire lineage is available and forms the basis for breeding-risk checks during breeding selection.',
+        };
 
         $weightLogs = $pig->healthLogs
             ->filter(fn ($log) => $log->purpose === 'weight_update' && $log->weight !== null)
@@ -828,6 +881,65 @@
                         <input type="text" value="{{ number_format($feedKg, 2) }} kg" readonly>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="panel-card">
+            <div class="section-title">
+                <div>
+                    <h3>Lineage</h3>
+                    <p>Stored dam, sire, birth cycle, and immediate ancestry context for this pig.</p>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Dam</label>
+                    <input type="text" value="{{ $damLabel }}" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label>Sire</label>
+                    <input type="text" value="{{ $sireLabel }}" readonly>
+                </div>
+
+                <div class="form-group full">
+                    <label>Birth Cycle</label>
+                    <input type="text" value="{{ $birthCycleLabel }}" readonly>
+                </div>
+            </div>
+
+            <div class="section-title" style="margin-top: 16px;">
+                <div>
+                    <h3 style="font-size: 16px;">Immediate Ancestry Context</h3>
+                    <p>Known grandparent links from the stored dam and sire records.</p>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Maternal Grandmother</label>
+                    <input type="text" value="{{ $maternalGrandmotherLabel }}" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label>Maternal Grandfather</label>
+                    <input type="text" value="{{ $maternalGrandfatherLabel }}" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label>Paternal Grandmother</label>
+                    <input type="text" value="{{ $paternalGrandmotherLabel }}" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label>Paternal Grandfather</label>
+                    <input type="text" value="{{ $paternalGrandfatherLabel }}" readonly>
+                </div>
+            </div>
+
+            <div class="flash" style="margin-top: 16px;">
+                {{ $lineageContextNote }}
             </div>
         </div>
 

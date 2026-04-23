@@ -1,5 +1,10 @@
 @extends('layouts.app')
 
+@php
+    $boarRiskMap = $boarRiskMap ?? [];
+    $initialSelectedBoarId = (string) ($initialSelectedBoarId ?? old('boar_id', $cycle->boar_id));
+@endphp
+
 @section('title', 'Edit Breeding Case')
 @section('page_title', 'Edit Breeding Case')
 @section('page_subtitle', 'Edit only the current attempt metadata. Biological progression stays in timeline events.')
@@ -122,7 +127,40 @@
                             </option>
                         @endforeach
                     </select>
+
+                    <div id="boar_risk_context" class="flash" style="display:none; margin-top:10px;">
+                        <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap;">
+                            <strong>Selected Boar Context</strong>
+                            <span id="boar_risk_status_badge" class="badge blue">—</span>
+                        </div>
+
+                        <div class="form-grid" style="margin-top: 12px;">
+                            <div class="form-group">
+                                <label>Boar</label>
+                                <input id="boar_risk_boar" type="text" value="" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Risk Result</label>
+                                <input id="boar_risk_reason" type="text" value="" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Boar Dam</label>
+                                <input id="boar_risk_dam" type="text" value="" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Boar Sire</label>
+                                <input id="boar_risk_sire" type="text" value="" readonly>
+                            </div>
+                        </div>
+
+                        <div class="metric-note" id="boar_risk_message"></div>
+                    </div>
+
                     <small class="metric-note" id="boar_note" style="display:none;">Required for natural mating and locally sourced AI donor boar selection.</small>
+
                     @error('boar_id')
                         <div class="error-text">{{ $message }}</div>
                     @enderror
@@ -220,10 +258,60 @@
 
 @section('scripts')
 document.addEventListener('DOMContentLoaded', function () {
+    const boarRiskMap = @json($boarRiskMap);
+    const initialSelectedBoarId = @json($initialSelectedBoarId);
+
     function setGroupVisibility(elementId, visible) {
         const element = document.getElementById(elementId);
         if (!element) return;
         element.style.display = visible ? '' : 'none';
+    }
+
+    function renderSelectedBoarContext() {
+        const boarId = document.getElementById('boar_id')?.value || '';
+        const context = document.getElementById('boar_risk_context');
+
+        if (!context || !boarId || !boarRiskMap[boarId]) {
+            if (context) context.style.display = 'none';
+            return;
+        }
+
+        const risk = boarRiskMap[boarId];
+
+        context.style.display = '';
+        context.className = risk.blocked ? 'flash error' : 'flash success';
+
+        const statusBadge = document.getElementById('boar_risk_status_badge');
+        const boarField = document.getElementById('boar_risk_boar');
+        const reasonField = document.getElementById('boar_risk_reason');
+        const damField = document.getElementById('boar_risk_dam');
+        const sireField = document.getElementById('boar_risk_sire');
+        const messageField = document.getElementById('boar_risk_message');
+
+        if (statusBadge) {
+            statusBadge.textContent = risk.status_label || '—';
+            statusBadge.className = 'badge ' + (risk.status_badge_class || 'blue');
+        }
+
+        if (boarField) {
+            boarField.value = [risk.boar_ear_tag, risk.boar_breed].filter(Boolean).join(' — ');
+        }
+
+        if (reasonField) {
+            reasonField.value = risk.reason_label || '—';
+        }
+
+        if (damField) {
+            damField.value = risk.dam_ear_tag || 'Unknown';
+        }
+
+        if (sireField) {
+            sireField.value = risk.sire_ear_tag || 'Unknown';
+        }
+
+        if (messageField) {
+            messageField.textContent = risk.message || '';
+        }
     }
 
     function updateBreedingEditState() {
@@ -233,6 +321,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const boarNote = document.getElementById('boar_note');
         const sourceNameLabel = document.getElementById('semen_source_name_label');
         const sourceNameNote = document.getElementById('semen_source_name_note');
+        const boarRiskContext = document.getElementById('boar_risk_context');
 
         const showBoar = breedingType === 'natural_mating' || (breedingType === 'artificial_insemination' && semenSourceType === 'local');
         const showAiFields = breedingType === 'artificial_insemination';
@@ -262,11 +351,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 ? 'Optional notes about the local source. Donor boar selection is required.'
                 : 'Required for purchased AI. Optional for locally sourced AI notes.';
         }
+
+        if (!showBoar && boarRiskContext) {
+            boarRiskContext.style.display = 'none';
+        } else {
+            renderSelectedBoarContext();
+        }
+    }
+
+    const boarSelect = document.getElementById('boar_id');
+    if (boarSelect && initialSelectedBoarId && boarSelect.value === '') {
+        boarSelect.value = initialSelectedBoarId;
     }
 
     document.getElementById('breeding_type')?.addEventListener('change', updateBreedingEditState);
     document.getElementById('semen_source_type')?.addEventListener('change', updateBreedingEditState);
+    document.getElementById('boar_id')?.addEventListener('change', renderSelectedBoarContext);
 
     updateBreedingEditState();
+    renderSelectedBoarContext();
 });
 @endsection
