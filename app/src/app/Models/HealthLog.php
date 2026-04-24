@@ -8,7 +8,9 @@ class HealthLog extends Model
 {
     protected $fillable = [
         'pig_id',
+        'purpose',
         'condition',
+        'weight',
         'notes',
         'log_date',
     ];

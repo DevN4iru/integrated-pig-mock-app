@@ -12,6 +12,13 @@ class Sale extends Model
         'price',
         'buyer',
         'notes',
+        'weight_at_sale',
+        'price_per_kg_at_sale',
+        'recommended_price',
+    ];
+
+    protected $casts = [
+        'sold_date' => 'date',
     ];
 
     public function pig()

@@ -2,13 +2,25 @@
 
 @section('title', 'Add Health Log')
 @section('page_title', 'Add Health Log')
-@section('page_subtitle', 'Record health condition for this pig.')
+@section('page_subtitle', 'Record a health event for this pig.')
 
 @section('top_actions')
     <a href="{{ route('pigs.show', $pig) }}" class="btn">Back</a>
 @endsection
 
 @section('content')
+    @php
+        $maxDate = now()->toDateString();
+        $existingWeightDates = $pig->healthLogs()
+            ->where('purpose', 'weight_update')
+            ->whereNotNull('weight')
+            ->pluck('log_date')
+            ->map(fn ($date) => substr((string) $date, 0, 10))
+            ->unique()
+            ->values()
+            ->all();
+    @endphp
+
     <div class="panel-card">
         <h3>Health Log Entry</h3>
 
@@ -17,22 +29,80 @@
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Condition</label>
-                    <input type="text" name="condition" required>
+                    <label>Purpose</label>
+                    <select name="purpose" id="purpose" required>
+                        <option value="">Select purpose</option>
+                        <option value="weight_update" {{ old('purpose') === 'weight_update' ? 'selected' : '' }}>Weight Update</option>
+                        <option value="sick" {{ old('purpose') === 'sick' ? 'selected' : '' }}>Sick</option>
+                        <option value="recovered" {{ old('purpose') === 'recovered' ? 'selected' : '' }}>Recovered</option>
+                        <option value="checkup" {{ old('purpose') === 'checkup' ? 'selected' : '' }}>Checkup</option>
+                        <option value="injury" {{ old('purpose') === 'injury' ? 'selected' : '' }}>Injury</option>
+                        <option value="observation" {{ old('purpose') === 'observation' ? 'selected' : '' }}>Observation</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
                     <label>Date</label>
-                    <input type="date" name="log_date" required>
+                    <input type="date" name="log_date" id="log_date" value="{{ old('log_date') }}" max="{{ $maxDate }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Condition / Summary</label>
+                    <input type="text" name="condition" value="{{ old('condition') }}" required>
+                </div>
+
+                <div class="form-group" id="weight-group">
+                    <label>Weight (kg)</label>
+                    <input type="number" step="0.01" min="0.01" name="weight" id="weight" value="{{ old('weight') }}">
+                </div>
+
+                <div class="form-group full" id="same-day-weight-warning" style="display:none;">
+                    <div class="flash error" style="margin: 0;">
+                        A weight update already exists for this date. Multiple same-day weight logs are allowed, and the latest saved entry will be used first in trend calculations.
+                    </div>
                 </div>
 
                 <div class="form-group full">
                     <label>Notes</label>
-                    <textarea name="notes"></textarea>
+                    <textarea name="notes">{{ old('notes') }}</textarea>
                 </div>
             </div>
 
-            <button class="btn primary">Save Log</button>
+            <div class="form-actions">
+                <button class="btn primary" type="submit">Save Log</button>
+                <a href="{{ route('pigs.show', $pig) }}" class="btn">Cancel</a>
+            </div>
         </form>
     </div>
+@endsection
+
+@section('scripts')
+const existingWeightDates = @json($existingWeightDates);
+
+function toggleWeightField() {
+    const purpose = document.getElementById('purpose');
+    const logDate = document.getElementById('log_date');
+    const weightGroup = document.getElementById('weight-group');
+    const weightInput = document.getElementById('weight');
+    const warning = document.getElementById('same-day-weight-warning');
+
+    if (!purpose || !logDate || !weightGroup || !weightInput || !warning) return;
+
+    const showWeight = purpose.value === 'weight_update';
+    const selectedDate = logDate.value;
+
+    weightGroup.style.display = showWeight ? '' : 'none';
+    weightInput.required = showWeight;
+
+    const showWarning = showWeight && selectedDate !== '' && existingWeightDates.includes(selectedDate);
+    warning.style.display = showWarning ? '' : 'none';
+
+    if (!showWeight) {
+        weightInput.value = '';
+    }
+}
+
+document.getElementById('purpose')?.addEventListener('change', toggleWeightField);
+document.getElementById('log_date')?.addEventListener('change', toggleWeightField);
+toggleWeightField();
 @endsection

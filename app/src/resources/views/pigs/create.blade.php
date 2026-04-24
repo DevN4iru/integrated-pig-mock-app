@@ -14,6 +14,7 @@
             <div>
                 <h3>Add Pig Record</h3>
                 <p>Fill in the details below to add a pig into the system.</p>
+                <p>Current global price per kg: <strong>₱ {{ number_format((float) $pricePerKg, 2) }}</strong></p>
             </div>
         </div>
 
@@ -45,8 +46,12 @@
                     <select id="pen_id" name="pen_id" required>
                         <option value="">Select pen</option>
                         @foreach ($pens as $pen)
-                            <option value="{{ $pen->id }}" {{ old('pen_id') == $pen->id ? 'selected' : '' }}>
-                                {{ $pen->name }} — {{ $pen->type }} (Cap: {{ $pen->capacity }})
+                            @php
+                                $remaining = max((int) $pen->capacity - (int) $pen->pigs_count, 0);
+                                $isFull = $remaining <= 0;
+                            @endphp
+                            <option value="{{ $pen->id }}" {{ old('pen_id') == $pen->id ? 'selected' : '' }} {{ $isFull ? 'disabled' : '' }}>
+                                {{ $pen->name }} — {{ $pen->type }} ({{ $pen->pigs_count }}/{{ $pen->capacity }}){{ $isFull ? ' - FULL' : '' }}
                             </option>
                         @endforeach
                     </select>
@@ -62,18 +67,38 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="age_value">Age Input</label>
+                    <div style="display:grid; grid-template-columns: 1fr 180px; gap:10px;">
+                        <input id="age_value" name="age_value" type="number" min="0" step="0.1" value="{{ old('age_value') }}" required>
+                        <select id="age_unit" name="age_unit" required>
+                            <option value="days" {{ old('age_unit', 'days') === 'days' ? 'selected' : '' }}>Days</option>
+                            <option value="weeks" {{ old('age_unit') === 'weeks' ? 'selected' : '' }}>Weeks</option>
+                            <option value="months" {{ old('age_unit') === 'months' ? 'selected' : '' }}>Months</option>
+                        </select>
+                    </div>
+                    <small class="metric-note">System stores age in days for protocol alerts and scheduling.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="age_days_preview">Stored Age (Days)</label>
+                    <input id="age_days_preview" type="text" readonly value="0 days">
+                    <input id="age" name="age" type="hidden" value="0">
+                </div>
+
+                <div class="form-group">
                     <label for="date_added">Date Added</label>
                     <input id="date_added" name="date_added" type="date" value="{{ old('date_added') }}" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="latest_weight">Weight Upon Entry</label>
-                    <input id="latest_weight" name="latest_weight" type="number" step="0.01" value="{{ old('latest_weight') }}" required>
+                    <label for="latest_weight">Weight Upon Entry (kg)</label>
+                    <input id="latest_weight" name="latest_weight" type="number" step="0.01" min="0" value="{{ old('latest_weight') }}" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="asset_value">Asset Value</label>
-                    <input id="asset_value" name="asset_value" type="number" step="0.01" value="{{ old('asset_value') }}" required>
+                    <label for="asset_value_preview">Asset Value (Auto)</label>
+                    <input id="asset_value_preview" type="number" step="0.01" value="{{ old('asset_value') }}" readonly>
+                    <input id="asset_value" name="asset_value" type="hidden" value="{{ old('asset_value', 0) }}">
                 </div>
             </div>
 
@@ -83,4 +108,52 @@
             </div>
         </form>
     </div>
+@endsection
+
+@section('scripts')
+const PRICE_PER_KG = {{ json_encode((float) $pricePerKg) }};
+
+function updateAssetValue() {
+    const weightInput = document.getElementById('latest_weight');
+    const hiddenAssetInput = document.getElementById('asset_value');
+    const previewInput = document.getElementById('asset_value_preview');
+
+    if (!weightInput || !hiddenAssetInput || !previewInput) return;
+
+    const weight = parseFloat(weightInput.value || '0');
+    const asset = isNaN(weight) ? 0 : (weight * PRICE_PER_KG);
+
+    hiddenAssetInput.value = asset.toFixed(2);
+    previewInput.value = asset.toFixed(2);
+}
+
+function convertAgeToDays(value, unit) {
+    const numeric = parseFloat(value || '0');
+    if (isNaN(numeric) || numeric < 0) return 0;
+
+    if (unit === 'weeks') return Math.round(numeric * 7);
+    if (unit === 'months') return Math.round(numeric * 30);
+    return Math.round(numeric);
+}
+
+function updateAgePreview() {
+    const valueInput = document.getElementById('age_value');
+    const unitInput = document.getElementById('age_unit');
+    const previewInput = document.getElementById('age_days_preview');
+    const hiddenAgeInput = document.getElementById('age');
+
+    if (!valueInput || !unitInput || !previewInput || !hiddenAgeInput) return;
+
+    const days = convertAgeToDays(valueInput.value, unitInput.value);
+
+    hiddenAgeInput.value = days;
+    previewInput.value = `${days} day${days === 1 ? '' : 's'}`;
+}
+
+document.getElementById('latest_weight')?.addEventListener('input', updateAssetValue);
+document.getElementById('age_value')?.addEventListener('input', updateAgePreview);
+document.getElementById('age_unit')?.addEventListener('change', updateAgePreview);
+
+updateAssetValue();
+updateAgePreview();
 @endsection

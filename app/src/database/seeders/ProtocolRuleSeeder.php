@@ -1,0 +1,350 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+class ProtocolRuleSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $pigletTemplateId = DB::table('protocol_templates')
+            ->where('code', 'piglet_core_program')
+            ->value('id');
+
+        $sowTemplateId = DB::table('protocol_templates')
+            ->where('code', 'lactating_sow_core_program')
+            ->value('id');
+
+        if (!$pigletTemplateId || !$sowTemplateId) {
+            return;
+        }
+
+        // Clear existing rules for idempotency.
+        DB::table('protocol_rules')->whereIn('protocol_template_id', [
+            $pigletTemplateId,
+            $sowTemplateId,
+        ])->delete();
+
+        // =========================
+        // PIGLET RULES
+        // =========================
+        $pigletRules = [
+            [
+                'sequence_order' => 10,
+                'day_offset_start' => 1,
+                'day_offset_end' => 3,
+                'action_name' => 'Apralyte support',
+                'action_type' => 'supplement',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'Apralyte',
+                'dosage_note' => 'Follow product label or farm veterinarian direction.',
+                'administration_note' => 'Use as oral/electrolyte support during early piglet adjustment or stress window.',
+                'market_note' => 'Equivalent piglet electrolyte or anti-stress support may be used when approved by farm protocol.',
+            ],
+            [
+                'sequence_order' => 20,
+                'day_offset_start' => 3,
+                'day_offset_end' => 3,
+                'action_name' => 'Iron administration',
+                'action_type' => 'medication',
+                'requirement_level' => 'required',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'Jectran Premium',
+                'dosage_note' => 'Use the product-label iron dose for piglets.',
+                'administration_note' => 'Administer using clean injectable technique and follow product label route.',
+                'market_note' => 'Equivalent piglet iron injectable may be used if approved by farm protocol.',
+            ],
+            [
+                'sequence_order' => 30,
+                'day_offset_start' => 7,
+                'day_offset_end' => 7,
+                'action_name' => 'Mycoplasma vaccination',
+                'action_type' => 'vaccination',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'Respisure',
+                'dosage_note' => 'Follow vaccine label dose and farm vaccination protocol.',
+                'administration_note' => 'Administer only to clinically fit piglets using proper vaccine handling and clean technique.',
+                'market_note' => 'Equivalent mycoplasma vaccine may be used according to farm disease program and veterinary direction.',
+            ],
+            [
+                'sequence_order' => 40,
+                'day_offset_start' => 10,
+                'day_offset_end' => 10,
+                'action_name' => 'B-complex administration',
+                'action_type' => 'supplement',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'Bexan SP',
+                'dosage_note' => 'Follow product label or farm veterinarian direction.',
+                'administration_note' => 'Use as supportive supplementation when piglets are under stress or as directed by farm protocol.',
+                'market_note' => 'Equivalent B-complex supplement may be used if approved by farm protocol.',
+            ],
+            [
+                'sequence_order' => 50,
+                'day_offset_start' => 11,
+                'day_offset_end' => 11,
+                'action_name' => 'Castration',
+                'action_type' => 'procedure',
+                'requirement_level' => 'recommended',
+                'condition_key' => 'sex_male',
+                'condition_note' => 'Male piglets only.',
+                'product_note' => null,
+                'dosage_note' => null,
+                'administration_note' => 'Perform only when the piglet is clinically fit, using clean instruments and the farm procedure protocol.',
+                'market_note' => null,
+            ],
+            [
+                'sequence_order' => 60,
+                'day_offset_start' => 10,
+                'day_offset_end' => 14,
+                'action_name' => 'Vetracin support window',
+                'action_type' => 'medication',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'Vetracin Premium / Gold',
+                'dosage_note' => 'Follow product label or veterinarian direction.',
+                'administration_note' => 'Use only when indicated by farm protocol, piglet condition, or veterinary direction.',
+                'market_note' => 'Equivalent farm-approved support product may be used when available.',
+            ],
+            [
+                'sequence_order' => 70,
+                'day_offset_start' => 14,
+                'day_offset_end' => 14,
+                'action_name' => 'Iron booster',
+                'action_type' => 'medication',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'Jectran Premium',
+                'dosage_note' => 'Use the product-label booster dose when a booster is part of farm protocol.',
+                'administration_note' => 'Administer using clean injectable technique and monitor piglet response.',
+                'market_note' => 'Equivalent piglet iron product may be used if approved by farm protocol.',
+            ],
+            [
+                'sequence_order' => 80,
+                'day_offset_start' => 21,
+                'day_offset_end' => 21,
+                'action_name' => 'Hog cholera vaccination',
+                'action_type' => 'vaccination',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'Coglapest',
+                'dosage_note' => 'Follow vaccine label dose and local disease-control protocol.',
+                'administration_note' => 'Administer only to clinically fit piglets using proper vaccine handling and clean technique.',
+                'market_note' => 'Equivalent hog cholera vaccine may be used according to local disease program and veterinary direction.',
+            ],
+            [
+                'sequence_order' => 90,
+                'day_offset_start' => 25,
+                'day_offset_end' => 25,
+                'action_name' => 'B-complex repeat',
+                'action_type' => 'supplement',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'Bexan SP',
+                'dosage_note' => 'Follow product label or farm veterinarian direction.',
+                'administration_note' => 'Use as repeat supportive supplementation when indicated by farm protocol.',
+                'market_note' => 'Equivalent B-complex supplement may be used if approved by farm protocol.',
+            ],
+            [
+                'sequence_order' => 100,
+                'day_offset_start' => 23,
+                'day_offset_end' => 33,
+                'action_name' => 'Anti-stress support',
+                'action_type' => 'supplement',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'Digestaide / Aquadox / Vetracin Gold',
+                'dosage_note' => 'Follow selected product label and farm protocol.',
+                'administration_note' => 'Use during stress-prone periods such as preparation for weaning, movement, or feed transition.',
+                'market_note' => 'Choose one appropriate farm-approved anti-stress or gut-support option based on availability and need.',
+            ],
+            [
+                'sequence_order' => 110,
+                'day_offset_start' => 35,
+                'day_offset_end' => 35,
+                'action_name' => 'Deworming',
+                'action_type' => 'medication',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'Latigo1000',
+                'dosage_note' => 'Follow product label dose based on piglet weight and farm protocol.',
+                'administration_note' => 'Administer only according to label direction and observe withdrawal guidance where applicable.',
+                'market_note' => 'Equivalent farm-approved dewormer may be used if it matches the herd parasite-control program.',
+            ],
+        ];
+
+        foreach ($pigletRules as $rule) {
+            DB::table('protocol_rules')->insert([
+                'protocol_template_id' => $pigletTemplateId,
+                'sequence_order' => $rule['sequence_order'],
+                'day_offset_start' => $rule['day_offset_start'],
+                'day_offset_end' => $rule['day_offset_end'],
+                'action_name' => $rule['action_name'],
+                'action_type' => $rule['action_type'],
+                'requirement_level' => $rule['requirement_level'],
+                'condition_key' => $rule['condition_key'],
+                'condition_note' => $rule['condition_note'],
+                'product_note' => $rule['product_note'],
+                'dosage_note' => $rule['dosage_note'],
+                'administration_note' => $rule['administration_note'],
+                'market_note' => $rule['market_note'],
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        // =========================
+        // LACTATING SOW RULES
+        // =========================
+        $sowRules = [
+            [
+                'sequence_order' => 10,
+                'day_offset_start' => 1,
+                'day_offset_end' => 1,
+                'action_name' => 'Long-acting antibiotic',
+                'action_type' => 'medication',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'Long-acting antibiotic per farm/veterinary protocol',
+                'dosage_note' => '10–15 ml',
+                'administration_note' => 'Use only when indicated by sow condition, farm protocol, or veterinary direction after farrowing.',
+                'market_note' => 'Specific product choice should follow farm inventory, label direction, and veterinary guidance.',
+            ],
+            [
+                'sequence_order' => 20,
+                'day_offset_start' => 2,
+                'day_offset_end' => 2,
+                'action_name' => 'B-complex administration',
+                'action_type' => 'supplement',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'B-complex',
+                'dosage_note' => '5 ml',
+                'administration_note' => 'Use as supportive supplementation for post-farrowing recovery according to farm protocol.',
+                'market_note' => 'Equivalent B-complex supplement may be used if approved by farm protocol.',
+            ],
+            [
+                'sequence_order' => 30,
+                'day_offset_start' => 6,
+                'day_offset_end' => 6,
+                'action_name' => 'Mycoplasma vaccination',
+                'action_type' => 'vaccination',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'Respisure',
+                'dosage_note' => 'Follow vaccine label dose and farm vaccination protocol.',
+                'administration_note' => 'Administer only to clinically fit sows using proper vaccine handling and clean technique.',
+                'market_note' => 'Equivalent mycoplasma vaccine may be used according to farm disease program and veterinary direction.',
+            ],
+            [
+                'sequence_order' => 40,
+                'day_offset_start' => 14,
+                'day_offset_end' => 14,
+                'action_name' => 'Parvo vaccination',
+                'action_type' => 'vaccination',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'Farrowsure',
+                'dosage_note' => '5 ml',
+                'administration_note' => 'Confirm timing fits the farm reproductive vaccination program before administration.',
+                'market_note' => 'Equivalent reproductive vaccine may be used according to farm breeding-stage protocol and veterinary direction.',
+            ],
+            [
+                'sequence_order' => 50,
+                'day_offset_start' => 21,
+                'day_offset_end' => 21,
+                'action_name' => 'Hog cholera vaccination',
+                'action_type' => 'vaccination',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'Hog cholera vaccine per local disease-control program',
+                'dosage_note' => 'Follow vaccine label dose and local disease-control protocol.',
+                'administration_note' => 'Administer only to clinically fit sows using proper vaccine handling and clean technique.',
+                'market_note' => 'Product choice should follow local disease program, label direction, and veterinary guidance.',
+            ],
+            [
+                'sequence_order' => 60,
+                'day_offset_start' => 28,
+                'day_offset_end' => 28,
+                'action_name' => 'Weaning',
+                'action_type' => 'management',
+                'requirement_level' => 'required',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => null,
+                'dosage_note' => null,
+                'administration_note' => 'Record weaning as a management event and check sow and litter condition before transition.',
+                'market_note' => null,
+            ],
+            [
+                'sequence_order' => 70,
+                'day_offset_start' => 29,
+                'day_offset_end' => 29,
+                'action_name' => 'Deworming',
+                'action_type' => 'medication',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'Dewormer per farm parasite-control program',
+                'dosage_note' => 'Follow product label dose based on sow weight and farm protocol.',
+                'administration_note' => 'Administer according to label direction and observe withdrawal guidance where applicable.',
+                'market_note' => 'Specific product should match the farm parasite-control program and veterinary direction.',
+            ],
+            [
+                'sequence_order' => 80,
+                'day_offset_start' => 30,
+                'day_offset_end' => 30,
+                'action_name' => 'B-complex + Vitamin ADE',
+                'action_type' => 'supplement',
+                'requirement_level' => 'recommended',
+                'condition_key' => null,
+                'condition_note' => null,
+                'product_note' => 'B-complex + Vitamin ADE',
+                'dosage_note' => '5 ml + 5 ml',
+                'administration_note' => 'Use as post-weaning/recovery supplementation according to farm protocol.',
+                'market_note' => 'Equivalent vitamin or recovery-support supplements may be used if approved by farm protocol.',
+            ],
+        ];
+
+        foreach ($sowRules as $rule) {
+            DB::table('protocol_rules')->insert([
+                'protocol_template_id' => $sowTemplateId,
+                'sequence_order' => $rule['sequence_order'],
+                'day_offset_start' => $rule['day_offset_start'],
+                'day_offset_end' => $rule['day_offset_end'],
+                'action_name' => $rule['action_name'],
+                'action_type' => $rule['action_type'],
+                'requirement_level' => $rule['requirement_level'],
+                'condition_key' => $rule['condition_key'],
+                'condition_note' => $rule['condition_note'],
+                'product_note' => $rule['product_note'],
+                'dosage_note' => $rule['dosage_note'],
+                'administration_note' => $rule['administration_note'],
+                'market_note' => $rule['market_note'],
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+}

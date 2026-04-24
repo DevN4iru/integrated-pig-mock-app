@@ -2,58 +2,61 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pig;
 use App\Models\FeedLog;
+use App\Models\Pig;
 use Illuminate\Http\Request;
 
 class FeedLogController extends Controller
 {
     public function create(Pig $pig)
     {
+        if ($pig->isOperationallyLocked()) {
+            return redirect()
+                ->route('pigs.show', $pig->id)
+                ->with('error', $pig->operationalLockMessage('feed logs'));
+        }
+
         return view('feed-logs.create', compact('pig'));
     }
 
     public function store(Request $request, Pig $pig)
     {
+        if ($pig->isOperationallyLocked()) {
+            return redirect()
+                ->route('pigs.show', $pig->id)
+                ->with('error', $pig->operationalLockMessage('feed logs'));
+        }
+
         $validated = $request->validate([
-            'feed_type' => ['required', 'string', 'max:255'],
+            'feed_type' => ['required'],
             'start_feed_date' => ['required', 'date'],
             'end_feed_date' => ['nullable', 'date'],
             'quantity' => ['required', 'numeric', 'min:0'],
-            'unit' => ['required', 'in:kg,grams,sacks,bags'],
-            'feeding_time' => ['required', 'in:Morning,Afternoon,Evening'],
-            'status' => ['required', 'in:ongoing,completed'],
-            'notes' => ['nullable', 'string'],
+            'cost' => ['required', 'numeric', 'min:0'],
+            'unit' => ['required'],
+            'feeding_time' => ['required'],
+            'status' => ['required'],
+            'notes' => ['nullable'],
         ]);
-
-        if ($validated['status'] === 'completed' && empty($validated['end_feed_date'])) {
-            return back()
-                ->withErrors(['end_feed_date' => 'End feed date is required when status is completed.'])
-                ->withInput();
-        }
-
-        if (!empty($validated['end_feed_date']) && $validated['end_feed_date'] < $validated['start_feed_date']) {
-            return back()
-                ->withErrors(['end_feed_date' => 'End feed date cannot be earlier than start feed date.'])
-                ->withInput();
-        }
-
-        if ($validated['status'] === 'ongoing') {
-            $validated['end_feed_date'] = null;
-        }
 
         $validated['pig_id'] = $pig->id;
 
         FeedLog::create($validated);
 
         return redirect()
-            ->route('pigs.show', $pig)
+            ->route('pigs.show', $pig->id)
             ->with('success', 'Feed log added successfully.');
     }
 
     public function edit(Pig $pig, FeedLog $feedLog)
     {
         abort_if($feedLog->pig_id !== $pig->id, 404);
+
+        if ($pig->isOperationallyLocked()) {
+            return redirect()
+                ->route('pigs.show', $pig->id)
+                ->with('error', $pig->operationalLockMessage('feed logs'));
+        }
 
         return view('feed-logs.edit', compact('pig', 'feedLog'));
     }
@@ -62,37 +65,28 @@ class FeedLogController extends Controller
     {
         abort_if($feedLog->pig_id !== $pig->id, 404);
 
+        if ($pig->isOperationallyLocked()) {
+            return redirect()
+                ->route('pigs.show', $pig->id)
+                ->with('error', $pig->operationalLockMessage('feed logs'));
+        }
+
         $validated = $request->validate([
-            'feed_type' => ['required', 'string', 'max:255'],
+            'feed_type' => ['required'],
             'start_feed_date' => ['required', 'date'],
             'end_feed_date' => ['nullable', 'date'],
             'quantity' => ['required', 'numeric', 'min:0'],
-            'unit' => ['required', 'in:kg,grams,sacks,bags'],
-            'feeding_time' => ['required', 'in:Morning,Afternoon,Evening'],
-            'status' => ['required', 'in:ongoing,completed'],
-            'notes' => ['nullable', 'string'],
+            'cost' => ['required', 'numeric', 'min:0'],
+            'unit' => ['required'],
+            'feeding_time' => ['required'],
+            'status' => ['required'],
+            'notes' => ['nullable'],
         ]);
-
-        if ($validated['status'] === 'completed' && empty($validated['end_feed_date'])) {
-            return back()
-                ->withErrors(['end_feed_date' => 'End feed date is required when status is completed.'])
-                ->withInput();
-        }
-
-        if (!empty($validated['end_feed_date']) && $validated['end_feed_date'] < $validated['start_feed_date']) {
-            return back()
-                ->withErrors(['end_feed_date' => 'End feed date cannot be earlier than start feed date.'])
-                ->withInput();
-        }
-
-        if ($validated['status'] === 'ongoing') {
-            $validated['end_feed_date'] = null;
-        }
 
         $feedLog->update($validated);
 
         return redirect()
-            ->route('pigs.show', $pig)
+            ->route('pigs.show', $pig->id)
             ->with('success', 'Feed log updated successfully.');
     }
 
@@ -100,10 +94,16 @@ class FeedLogController extends Controller
     {
         abort_if($feedLog->pig_id !== $pig->id, 404);
 
+        if ($pig->isOperationallyLocked()) {
+            return redirect()
+                ->route('pigs.show', $pig->id)
+                ->with('error', $pig->operationalLockMessage('feed logs'));
+        }
+
         $feedLog->delete();
 
         return redirect()
-            ->route('pigs.show', $pig)
-            ->with('success', 'Feed log deleted successfully.');
+            ->route('pigs.show', $pig->id)
+            ->with('success', 'Feed log deleted.');
     }
 }

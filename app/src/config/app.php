@@ -59,13 +59,14 @@ return [
     | Application Timezone
     |--------------------------------------------------------------------------
     |
-    | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | This timezone drives the application's default date and time behavior.
+    | It should match the intended operational day boundary for the farm.
+    | Set APP_TIMEZONE in the environment when deployment needs a different
+    | timezone. Asia/Manila is the safe default for local farm operations.
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'Asia/Manila'),
 
     /*
     |--------------------------------------------------------------------------
