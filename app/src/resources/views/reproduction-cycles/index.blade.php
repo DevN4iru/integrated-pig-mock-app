@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Breeding Cases')
-@section('page_title', 'Breeding Cases')
-@section('page_subtitle', 'Parent breeding cases with current snapshot and append-only timeline flow.')
+@section('title', 'Breeding Records')
+@section('page_title', 'Breeding Records')
+@section('page_subtitle', 'Parent breeding records with current snapshot and append-only timeline flow.')
 
 @section('top_actions')
     <a href="{{ route('dashboard') }}" class="btn">Back to Dashboard</a>
@@ -14,29 +14,29 @@
         <div class="grid stats">
             <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">Total Cases</span>
+                    <span class="label">Total Records</span>
                     <span class="badge blue">All</span>
                 </div>
                 <div class="stat-value">{{ $cycles->count() }}</div>
-                <div class="stat-sub">All breeding cases currently recorded in the farm.</div>
+                <div class="stat-sub">All breeding records currently recorded in the farm.</div>
             </div>
 
             <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">Active Cases</span>
+                    <span class="label">Active Records</span>
                     <span class="badge green">Live</span>
                 </div>
                 <div class="stat-value">{{ $activeCycles->count() }}</div>
-                <div class="stat-sub">Serviced, pregnant, or derived due-soon breeding cases.</div>
+                <div class="stat-sub">Serviced, pregnant, or derived due-soon breeding records.</div>
             </div>
 
             <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">Inactive Cases</span>
+                    <span class="label">Inactive Records</span>
                     <span class="badge orange">History</span>
                 </div>
                 <div class="stat-value">{{ $closedCycles->count() }}</div>
-                <div class="stat-sub">Not pregnant, returned-to-heat, farrowed, or closed breeding cases.</div>
+                <div class="stat-sub">Not pregnant, returned-to-heat, farrowed, or closed breeding records.</div>
             </div>
 
             <div class="stat-card">
@@ -44,20 +44,20 @@
                     <span class="label">Primary Workflow</span>
                     <span class="badge blue">Flow A</span>
                 </div>
-                <div class="stat-sub">Create the case once from the sow profile, then append biological milestones as separate timeline events. Due soon is date-derived, not manually submitted.</div>
+                <div class="stat-sub">Create the record once from the sow profile, then append biological milestones as separate timeline events. Due soon is date-derived, not manually submitted.</div>
             </div>
         </div>
 
         <div class="panel-card">
             <div class="section-title">
                 <div>
-                    <h3>All Breeding Cases</h3>
-                    <p>Each row is a parent breeding case. Open the case to see the summary, timeline, and event-specific progress form.</p>
+                    <h3>All Breeding Records</h3>
+                    <p>Each row is a parent breeding record. Open the record to see the summary, timeline, and event-specific progress form.</p>
                 </div>
             </div>
 
             @if($cycles->isEmpty())
-                <div class="empty-state">No breeding cases recorded yet.</div>
+                <div class="empty-state">No breeding records recorded yet.</div>
             @else
                 <div class="table-wrap">
                     <table class="data-table">
@@ -120,7 +120,7 @@
                                     <td>₱ {{ number_format((float) $cycle->breeding_cost, 2) }}</td>
                                     <td>
                                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                            <a href="{{ route('reproduction-cycles.show', $cycle) }}" class="btn primary">Open Case</a>
+                                            <a href="{{ route('reproduction-cycles.show', $cycle) }}" class="btn primary">Open Record</a>
                                             <a href="{{ route('reproduction-cycles.edit', $cycle) }}" class="btn">Edit Metadata</a>
                                         </div>
                                     </td>

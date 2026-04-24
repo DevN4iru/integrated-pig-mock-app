@@ -5,6 +5,7 @@
 @section('page_subtitle', 'Controlled shared-content editing only. Scheduling and execution logic stay locked.')
 
 @section('top_actions')
+    <button type="submit" form="protocolProgramContentForm" class="btn primary">Save Content</button>
     <a href="{{ route('protocol-programs.show', $protocolTemplate) }}" class="btn">Back to Program</a>
     <a href="{{ route('protocol-programs.index') }}" class="btn">All Protocol Programs</a>
 @endsection
@@ -115,7 +116,7 @@
 @endsection
 
 @section('content')
-    <form method="POST" action="{{ route('protocol-programs.update', $protocolTemplate) }}">
+    <form id="protocolProgramContentForm" method="POST" action="{{ route('protocol-programs.update', $protocolTemplate) }}">
         @csrf
         @method('PUT')
 

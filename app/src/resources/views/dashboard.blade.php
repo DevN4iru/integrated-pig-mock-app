@@ -7,6 +7,7 @@
 @section('top_actions')
     <a href="{{ route('settings.farm.edit') }}" class="btn">Farm Settings</a>
     <a href="{{ route('reproduction-cycles.index') }}" class="btn">Breeding Records</a>
+    <a href="{{ route('protocol-programs.index') }}" class="btn">Protocol Programs</a>
     <a href="{{ route('pigs.index') }}" class="btn">View Pigs</a>
     <a href="{{ route('pigs.create') }}" class="btn primary">+ Add Pig</a>
 @endsection
