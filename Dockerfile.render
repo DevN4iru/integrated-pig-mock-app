@@ -1,0 +1,59 @@
+FROM php:8.3-fpm-alpine
+
+WORKDIR /var/www/html
+
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
+RUN apk add --no-cache \
+    nginx \
+    supervisor \
+    bash \
+    curl \
+    git \
+    unzip \
+    gettext \
+    nodejs \
+    npm \
+    icu-dev \
+    oniguruma-dev \
+    libzip-dev \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install \
+        pdo_mysql \
+        mbstring \
+        zip \
+        intl \
+        bcmath \
+        exif \
+        pcntl \
+        gd
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+COPY . .
+
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+RUN if [ -f package.json ]; then npm ci || npm install; npm run build; fi
+
+RUN mkdir -p \
+    storage/app/public \
+    storage/framework/cache \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+COPY deploy/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY deploy/supervisord.conf /etc/supervisord.conf
+COPY deploy/start.sh /usr/local/bin/start.sh
+
+RUN chmod +x /usr/local/bin/start.sh
+
+EXPOSE 10000
+
+CMD ["/usr/local/bin/start.sh"]
