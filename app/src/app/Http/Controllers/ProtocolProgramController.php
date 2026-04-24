@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProtocolTemplate;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProtocolProgramController extends Controller
 {
@@ -161,5 +163,96 @@ class ProtocolProgramController extends Controller
             'whyExplanationRows',
             'previewRules',
         ));
+    }
+
+    public function edit(ProtocolTemplate $protocolTemplate)
+    {
+        $protocolTemplate->load([
+            'rules' => function ($query) {
+                $query->orderBy('sequence_order')->orderBy('id');
+            },
+        ]);
+
+        $rules = $protocolTemplate->rules->values();
+
+        return view('protocol-programs.edit', compact('protocolTemplate', 'rules'));
+    }
+
+    public function update(Request $request, ProtocolTemplate $protocolTemplate)
+    {
+        $protocolTemplate->load([
+            'rules' => function ($query) {
+                $query->orderBy('sequence_order')->orderBy('id');
+            },
+        ]);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'rules' => ['nullable', 'array'],
+            'rules.*.id' => ['required', 'integer'],
+            'rules.*.product_note' => ['nullable', 'string', 'max:5000'],
+            'rules.*.dosage_note' => ['nullable', 'string', 'max:5000'],
+            'rules.*.administration_note' => ['nullable', 'string', 'max:5000'],
+            'rules.*.market_note' => ['nullable', 'string', 'max:5000'],
+            'rules.*.condition_note' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $ruleInputs = collect($validated['rules'] ?? [])
+            ->keyBy(fn ($ruleInput) => (int) $ruleInput['id']);
+
+        $allowedRuleIds = $protocolTemplate->rules
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $submittedRuleIds = $ruleInputs
+            ->keys()
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if (array_diff($submittedRuleIds, $allowedRuleIds)) {
+            return back()
+                ->withErrors(['rules' => 'One or more submitted rules do not belong to this protocol program.'])
+                ->withInput();
+        }
+
+        DB::transaction(function () use ($protocolTemplate, $validated, $ruleInputs): void {
+            $protocolTemplate->update([
+                'name' => $validated['name'],
+                'description' => $this->normalizeNullableString($validated['description'] ?? null),
+            ]);
+
+            foreach ($protocolTemplate->rules as $rule) {
+                $ruleInput = $ruleInputs->get((int) $rule->id);
+
+                if (!$ruleInput) {
+                    continue;
+                }
+
+                $rule->update([
+                    'product_note' => $this->normalizeNullableString($ruleInput['product_note'] ?? null),
+                    'dosage_note' => $this->normalizeNullableString($ruleInput['dosage_note'] ?? null),
+                    'administration_note' => $this->normalizeNullableString($ruleInput['administration_note'] ?? null),
+                    'market_note' => $this->normalizeNullableString($ruleInput['market_note'] ?? null),
+                    'condition_note' => $this->normalizeNullableString($ruleInput['condition_note'] ?? null),
+                ]);
+            }
+        });
+
+        return redirect()
+            ->route('protocol-programs.show', $protocolTemplate)
+            ->with('success', 'Protocol program display and guide content updated. Scheduling and execution logic were not changed.');
+    }
+
+    private function normalizeNullableString(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 }
