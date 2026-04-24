@@ -714,13 +714,13 @@
                     <small>Overview</small>
                 </a>
 
-                <a href="{{ route('pigs.index') }}" class="{{ request()->routeIs('pigs.*') ? 'active' : '' }}">
+                <a href="{{ route('pigs.index') }}" class="{{ request()->routeIs('pigs.*') && ! request()->routeIs('pigs.create') ? 'active' : '' }}">
                     <span>Pigs</span>
                     <small>Ear tags</small>
                 </a>
 
                 <a href="{{ route('reproduction-cycles.index') }}" class="{{ request()->routeIs('reproduction-cycles.*') ? 'active' : '' }}">
-                    <span>Breeding</span>
+                    <span>Breeding Records</span>
                     <small>Reproduction</small>
                 </a>
 

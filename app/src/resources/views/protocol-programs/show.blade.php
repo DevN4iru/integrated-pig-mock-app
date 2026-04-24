@@ -235,7 +235,7 @@
             <div class="panel-card">
                 <div class="section-title">
                     <div>
-                        <h3>Phase 1 Boundary</h3>
+                        <h3>Editing Boundary</h3>
                         <p>This controlled edit pass keeps execution and scheduling protected.</p>
                     </div>
                 </div>
