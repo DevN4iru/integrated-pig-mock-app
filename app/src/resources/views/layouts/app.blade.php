@@ -724,6 +724,11 @@
                     <small>Reproduction</small>
                 </a>
 
+                <a href="{{ route('protocol-programs.index') }}" class="{{ request()->routeIs('protocol-programs.*') ? 'active' : '' }}">
+                    <span>Protocol Programs</span>
+                    <small>Shared rules</small>
+                </a>
+
                 <a href="{{ route('pens.index') }}" class="{{ request()->routeIs('pens.*') ? 'active' : '' }}">
                     <span>Pens</span>
                     <small>Housing</small>
