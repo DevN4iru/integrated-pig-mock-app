@@ -11,6 +11,7 @@ use App\Http\Controllers\PenController;
 use App\Http\Controllers\PigController;
 use App\Http\Controllers\PigTransferController;
 use App\Http\Controllers\ProtocolExecutionController;
+use App\Http\Controllers\ProtocolProgramController;
 use App\Http\Controllers\ReproductionCycleController;
 use App\Http\Controllers\ReproductionCycleUpdateController;
 use App\Http\Controllers\SaleController;
@@ -43,6 +44,15 @@ Route::post('/notifications/{notification}/dismiss', [NotificationController::cl
 
 Route::get('/settings/farm', [FarmSettingController::class, 'edit'])->name('settings.farm.edit');
 Route::put('/settings/farm', [FarmSettingController::class, 'update'])->name('settings.farm.update');
+
+/*
+|--------------------------------------------------------------------------
+| Protocol Programs
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/protocol-programs', [ProtocolProgramController::class, 'index'])->name('protocol-programs.index');
+Route::get('/protocol-programs/{protocolTemplate}', [ProtocolProgramController::class, 'show'])->name('protocol-programs.show');
 
 /*
 |--------------------------------------------------------------------------
