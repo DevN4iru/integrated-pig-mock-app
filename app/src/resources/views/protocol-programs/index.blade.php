@@ -2,7 +2,7 @@
 
 @section('title', 'Protocol Programs')
 @section('page_title', 'Protocol Programs')
-@section('page_subtitle', 'Read-only shared program registry for category-wide protocol schedules and guide content.')
+@section('page_subtitle', 'Shared program registry for category-wide protocol schedules and guide content.')
 
 @section('top_actions')
     <a href="{{ route('dashboard') }}" class="btn">Back to Dashboard</a>
@@ -14,13 +14,14 @@
             <div class="section-title">
                 <div>
                     <h3>Shared Programs</h3>
-                    <p>These are shared category-level protocol programs. Pig profiles consume these programs for display and execution, but do not edit them directly in this phase.</p>
+                    <p>These are shared category-level protocol programs. Pig profiles consume these programs for display and execution.</p>
                 </div>
             </div>
 
             <div class="flash" style="margin-bottom: 16px;">
-                <strong>Admin guardrail</strong><br>
-                This area is read-only in Phase 1. Shared program editing is intentionally locked because any future change here will affect all pigs using the selected program.
+                <strong>Shared-impact warning</strong><br>
+                Editing this shared protocol program affects all pigs currently using it.
+                This area only edits display/guide content, not scheduling or execution logic.
             </div>
 
             @if ($programs->isEmpty())
@@ -58,7 +59,10 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <a href="{{ route('protocol-programs.show', $program) }}" class="btn primary">Open Program</a>
+                                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                            <a href="{{ route('protocol-programs.show', $program) }}" class="btn primary">Open Program</a>
+                                            <a href="{{ route('protocol-programs.edit', $program) }}" class="btn">Edit Content</a>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach

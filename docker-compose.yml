@@ -1,12 +1,12 @@
 services:
   app:
     build:
-        context: .
-        dockerfile: docker/php/Dockerfile
+      context: ./app
+      dockerfile: docker/php/Dockerfile
     container_name: integrated_pig_app
     working_dir: /var/www
     volumes:
-      - ./src:/var/www
+      - ./app/src:/var/www
     depends_on:
       - db
 
@@ -16,8 +16,8 @@ services:
     ports:
       - "8000:80"
     volumes:
-      - ./src:/var/www
-      - ./docker/nginx:/etc/nginx/conf.d
+      - ./app/src:/var/www
+      - ./app/docker/nginx:/etc/nginx/conf.d
     depends_on:
       - app
 

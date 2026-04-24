@@ -52,6 +52,8 @@ Route::put('/settings/farm', [FarmSettingController::class, 'update'])->name('se
 */
 
 Route::get('/protocol-programs', [ProtocolProgramController::class, 'index'])->name('protocol-programs.index');
+Route::get('/protocol-programs/{protocolTemplate}/edit', [ProtocolProgramController::class, 'edit'])->name('protocol-programs.edit');
+Route::put('/protocol-programs/{protocolTemplate}', [ProtocolProgramController::class, 'update'])->name('protocol-programs.update');
 Route::get('/protocol-programs/{protocolTemplate}', [ProtocolProgramController::class, 'show'])->name('protocol-programs.show');
 
 /*

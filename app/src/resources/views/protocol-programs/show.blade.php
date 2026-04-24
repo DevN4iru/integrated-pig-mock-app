@@ -2,10 +2,11 @@
 
 @section('title', 'Protocol Program')
 @section('page_title', 'Protocol Program')
-@section('page_subtitle', 'Read-only shared program detail for schedule truth, guide cards, and pig-facing preview.')
+@section('page_subtitle', 'Shared program detail for schedule truth, guide cards, and pig-facing preview.')
 
 @section('top_actions')
     <a href="{{ route('protocol-programs.index') }}" class="btn">Back to Protocol Programs</a>
+    <a href="{{ route('protocol-programs.edit', $protocolTemplate) }}" class="btn primary">Edit Content</a>
 @endsection
 
 @section('styles')
@@ -226,7 +227,8 @@
 
                 <div class="flash">
                     <strong>Shared-impact warning</strong><br>
-                    This program is shared. Any future editing here would affect all pigs currently using this program, so Phase 1 keeps this surface read-only.
+                    Editing this shared protocol program affects all pigs currently using it.
+                    This page only edits display/guide content, not scheduling or execution logic.
                 </div>
             </div>
 
@@ -234,24 +236,24 @@
                 <div class="section-title">
                     <div>
                         <h3>Phase 1 Boundary</h3>
-                        <p>This first admin pass is for visibility, review, and structure only.</p>
+                        <p>This controlled edit pass keeps execution and scheduling protected.</p>
                     </div>
                 </div>
 
                 <div class="protocol-admin-subsection">
                     <div class="protocol-admin-card">
                         <h4>Program Rules</h4>
-                        <p>Read-only schedule truth for the shared program.</p>
+                        <p>Schedule truth remains locked. Sequence, offsets, action names, action types, requirements, and conditions are not editable here.</p>
                     </div>
 
                     <div class="protocol-admin-card">
                         <h4>Guide Cards</h4>
-                        <p>Read-only display of guide and explanation content separated from executable schedule rules.</p>
+                        <p>Only existing DB-backed guide-note text can be edited.</p>
                     </div>
 
                     <div class="protocol-admin-card">
                         <h4>Pig-facing Preview</h4>
-                        <p>Preview of how the program should conceptually appear on pig profiles without turning this page into a pig-level execution screen.</p>
+                        <p>Pig-level protocol execution remains on pig profiles only.</p>
                     </div>
                 </div>
             </div>
@@ -261,7 +263,7 @@
             <div class="section-title">
                 <div>
                     <h3>Program Rules</h3>
-                    <p>Read-only schedule table for this shared program.</p>
+                    <p>Locked schedule table for this shared program.</p>
                 </div>
             </div>
 
@@ -275,7 +277,7 @@
                 <div class="section-title">
                     <div>
                         <h3>Guide Cards</h3>
-                        <p>Read-only shared guide content grouped for future pig-facing display.</p>
+                        <p>Shared guide content grouped for pig-facing display.</p>
                     </div>
                 </div>
 
