@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FarmSettingController;
+use App\Http\Controllers\FarmSummaryReportController;
 use App\Http\Controllers\FeedLogController;
 use App\Http\Controllers\HealthLogController;
 use App\Http\Controllers\MedicationController;
@@ -46,6 +47,15 @@ Route::middleware('auth')->group(function (): void {
     */
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reports
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/reports/farm-summary.csv', [FarmSummaryReportController::class, 'csv'])
+        ->name('reports.farm-summary.csv');
 
     /*
     |--------------------------------------------------------------------------
