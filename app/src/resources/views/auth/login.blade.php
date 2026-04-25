@@ -381,7 +381,7 @@
                                 id="email"
                                 type="email"
                                 name="email"
-                                value="{{ old('email') }}"
+                                value="{{ old('email', 'pigstephandling@gmail.com') }}"
                                 autocomplete="email"
                                 required
                                 autofocus
