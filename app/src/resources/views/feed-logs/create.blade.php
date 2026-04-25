@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Add Feed Log')
-@section('page_title', 'Add Feed Log')
-@section('page_subtitle', 'Record feeding period for this pig.')
+@section('title', 'Assign Feed')
+@section('page_title', 'Assign Feed')
+@section('page_subtitle', 'Record the feed assigned to this pig for a period.')
 
 @section('top_actions')
     <a href="{{ route('pigs.show', $pig) }}" class="btn">Back</a>
@@ -10,15 +10,20 @@
 
 @section('content')
 <div class="panel-card">
-    <h3>Add Feed Log</h3>
+    <h3>Assign Feed</h3>
+    <p class="text-muted mb-3">Use this to track what feed is assigned from a start date to an optional end date. No feed cost is calculated in the client view.</p>
 
     <form method="POST" action="{{ route('feed-logs.store', $pig) }}">
         @csrf
 
+        <input type="hidden" name="cost" value="0">
+        <input type="hidden" name="feeding_time" value="Assigned period">
+        <input type="hidden" name="status" value="ongoing">
+
         <div class="form-grid">
             <div class="form-group">
-                <label>Feed Type</label>
-                <input type="text" name="feed_type" value="{{ old('feed_type') }}" required>
+                <label>Feed Name / Type</label>
+                <input type="text" name="feed_type" value="{{ old('feed_type') }}" placeholder="Example: Starter, Grower, Lactating Sow Feed" required autofocus>
             </div>
 
             <div class="form-group">
@@ -37,11 +42,6 @@
             </div>
 
             <div class="form-group">
-                <label>Cost (₱)</label>
-                <input type="number" step="0.01" min="0" name="cost" value="{{ old('cost', 0) }}" required>
-            </div>
-
-            <div class="form-group">
                 <label>Unit</label>
                 <select name="unit" required>
                     <option value="">Select unit</option>
@@ -52,33 +52,14 @@
                 </select>
             </div>
 
-            <div class="form-group">
-                <label>Feeding Time</label>
-                <select name="feeding_time" required>
-                    <option value="">Select feeding time</option>
-                    <option value="Morning" {{ old('feeding_time') === 'Morning' ? 'selected' : '' }}>Morning</option>
-                    <option value="Afternoon" {{ old('feeding_time') === 'Afternoon' ? 'selected' : '' }}>Afternoon</option>
-                    <option value="Evening" {{ old('feeding_time') === 'Evening' ? 'selected' : '' }}>Evening</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Status</label>
-                <select name="status" required>
-                    <option value="">Select status</option>
-                    <option value="ongoing" {{ old('status') === 'ongoing' ? 'selected' : '' }}>Ongoing</option>
-                    <option value="completed" {{ old('status') === 'completed' ? 'selected' : '' }}>Completed</option>
-                </select>
-            </div>
-
             <div class="form-group full">
                 <label>Notes</label>
-                <textarea name="notes">{{ old('notes') }}</textarea>
+                <textarea name="notes" placeholder="Optional remarks about this feed assignment.">{{ old('notes') }}</textarea>
             </div>
         </div>
 
         <div class="form-actions">
-            <button type="submit" class="btn primary">Save Feed Log</button>
+            <button type="submit" class="btn primary">Save Assigned Feed</button>
             <a href="{{ route('pigs.show', $pig) }}" class="btn">Cancel</a>
         </div>
     </form>
