@@ -1,13 +1,51 @@
 <?php
 
+use App\Models\User;
 use App\Services\EmailAlertDispatchService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Validator;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Artisan::command('auth:create-owner {email} {--name=Owner} {--password=}', function (string $email) {
+    $name = trim((string) $this->option('name'));
+    $password = (string) $this->option('password');
+
+    if ($name === '') {
+        $name = 'Owner';
+    }
+
+    if ($password === '') {
+        $password = (string) $this->secret('Owner password');
+    }
+
+    $validated = Validator::make(
+        [
+            'email' => $email,
+            'name' => $name,
+            'password' => $password,
+        ],
+        [
+            'email' => ['required', 'email:rfc', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
+            'password' => ['required', 'string', 'min:8'],
+        ]
+    )->validate();
+
+    $user = User::query()->updateOrCreate(
+        ['email' => $validated['email']],
+        [
+            'name' => $validated['name'],
+            'password' => $validated['password'],
+        ]
+    );
+
+    $this->info('Owner account ready: '.$user->email);
+})->purpose('Create or update the Pigstep owner login account');
 
 Artisan::command('alerts:dispatch-email', function () {
     app(EmailAlertDispatchService::class)->dispatchScheduledAlerts();
