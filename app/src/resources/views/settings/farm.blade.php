@@ -2,7 +2,7 @@
 
 @section('title', 'Farm Settings')
 @section('page_title', 'Farm Settings')
-@section('page_subtitle', 'Configure global pricing and email reminder settings for Pigstep.')
+@section('page_subtitle', 'Configure global pricing, email reminder settings, and manual farm exports for Pigstep.')
 
 @section('top_actions')
     <a href="{{ route('dashboard') }}" class="btn">Back to Dashboard</a>
@@ -10,6 +10,19 @@
 
 @section('content')
     <div class="grid">
+        <div class="panel-card">
+            <div class="section-title">
+                <div>
+                    <h3>Manual Reports</h3>
+                    <p>Download a current farm summary export. This is manual only and does not schedule or email reports.</p>
+                </div>
+            </div>
+
+            <div class="form-actions" style="margin-top: 0;">
+                <a href="{{ route('reports.farm-summary.csv') }}" class="btn primary">Download Farm Summary CSV</a>
+            </div>
+        </div>
+
         <div class="panel-card">
             <div class="section-title">
                 <div>
