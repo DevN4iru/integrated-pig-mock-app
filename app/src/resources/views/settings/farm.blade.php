@@ -20,6 +20,7 @@
 
             <div class="form-actions" style="margin-top: 0;">
                 <a href="{{ route('reports.farm-summary.csv') }}" class="btn primary">Download Farm Summary CSV</a>
+                <a href="{{ route('reports.farm-summary.pdf') }}" class="btn">Download Farm Summary PDF</a>
             </div>
         </div>
 
