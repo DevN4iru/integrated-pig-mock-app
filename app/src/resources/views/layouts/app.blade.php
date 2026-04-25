@@ -176,6 +176,44 @@
             color: #c6d4ef;
         }
 
+        .sidebar-logout-form {
+            margin: 0;
+        }
+
+        .sidebar-logout-button {
+            width: 100%;
+            color: #d7e0ee;
+            padding: 13px 14px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            border: 1px solid transparent;
+            transition: 0.18s ease;
+            font-size: 14px;
+            background: transparent;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .sidebar-logout-button span {
+            font-weight: 600;
+        }
+
+        .sidebar-logout-button small {
+            font-size: 11px;
+            color: #8fa0bb;
+            white-space: nowrap;
+        }
+
+        .sidebar-logout-button:hover {
+            background: rgba(255,255,255,0.06);
+            color: #fff;
+            border-color: rgba(255,255,255,0.06);
+            transform: translateY(-1px);
+        }
+
         .sidebar-note {
             margin-top: auto;
             background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
@@ -776,6 +814,16 @@
                     <span>Settings</span>
                     <small>Farm config</small>
                 </a>
+
+                @auth
+                    <form method="POST" action="{{ route('logout') }}" class="sidebar-logout-form">
+                        @csrf
+                        <button type="submit" class="sidebar-logout-button">
+                            <span>Logout</span>
+                            <small>Sign out</small>
+                        </button>
+                    </form>
+                @endauth
             </nav>
 
             <div class="sidebar-note">
@@ -814,11 +862,6 @@
                                 <span>{{ auth()->user()->name }}</span>
                                 <small>{{ auth()->user()->email }}</small>
                             </span>
-
-                            <form method="POST" action="{{ route('logout') }}" class="logout-form">
-                                @csrf
-                                <button type="submit" class="btn">Logout</button>
-                            </form>
                         @endauth
                     </div>
                 </header>
