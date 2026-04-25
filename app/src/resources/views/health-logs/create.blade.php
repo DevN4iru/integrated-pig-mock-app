@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Add Health Log')
-@section('page_title', 'Add Health Log')
-@section('page_subtitle', 'Record a health event for this pig.')
+@section('title', 'Update Weight')
+@section('page_title', 'Update Weight')
+@section('page_subtitle', 'Record the latest weight for this pig.')
 
 @section('top_actions')
     <a href="{{ route('pigs.show', $pig) }}" class="btn">Back</a>
@@ -22,54 +22,40 @@
     @endphp
 
     <div class="panel-card">
-        <h3>Health Log Entry</h3>
+        <h3>Weight Update</h3>
+        <p class="text-muted mb-3">Add a dated weight record. This becomes part of the pig's weight history.</p>
 
         <form method="POST" action="{{ route('health-logs.store', $pig) }}">
             @csrf
 
+            <input type="hidden" name="purpose" value="weight_update">
+            <input type="hidden" name="condition" value="Weight update">
+
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Purpose</label>
-                    <select name="purpose" id="purpose" required>
-                        <option value="">Select purpose</option>
-                        <option value="weight_update" {{ old('purpose') === 'weight_update' ? 'selected' : '' }}>Weight Update</option>
-                        <option value="sick" {{ old('purpose') === 'sick' ? 'selected' : '' }}>Sick</option>
-                        <option value="recovered" {{ old('purpose') === 'recovered' ? 'selected' : '' }}>Recovered</option>
-                        <option value="checkup" {{ old('purpose') === 'checkup' ? 'selected' : '' }}>Checkup</option>
-                        <option value="injury" {{ old('purpose') === 'injury' ? 'selected' : '' }}>Injury</option>
-                        <option value="observation" {{ old('purpose') === 'observation' ? 'selected' : '' }}>Observation</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
                     <label>Date</label>
-                    <input type="date" name="log_date" id="log_date" value="{{ old('log_date') }}" max="{{ $maxDate }}" required>
+                    <input type="date" name="log_date" id="log_date" value="{{ old('log_date', $maxDate) }}" max="{{ $maxDate }}" required>
                 </div>
 
                 <div class="form-group">
-                    <label>Condition / Summary</label>
-                    <input type="text" name="condition" value="{{ old('condition') }}" required>
-                </div>
-
-                <div class="form-group" id="weight-group">
                     <label>Weight (kg)</label>
-                    <input type="number" step="0.01" min="0.01" name="weight" id="weight" value="{{ old('weight') }}">
+                    <input type="number" step="0.01" min="0.01" name="weight" id="weight" value="{{ old('weight') }}" required autofocus>
                 </div>
 
                 <div class="form-group full" id="same-day-weight-warning" style="display:none;">
                     <div class="flash error" style="margin: 0;">
-                        A weight update already exists for this date. Multiple same-day weight logs are allowed, and the latest saved entry will be used first in trend calculations.
+                        A weight update already exists for this date. Multiple same-day weight records are allowed, and the latest saved entry will be used first.
                     </div>
                 </div>
 
                 <div class="form-group full">
                     <label>Notes</label>
-                    <textarea name="notes">{{ old('notes') }}</textarea>
+                    <textarea name="notes" placeholder="Optional notes about this weight record.">{{ old('notes') }}</textarea>
                 </div>
             </div>
 
             <div class="form-actions">
-                <button class="btn primary" type="submit">Save Log</button>
+                <button class="btn primary" type="submit">Save Weight</button>
                 <a href="{{ route('pigs.show', $pig) }}" class="btn">Cancel</a>
             </div>
         </form>
@@ -78,31 +64,16 @@
 
 @section('scripts')
 const existingWeightDates = @json($existingWeightDates);
+const logDate = document.getElementById('log_date');
+const warning = document.getElementById('same-day-weight-warning');
 
-function toggleWeightField() {
-    const purpose = document.getElementById('purpose');
-    const logDate = document.getElementById('log_date');
-    const weightGroup = document.getElementById('weight-group');
-    const weightInput = document.getElementById('weight');
-    const warning = document.getElementById('same-day-weight-warning');
+function toggleWeightDateWarning() {
+    if (!logDate || !warning) return;
 
-    if (!purpose || !logDate || !weightGroup || !weightInput || !warning) return;
-
-    const showWeight = purpose.value === 'weight_update';
     const selectedDate = logDate.value;
-
-    weightGroup.style.display = showWeight ? '' : 'none';
-    weightInput.required = showWeight;
-
-    const showWarning = showWeight && selectedDate !== '' && existingWeightDates.includes(selectedDate);
-    warning.style.display = showWarning ? '' : 'none';
-
-    if (!showWeight) {
-        weightInput.value = '';
-    }
+    warning.style.display = selectedDate !== '' && existingWeightDates.includes(selectedDate) ? '' : 'none';
 }
 
-document.getElementById('purpose')?.addEventListener('change', toggleWeightField);
-document.getElementById('log_date')?.addEventListener('change', toggleWeightField);
-toggleWeightField();
+logDate?.addEventListener('change', toggleWeightDateWarning);
+toggleWeightDateWarning();
 @endsection
