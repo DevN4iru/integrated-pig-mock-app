@@ -14,14 +14,23 @@
             <div class="section-title">
                 <div>
                     <h3>Manual Reports</h3>
-                    <p>Download a current farm summary export. This is manual only and does not schedule or email reports.</p>
+                    <p>Download or manually email a current farm summary export. This does not schedule weekly or month-end reports.</p>
                 </div>
             </div>
 
             <div class="form-actions" style="margin-top: 0;">
                 <a href="{{ route('reports.farm-summary.csv') }}" class="btn primary">Download Farm Summary CSV</a>
                 <a href="{{ route('reports.farm-summary.pdf') }}" class="btn">Download Farm Summary PDF</a>
+
+                <form method="POST" action="{{ route('reports.farm-summary.email') }}" style="display: inline-flex; margin: 0;">
+                    @csrf
+                    <button type="submit" class="btn">Send Farm Summary to Email</button>
+                </form>
             </div>
+
+            <p class="text-muted" style="margin-top: 12px; font-size: 13px;">
+                Manual email sends the current PDF and CSV report to the alert recipient email saved below.
+            </p>
         </div>
 
         <div class="panel-card">

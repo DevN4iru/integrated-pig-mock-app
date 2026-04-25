@@ -60,6 +60,9 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/reports/farm-summary.pdf', [FarmSummaryReportController::class, 'pdf'])
         ->name('reports.farm-summary.pdf');
 
+    Route::post('/reports/farm-summary/email', [FarmSummaryReportController::class, 'email'])
+        ->name('reports.farm-summary.email');
+
     /*
     |--------------------------------------------------------------------------
     | Notifications
