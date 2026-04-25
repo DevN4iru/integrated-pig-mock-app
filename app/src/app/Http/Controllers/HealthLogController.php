@@ -7,44 +7,19 @@ use App\Models\HealthLog;
 use App\Models\Pig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 
 class HealthLogController extends Controller
 {
-    private function rules(): array
-    {
-        return [
-            'purpose' => ['required', Rule::in([
-                'weight_update',
-                'sick',
-                'recovered',
-                'checkup',
-                'injury',
-                'observation',
-            ])],
-            'condition' => ['required', 'string', 'max:255'],
-            'weight' => ['nullable', 'numeric', 'gt:0'],
-            'notes' => ['nullable', 'string'],
-            'log_date' => ['required', 'date', 'before_or_equal:today'],
-        ];
-    }
-
     private function validatedPayload(Request $request): array
     {
-        $validated = $request->validate($this->rules());
+        $validated = $request->validate([
+            'weight' => ['required', 'numeric', 'gt:0'],
+            'log_date' => ['required', 'date', 'before_or_equal:today'],
+            'notes' => ['nullable', 'string'],
+        ]);
 
-        if ($validated['purpose'] === 'weight_update' && ($validated['weight'] === null || $validated['weight'] === '')) {
-            return back()
-                ->withErrors(['weight' => 'Weight is required for a weight update.'])
-                ->withInput()
-                ->throwResponse();
-        }
-
-        if ($validated['purpose'] !== 'weight_update') {
-            $validated['weight'] = null;
-        }
-
-        $validated['condition'] = trim((string) $validated['condition']);
+        $validated['purpose'] = 'weight_update';
+        $validated['condition'] = 'Weight update';
         $validated['notes'] = isset($validated['notes']) ? trim((string) $validated['notes']) : null;
         $validated['notes'] = $validated['notes'] === '' ? null : $validated['notes'];
 
@@ -74,7 +49,7 @@ class HealthLogController extends Controller
         if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $pig->operationalLockMessage('health logs'));
+                ->with('error', $pig->operationalLockMessage('weight history'));
         }
 
         return view('health-logs.create', compact('pig'));
@@ -85,7 +60,7 @@ class HealthLogController extends Controller
         if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $pig->operationalLockMessage('health logs'));
+                ->with('error', $pig->operationalLockMessage('weight history'));
         }
 
         $validated = $this->validatedPayload($request);
@@ -98,7 +73,7 @@ class HealthLogController extends Controller
 
         return redirect()
             ->route('pigs.show', $pig->id)
-            ->with('success', 'Health log added.');
+            ->with('success', 'Weight updated.');
     }
 
     public function edit(Pig $pig, HealthLog $healthLog)
@@ -108,7 +83,13 @@ class HealthLogController extends Controller
         if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $pig->operationalLockMessage('health logs'));
+                ->with('error', $pig->operationalLockMessage('weight history'));
+        }
+
+        if ($healthLog->purpose !== 'weight_update') {
+            return redirect()
+                ->route('pigs.show', $pig->id)
+                ->with('error', 'This record is hidden in the simplified client view.');
         }
 
         return view('health-logs.edit', compact('pig', 'healthLog'));
@@ -121,7 +102,13 @@ class HealthLogController extends Controller
         if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $pig->operationalLockMessage('health logs'));
+                ->with('error', $pig->operationalLockMessage('weight history'));
+        }
+
+        if ($healthLog->purpose !== 'weight_update') {
+            return redirect()
+                ->route('pigs.show', $pig->id)
+                ->with('error', 'This record is hidden in the simplified client view.');
         }
 
         $validated = $this->validatedPayload($request);
@@ -133,7 +120,7 @@ class HealthLogController extends Controller
 
         return redirect()
             ->route('pigs.show', $pig->id)
-            ->with('success', 'Health log updated.');
+            ->with('success', 'Weight record updated.');
     }
 
     public function destroy(Pig $pig, HealthLog $healthLog)
@@ -143,7 +130,13 @@ class HealthLogController extends Controller
         if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $pig->operationalLockMessage('health logs'));
+                ->with('error', $pig->operationalLockMessage('weight history'));
+        }
+
+        if ($healthLog->purpose !== 'weight_update') {
+            return redirect()
+                ->route('pigs.show', $pig->id)
+                ->with('error', 'This record is hidden in the simplified client view.');
         }
 
         DB::transaction(function () use ($healthLog, $pig): void {
@@ -153,6 +146,6 @@ class HealthLogController extends Controller
 
         return redirect()
             ->route('pigs.show', $pig->id)
-            ->with('success', 'Health log deleted.');
+            ->with('success', 'Weight record deleted.');
     }
 }
