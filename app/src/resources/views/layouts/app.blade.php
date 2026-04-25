@@ -233,6 +233,34 @@
             gap: 10px;
             flex-wrap: wrap;
             justify-content: flex-end;
+            align-items: center;
+        }
+
+        .topbar-user {
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 800;
+            line-height: 1.2;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+            padding: 2px 2px;
+            max-width: 220px;
+        }
+
+        .topbar-user small {
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .logout-form {
+            display: inline-flex;
+            margin: 0;
         }
 
         .btn,
@@ -635,6 +663,11 @@
                 justify-content: flex-start;
             }
 
+            .topbar-user {
+                align-items: flex-start;
+                max-width: 100%;
+            }
+
             .sidebar {
                 position: fixed;
                 left: 0;
@@ -775,6 +808,18 @@
                         @endif
 
                         @yield('top_actions')
+
+                        @auth
+                            <span class="topbar-user">
+                                <span>{{ auth()->user()->name }}</span>
+                                <small>{{ auth()->user()->email }}</small>
+                            </span>
+
+                            <form method="POST" action="{{ route('logout') }}" class="logout-form">
+                                @csrf
+                                <button type="submit" class="btn">Logout</button>
+                            </form>
+                        @endauth
                     </div>
                 </header>
 
@@ -831,11 +876,11 @@
             overlay.classList.remove('active');
             overlay.hidden = true;
             menuToggle.setAttribute('aria-expanded', 'false');
+            document.body.classList.remove('menu-open');
         }
 
         function toggleMenu() {
             sidebar.classList.contains('open') ? closeMenu() : openMenu();
-            overlay.classList.toggle('active');
             document.body.classList.toggle('menu-open');
         }
 
