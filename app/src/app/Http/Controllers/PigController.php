@@ -305,7 +305,7 @@ class PigController extends Controller
             ])
             ->findOrFail($pig);
 
-        return view('pigs.show', compact('pig'));
+        return view('pigs.client-show', compact('pig'));
     }
 
     public function edit(Request $request, Pig $pig)
