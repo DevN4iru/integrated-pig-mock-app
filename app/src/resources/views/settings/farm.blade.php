@@ -74,7 +74,8 @@
                                 <li>Server ready email is sent daily at 5:00 AM.</li>
                                 <li>Server close reminder uses the configured close time and says Pigstep will resume at 5:00 AM.</li>
                                 <li>Feed reminder uses the configured daily feed time.</li>
-                                <li>Event emails are sent for farrowing and protocol reminders at T-3 and D-day only.</li>
+                                <li>Farrowing emails are sent at T-3 and on the due day.</li>
+                                <li>Protocol emails are sent at T-3, on the due day/window, and once when an unresolved item becomes overdue.</li>
                             </ul>
                         </div>
                     </div>
