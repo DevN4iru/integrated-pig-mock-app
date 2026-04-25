@@ -47,8 +47,8 @@ class FarmSummaryReportService
 
         $netPosition = $totalAssetValue + $totalRevenue - $mortalityLoss - $totalOperatingCost;
 
-        $protocolDueToday = 0;
-        $protocolOverdue = 0;
+        $protocolDueTodayRows = [];
+        $protocolOverdueRows = [];
 
         foreach ($livePigs as $pig) {
             $protocolSummary = $pig->protocol_summary;
@@ -57,36 +57,150 @@ class FarmSummaryReportService
                 continue;
             }
 
-            $protocolDueToday += count($protocolSummary['due_today'] ?? []);
-            $protocolOverdue += count($protocolSummary['overdue'] ?? []);
+            foreach (($protocolSummary['due_today'] ?? []) as $row) {
+                $protocolDueTodayRows[] = $this->protocolRow($pig, $row);
+            }
+
+            foreach (($protocolSummary['overdue'] ?? []) as $row) {
+                $protocolOverdueRows[] = $this->protocolRow($pig, $row);
+            }
         }
+
+        $activeBreedingRecords = ReproductionCycle::query()->activeDashboardCycles()->count();
+        $farrowingDueSoon = ReproductionCycle::query()->upcomingFarrowingAlerts()->count();
+        $pendingPregnancyChecks = ReproductionCycle::query()->pendingPregnancyChecksDashboardCycles()->count();
+        $staleWeightPigs = $pigs->filter(fn (Pig $pig) => $pig->has_stale_weight)->count();
+
+        $metrics = [
+            'total_pigs' => $pigs->count(),
+            'active_pigs' => $livePigs->count(),
+            'sold_pigs' => $soldPigs->count(),
+            'dead_pigs' => $deadPigs->count(),
+            'archived_pigs' => Pig::onlyTrashed()->count(),
+            'pen_count' => Pen::query()->count(),
+            'active_breeding_records' => $activeBreedingRecords,
+            'farrowing_due_soon' => $farrowingDueSoon,
+            'pending_pregnancy_checks' => $pendingPregnancyChecks,
+            'stale_weight_pigs' => $staleWeightPigs,
+            'protocol_due_today' => count($protocolDueTodayRows),
+            'protocol_overdue' => count($protocolOverdueRows),
+            'total_asset_value' => $totalAssetValue,
+            'total_revenue' => $totalRevenue,
+            'mortality_loss' => $mortalityLoss,
+            'total_feed_cost' => $totalFeedCost,
+            'total_medication_cost' => $totalMedicationCost,
+            'total_vaccination_cost' => $totalVaccinationCost,
+            'total_breeding_cost' => $totalBreedingCost,
+            'total_care_liability' => $totalCareLiability,
+            'total_operating_cost' => $totalOperatingCost,
+            'net_position' => $netPosition,
+        ];
 
         return [
             'generated_at' => $generatedAt,
-            'rows' => [
-                ['metric' => 'generated_at', 'value' => $generatedAt->format('Y-m-d H:i:s')],
-                ['metric' => 'total_pigs', 'value' => $pigs->count()],
-                ['metric' => 'active_pigs', 'value' => $livePigs->count()],
-                ['metric' => 'sold_pigs', 'value' => $soldPigs->count()],
-                ['metric' => 'dead_pigs', 'value' => $deadPigs->count()],
-                ['metric' => 'archived_pigs', 'value' => Pig::onlyTrashed()->count()],
-                ['metric' => 'pen_count', 'value' => Pen::query()->count()],
-                ['metric' => 'active_breeding_records', 'value' => ReproductionCycle::query()->activeDashboardCycles()->count()],
-                ['metric' => 'farrowing_due_soon', 'value' => ReproductionCycle::query()->upcomingFarrowingAlerts()->count()],
-                ['metric' => 'pending_pregnancy_checks', 'value' => ReproductionCycle::query()->pendingPregnancyChecksDashboardCycles()->count()],
-                ['metric' => 'stale_weight_pigs', 'value' => $pigs->filter(fn (Pig $pig) => $pig->has_stale_weight)->count()],
-                ['metric' => 'protocol_due_today', 'value' => $protocolDueToday],
-                ['metric' => 'protocol_overdue', 'value' => $protocolOverdue],
-                ['metric' => 'total_asset_value', 'value' => $this->money($totalAssetValue)],
-                ['metric' => 'total_revenue', 'value' => $this->money($totalRevenue)],
-                ['metric' => 'mortality_loss', 'value' => $this->money($mortalityLoss)],
-                ['metric' => 'total_feed_cost', 'value' => $this->money($totalFeedCost)],
-                ['metric' => 'total_medication_cost', 'value' => $this->money($totalMedicationCost)],
-                ['metric' => 'total_vaccination_cost', 'value' => $this->money($totalVaccinationCost)],
-                ['metric' => 'total_breeding_cost', 'value' => $this->money($totalBreedingCost)],
-                ['metric' => 'total_care_liability', 'value' => $this->money($totalCareLiability)],
-                ['metric' => 'total_operating_cost', 'value' => $this->money($totalOperatingCost)],
-                ['metric' => 'net_position', 'value' => $this->money($netPosition)],
+            'report_type' => 'Manual',
+            'prepared_for' => 'Timothy Maglente',
+            'product_by' => 'Kirjane Labs',
+            'metrics' => $metrics,
+            'rows' => $this->csvRows($generatedAt, $metrics),
+            'pen_occupancy' => $this->penOccupancy(),
+            'protocol_due_today_rows' => $protocolDueTodayRows,
+            'protocol_overdue_rows' => $protocolOverdueRows,
+            'action_checklist' => $this->actionChecklist($metrics),
+        ];
+    }
+
+    protected function csvRows(Carbon $generatedAt, array $metrics): array
+    {
+        return [
+            ['metric' => 'generated_at', 'value' => $generatedAt->format('Y-m-d H:i:s')],
+            ['metric' => 'total_pigs', 'value' => $metrics['total_pigs']],
+            ['metric' => 'active_pigs', 'value' => $metrics['active_pigs']],
+            ['metric' => 'sold_pigs', 'value' => $metrics['sold_pigs']],
+            ['metric' => 'dead_pigs', 'value' => $metrics['dead_pigs']],
+            ['metric' => 'archived_pigs', 'value' => $metrics['archived_pigs']],
+            ['metric' => 'pen_count', 'value' => $metrics['pen_count']],
+            ['metric' => 'active_breeding_records', 'value' => $metrics['active_breeding_records']],
+            ['metric' => 'farrowing_due_soon', 'value' => $metrics['farrowing_due_soon']],
+            ['metric' => 'pending_pregnancy_checks', 'value' => $metrics['pending_pregnancy_checks']],
+            ['metric' => 'stale_weight_pigs', 'value' => $metrics['stale_weight_pigs']],
+            ['metric' => 'protocol_due_today', 'value' => $metrics['protocol_due_today']],
+            ['metric' => 'protocol_overdue', 'value' => $metrics['protocol_overdue']],
+            ['metric' => 'total_asset_value', 'value' => $this->money($metrics['total_asset_value'])],
+            ['metric' => 'total_revenue', 'value' => $this->money($metrics['total_revenue'])],
+            ['metric' => 'mortality_loss', 'value' => $this->money($metrics['mortality_loss'])],
+            ['metric' => 'total_feed_cost', 'value' => $this->money($metrics['total_feed_cost'])],
+            ['metric' => 'total_medication_cost', 'value' => $this->money($metrics['total_medication_cost'])],
+            ['metric' => 'total_vaccination_cost', 'value' => $this->money($metrics['total_vaccination_cost'])],
+            ['metric' => 'total_breeding_cost', 'value' => $this->money($metrics['total_breeding_cost'])],
+            ['metric' => 'total_care_liability', 'value' => $this->money($metrics['total_care_liability'])],
+            ['metric' => 'total_operating_cost', 'value' => $this->money($metrics['total_operating_cost'])],
+            ['metric' => 'net_position', 'value' => $this->money($metrics['net_position'])],
+        ];
+    }
+
+    protected function penOccupancy(): array
+    {
+        return Pen::query()
+            ->withCount(['activePigs as active_pigs_count'])
+            ->get()
+            ->sortBy(fn (Pen $pen) => $pen->sortKey())
+            ->values()
+            ->map(function (Pen $pen): array {
+                $capacity = (int) $pen->capacity;
+                $activePigCount = (int) ($pen->active_pigs_count ?? 0);
+
+                return [
+                    'name' => $pen->name,
+                    'type' => $pen->type,
+                    'capacity' => $capacity,
+                    'active_pig_count' => $activePigCount,
+                    'available_slots' => max($capacity - $activePigCount, 0),
+                ];
+            })
+            ->all();
+    }
+
+    protected function protocolRow(Pig $pig, array $row): array
+    {
+        return [
+            'pig_id' => $pig->id,
+            'pig_ear_tag' => $pig->ear_tag,
+            'action' => $row['action'] ?? '—',
+            'type' => $row['type'] ?? '—',
+            'requirement' => $row['requirement'] ?? '—',
+            'scheduled_date' => $row['due_start'] ?? null,
+            'due_end' => $row['due_end'] ?? null,
+        ];
+    }
+
+    protected function actionChecklist(array $metrics): array
+    {
+        return [
+            [
+                'item' => 'Resolve overdue protocol items',
+                'count' => $metrics['protocol_overdue'],
+                'status' => $metrics['protocol_overdue'] > 0 ? 'Needs action' : 'Clear',
+            ],
+            [
+                'item' => 'Handle protocol items due today',
+                'count' => $metrics['protocol_due_today'],
+                'status' => $metrics['protocol_due_today'] > 0 ? 'Due today' : 'Clear',
+            ],
+            [
+                'item' => 'Update stale pig weights',
+                'count' => $metrics['stale_weight_pigs'],
+                'status' => $metrics['stale_weight_pigs'] > 0 ? 'Needs update' : 'Clear',
+            ],
+            [
+                'item' => 'Prepare for farrowing due soon',
+                'count' => $metrics['farrowing_due_soon'],
+                'status' => $metrics['farrowing_due_soon'] > 0 ? 'Monitor closely' : 'Clear',
+            ],
+            [
+                'item' => 'Complete pending pregnancy checks',
+                'count' => $metrics['pending_pregnancy_checks'],
+                'status' => $metrics['pending_pregnancy_checks'] > 0 ? 'Pending' : 'Clear',
             ],
         ];
     }

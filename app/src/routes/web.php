@@ -57,6 +57,9 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/reports/farm-summary.csv', [FarmSummaryReportController::class, 'csv'])
         ->name('reports.farm-summary.csv');
 
+    Route::get('/reports/farm-summary.pdf', [FarmSummaryReportController::class, 'pdf'])
+        ->name('reports.farm-summary.pdf');
+
     /*
     |--------------------------------------------------------------------------
     | Notifications
