@@ -13,7 +13,7 @@ class FeedLogController extends Controller
         if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $pig->operationalLockMessage('feed logs'));
+                ->with('error', $pig->operationalLockMessage('assigned feeds'));
         }
 
         return view('feed-logs.create', compact('pig'));
@@ -24,28 +24,32 @@ class FeedLogController extends Controller
         if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $pig->operationalLockMessage('feed logs'));
+                ->with('error', $pig->operationalLockMessage('assigned feeds'));
         }
 
         $validated = $request->validate([
-            'feed_type' => ['required'],
+            'feed_type' => ['required', 'string', 'max:255'],
             'start_feed_date' => ['required', 'date'],
-            'end_feed_date' => ['nullable', 'date'],
+            'end_feed_date' => ['nullable', 'date', 'after_or_equal:start_feed_date'],
             'quantity' => ['required', 'numeric', 'min:0'],
-            'cost' => ['required', 'numeric', 'min:0'],
-            'unit' => ['required'],
-            'feeding_time' => ['required'],
-            'status' => ['required'],
-            'notes' => ['nullable'],
+            'unit' => ['required', 'string', 'max:50'],
+            'feeding_time' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'max:50'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $validated['pig_id'] = $pig->id;
+        $validated['cost'] = 0;
+        $validated['feeding_time'] = $validated['feeding_time'] ?: 'Assigned period';
+        $validated['status'] = $validated['status'] ?: 'ongoing';
+        $validated['notes'] = isset($validated['notes']) ? trim((string) $validated['notes']) : null;
+        $validated['notes'] = $validated['notes'] === '' ? null : $validated['notes'];
 
         FeedLog::create($validated);
 
         return redirect()
             ->route('pigs.show', $pig->id)
-            ->with('success', 'Feed log added successfully.');
+            ->with('success', 'Assigned feed saved.');
     }
 
     public function edit(Pig $pig, FeedLog $feedLog)
@@ -55,7 +59,7 @@ class FeedLogController extends Controller
         if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $pig->operationalLockMessage('feed logs'));
+                ->with('error', $pig->operationalLockMessage('assigned feeds'));
         }
 
         return view('feed-logs.edit', compact('pig', 'feedLog'));
@@ -68,26 +72,31 @@ class FeedLogController extends Controller
         if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $pig->operationalLockMessage('feed logs'));
+                ->with('error', $pig->operationalLockMessage('assigned feeds'));
         }
 
         $validated = $request->validate([
-            'feed_type' => ['required'],
+            'feed_type' => ['required', 'string', 'max:255'],
             'start_feed_date' => ['required', 'date'],
-            'end_feed_date' => ['nullable', 'date'],
+            'end_feed_date' => ['nullable', 'date', 'after_or_equal:start_feed_date'],
             'quantity' => ['required', 'numeric', 'min:0'],
-            'cost' => ['required', 'numeric', 'min:0'],
-            'unit' => ['required'],
-            'feeding_time' => ['required'],
-            'status' => ['required'],
-            'notes' => ['nullable'],
+            'unit' => ['required', 'string', 'max:50'],
+            'feeding_time' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'max:50'],
+            'notes' => ['nullable', 'string'],
         ]);
+
+        $validated['cost'] = 0;
+        $validated['feeding_time'] = $validated['feeding_time'] ?: 'Assigned period';
+        $validated['status'] = $validated['status'] ?: 'ongoing';
+        $validated['notes'] = isset($validated['notes']) ? trim((string) $validated['notes']) : null;
+        $validated['notes'] = $validated['notes'] === '' ? null : $validated['notes'];
 
         $feedLog->update($validated);
 
         return redirect()
             ->route('pigs.show', $pig->id)
-            ->with('success', 'Feed log updated successfully.');
+            ->with('success', 'Assigned feed updated.');
     }
 
     public function destroy(Pig $pig, FeedLog $feedLog)
@@ -97,13 +106,13 @@ class FeedLogController extends Controller
         if ($pig->isOperationallyLocked()) {
             return redirect()
                 ->route('pigs.show', $pig->id)
-                ->with('error', $pig->operationalLockMessage('feed logs'));
+                ->with('error', $pig->operationalLockMessage('assigned feeds'));
         }
 
         $feedLog->delete();
 
         return redirect()
             ->route('pigs.show', $pig->id)
-            ->with('success', 'Feed log deleted.');
+            ->with('success', 'Assigned feed deleted.');
     }
 }
