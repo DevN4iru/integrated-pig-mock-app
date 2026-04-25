@@ -816,7 +816,7 @@
                 </a>
 
                 @auth
-                    <form method="POST" action="{{ route('logout') }}" class="sidebar-logout-form">
+                    <form method="POST" action="{{ route('logout') }}" class="sidebar-logout-form" onsubmit="return confirm('Are you sure you want to log out?');">
                         @csrf
                         <button type="submit" class="sidebar-logout-button">
                             <span>Logout</span>
