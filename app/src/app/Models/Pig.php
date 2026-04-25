@@ -419,6 +419,15 @@ class Pig extends Model
             && $today->lessThanOrEqualTo($windowEnd);
     }
 
+    protected function hasProtocolAnchorStarted(?ProtocolTemplate $template, ?Carbon $anchorDate): bool
+    {
+        if (!$template || !$anchorDate) {
+            return false;
+        }
+
+        return Carbon::today()->greaterThanOrEqualTo($anchorDate->copy()->startOfDay());
+    }
+
     protected function qualifiesForLactatingSowProtocol(?ProtocolTemplate $template = null): bool
     {
         if ($this->sex !== 'female') {
@@ -433,7 +442,7 @@ class Pig extends Model
 
         $anchorDate = $this->resolveProtocolAnchorDate($template);
 
-        return $this->isWithinProtocolCoverageWindow($template, $anchorDate);
+        return $this->hasProtocolAnchorStarted($template, $anchorDate);
     }
 
     protected function qualifiesForPigletProtocol(?ProtocolTemplate $template = null): bool
@@ -454,7 +463,7 @@ class Pig extends Model
 
         $anchorDate = $this->resolveProtocolAnchorDate($template);
 
-        return $this->isWithinProtocolCoverageWindow($template, $anchorDate);
+        return $this->hasProtocolAnchorStarted($template, $anchorDate);
     }
 
     protected function resolveProtocolTemplate(): ?ProtocolTemplate

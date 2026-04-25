@@ -135,6 +135,16 @@ class EmailAlertDispatchService
 
                 $this->sendProtocolEmail($recipient, $pig, $row, 'd0', $scheduledDate);
             }
+
+            foreach ($summary['overdue'] ?? [] as $row) {
+                $scheduledDate = $this->normalizeDateString($row['due_start'] ?? null);
+
+                if ($scheduledDate === null) {
+                    continue;
+                }
+
+                $this->sendProtocolEmail($recipient, $pig, $row, 'overdue', $scheduledDate);
+            }
         }
     }
 
@@ -146,17 +156,26 @@ class EmailAlertDispatchService
         $requirement = (string) ($row['requirement'] ?? '');
         $dueEndDate = $this->normalizeDateString($row['due_end'] ?? null);
 
-        $subject = $windowCode === 't3'
-            ? '[Pigstep] Protocol due in 3 days — ' . $pigLabel
-            : '[Pigstep] Protocol due today — ' . $pigLabel;
+        $subject = match ($windowCode) {
+            't3' => '[Pigstep] Protocol due in 3 days — ' . $pigLabel,
+            'overdue' => '[Pigstep] Protocol overdue — ' . $pigLabel,
+            default => '[Pigstep] Protocol due today — ' . $pigLabel,
+        };
 
-        $headline = $windowCode === 't3'
-            ? 'Protocol due in 3 days'
-            : 'Protocol due today';
+        $headline = match ($windowCode) {
+            't3' => 'Protocol due in 3 days',
+            'overdue' => 'Protocol overdue',
+            default => 'Protocol due today',
+        };
 
-        $lines = [
-            'Pig ' . $pigLabel . ' has protocol action "' . $action . '" scheduled for ' . $this->displayDate($scheduledDate) . '.',
-        ];
+        $lines = $windowCode === 'overdue'
+            ? [
+                'Pig ' . $pigLabel . ' has unresolved protocol action "' . $action . '" that was scheduled for ' . $this->displayDate($scheduledDate) . '.',
+                'Open the pig record and resolve the protocol occurrence as completed, skipped, or deferred.',
+            ]
+            : [
+                'Pig ' . $pigLabel . ' has protocol action "' . $action . '" scheduled for ' . $this->displayDate($scheduledDate) . '.',
+            ];
 
         if ($requirement !== '') {
             $lines[] = 'Requirement level: ' . ucfirst($requirement) . '.';
