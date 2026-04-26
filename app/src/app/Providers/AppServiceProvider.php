@@ -2,12 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\Pen;
 use App\Models\Pig;
 use App\Services\NotificationGenerationService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\ValidationException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,6 +27,20 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Pig::saving(function (Pig $pig): void {
+            $pen = null;
+
+            if ($pig->pen_id) {
+                $pen = $pig->relationLoaded('pen')
+                    ? $pig->pen
+                    : Pen::query()->find($pig->pen_id);
+            }
+
+            if ($pen?->type === Pen::TYPE_BOAR && strtolower((string) $pig->sex) !== 'male') {
+                throw ValidationException::withMessages([
+                    'sex' => 'Only male pigs can be assigned to a Boar pen.',
+                ]);
+            }
+
             if (!Schema::hasTable('pigs') || !Schema::hasColumn('pigs', 'exclude_from_value_computation')) {
                 return;
             }
