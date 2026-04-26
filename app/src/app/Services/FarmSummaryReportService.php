@@ -13,6 +13,7 @@ class FarmSummaryReportService
     {
         $generatedAt = Carbon::now();
         $protocolEligibility = new ProtocolEligibilityService();
+        $pigValueService = new PigValueService();
 
         $pigs = Pig::with([
             'pen',
@@ -36,11 +37,7 @@ class FarmSummaryReportService
         $soldPigs = $groupedPigs->get('sold', collect());
         $deadPigs = $groupedPigs->get('dead', collect());
 
-        $totalAssetValue = (float) $livePigs->sum(function (Pig $pig): float {
-            return (bool) ($pig->exclude_from_value_computation ?? false)
-                ? 0.0
-                : (float) $pig->active_live_value;
-        });
+        $totalAssetValue = (float) $livePigs->sum(fn (Pig $pig): float => $pigValueService->activeLiveValue($pig));
         $totalRevenue = (float) $soldPigs->flatMap->sales->sum('price');
         $mortalityLoss = (float) $deadPigs->sum(fn (Pig $pig) => (float) $pig->frozen_mortality_value);
 
