@@ -5,14 +5,27 @@
 @section('page_subtitle', 'View all housing pens in the system.')
 
 @section('top_actions')
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button type="button" class="btn" onclick="setView('simple')">Simple View</button>
-        <button type="button" class="btn" onclick="setView('grid')">Grid View</button>
+    <div class="pen-view-actions">
+        <button id="penSimpleViewButton" type="button" class="btn pen-view-toggle" onclick="setView('simple')">Simple View</button>
+        <button id="penGridViewButton" type="button" class="btn pen-view-toggle" onclick="setView('grid')">Grid View</button>
         <a href="{{ route('pens.create') }}" class="btn primary">Add Pen</a>
     </div>
 @endsection
 
 @section('styles')
+.pen-view-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.pen-view-toggle.is-active {
+    background: #eaf2ff;
+    border-color: #bcd4ff;
+    color: var(--primary);
+}
+
 .pen-dashboard {
     display: grid;
     gap: 20px;
@@ -230,10 +243,62 @@
 }
 
 @media (max-width: 640px) {
+    .pen-view-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+    }
+
+    .pen-view-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
     .pen-grid,
     .pen-heat-grid,
     .pen-summary-grid {
         grid-template-columns: 1fr;
+    }
+
+    .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 8px;
+    }
+
+    .data-table {
+        min-width: 760px;
+    }
+
+    .data-table th,
+    .data-table td {
+        white-space: nowrap;
+    }
+
+    .pen-heat-card {
+        min-height: auto;
+    }
+
+    .pen-heat-top,
+    .pen-card-top {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .pen-heat-card .btn,
+    .pen-heat-card form,
+    .pen-heat-card input,
+    .pen-heat-card button,
+    .data-table .btn {
+        width: 100%;
+    }
+
+    .pen-summary-card {
+        padding: 14px;
+    }
+
+    .pen-summary-value {
+        font-size: 22px;
     }
 }
 @endsection
@@ -497,11 +562,21 @@
 function setView(type) {
     const simpleView = document.getElementById('simpleView');
     const gridView = document.getElementById('gridView');
+    const simpleButton = document.getElementById('penSimpleViewButton');
+    const gridButton = document.getElementById('penGridViewButton');
 
     if (!simpleView || !gridView) return;
 
     simpleView.classList.toggle('hidden', type !== 'simple');
     gridView.classList.toggle('hidden', type !== 'grid');
+
+    if (simpleButton) {
+        simpleButton.classList.toggle('is-active', type === 'simple');
+    }
+
+    if (gridButton) {
+        gridButton.classList.toggle('is-active', type === 'grid');
+    }
 
     localStorage.setItem('penViewMode', type);
 }
