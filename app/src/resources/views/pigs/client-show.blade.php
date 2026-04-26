@@ -53,7 +53,13 @@
 .client-protocol-box strong { font-size: 24px; }
 .client-protocol-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
 .client-protocol-actions form { margin: 0; }
-@media (max-width: 980px) { .client-grid-two, .client-info-grid, .client-protocol-grid, .client-row { grid-template-columns: 1fr; } .client-protocol-actions { justify-content: flex-start; } }
+.client-value-toggle { margin-top: 14px; border: 1px solid var(--line); border-radius: 14px; background: #fff; padding: 14px; display: flex; justify-content: space-between; gap: 14px; align-items: center; }
+.client-value-toggle h4 { margin: 0 0 4px; }
+.client-value-toggle p { color: var(--muted); font-size: 13px; margin: 0; }
+.client-value-form { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.client-value-check { display: flex; gap: 8px; align-items: center; font-weight: 700; color: var(--text); }
+.client-value-check input { width: auto; }
+@media (max-width: 980px) { .client-grid-two, .client-info-grid, .client-protocol-grid, .client-row, .client-value-toggle { grid-template-columns: 1fr; } .client-protocol-actions, .client-value-form { justify-content: flex-start; } .client-value-toggle { display: grid; } }
 @endsection
 
 @section('content')
@@ -78,6 +84,8 @@
             'archived' => 'blue',
             default => 'green',
         };
+        $isValueExcluded = (bool) ($pig->exclude_from_value_computation ?? false);
+        $assetValueDisplay = $isValueExcluded ? 'Not counted' : '₱ ' . number_format((float) ($pig->asset_value ?? 0), 2);
 
         $weightLogs = $pig->healthLogs
             ->filter(fn ($log) => $log->purpose === 'weight_update' && $log->weight !== null)
@@ -134,7 +142,33 @@
                 <div class="client-field"><label>Age</label><strong>{{ $pig->age_display }}</strong></div>
                 <div class="client-field"><label>Date Added</label><strong>{{ $dateAdded }}</strong></div>
                 <div class="client-field"><label>Current Weight</label><strong>{{ $weight }}</strong></div>
+                <div class="client-field"><label>Farm Value</label><strong>{{ $assetValueDisplay }}</strong></div>
+                <div class="client-field"><label>Value Status</label><strong>{{ $isValueExcluded ? 'Excluded from totals' : 'Included in totals' }}</strong></div>
             </div>
+
+            @if (!$pig->trashed())
+                <div class="client-value-toggle">
+                    <div>
+                        <h4>Breeding Stock Value</h4>
+                        <p>Use this for breeder boars or sows that should stay as breeding stock, not saleable inventory.</p>
+                    </div>
+
+                    @if (!$pig->isOperationallyLocked())
+                        <form method="POST" action="{{ route('pigs.breeding-stock-value.update', $pig) }}" class="client-value-form">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="exclude_from_value_computation" value="0">
+                            <label class="client-value-check">
+                                <input type="checkbox" name="exclude_from_value_computation" value="1" {{ $isValueExcluded ? 'checked' : '' }}>
+                                Do not include in farm value totals
+                            </label>
+                            <button type="submit" class="btn primary">Save</button>
+                        </form>
+                    @else
+                        <span class="badge blue">Locked</span>
+                    @endif
+                </div>
+            @endif
         </div>
 
         @if ($protocol)
