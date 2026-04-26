@@ -381,6 +381,23 @@
         </div>
     </div>
 
+    <div class="dashboard-section">
+        <div>
+            <div class="dashboard-section-title">Quick Actions</div>
+            <div class="dashboard-section-sub">Common tasks for the handler.</div>
+        </div>
+
+        <div class="panel-card">
+            <div class="dashboard-quick-actions">
+                <a href="{{ route('pigs.create') }}" class="btn primary">Add Pig</a>
+                <a href="{{ route('pigs.index') }}" class="btn">Open Pig List</a>
+                <a href="{{ route('reproduction-cycles.index') }}" class="btn">Open Breeding Records</a>
+                <a href="{{ route('settings.farm.edit') }}" class="btn">Download / Email Summary</a>
+            </div>
+        </div>
+    </div>
+
+
     <details class="dashboard-toggle">
         <summary>
             <span>
@@ -472,22 +489,6 @@
             --}}
         </div>
     </details>
-
-    <div class="dashboard-section">
-        <div>
-            <div class="dashboard-section-title">Quick Actions</div>
-            <div class="dashboard-section-sub">Common tasks for the handler.</div>
-        </div>
-
-        <div class="panel-card">
-            <div class="dashboard-quick-actions">
-                <a href="{{ route('pigs.create') }}" class="btn primary">Add Pig</a>
-                <a href="{{ route('pigs.index') }}" class="btn">Open Pig List</a>
-                <a href="{{ route('reproduction-cycles.index') }}" class="btn">Open Breeding Records</a>
-                <a href="{{ route('settings.farm.edit') }}" class="btn">Download / Email Summary</a>
-            </div>
-        </div>
-    </div>
 
     <details class="dashboard-toggle">
         <summary>
