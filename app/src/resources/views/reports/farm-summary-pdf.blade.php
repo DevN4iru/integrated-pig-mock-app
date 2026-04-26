@@ -199,8 +199,7 @@
                 <td><strong>Report type:</strong> {{ $summary['report_type'] }}</td>
             </tr>
             <tr>
-                <td><strong>Prepared for:</strong> {{ $summary['prepared_for'] }}</td>
-                <td><strong>Product by:</strong> {{ $summary['product_by'] }}</td>
+                <td colspan="2"><strong>Prepared for:</strong> {{ $summary['prepared_for'] }}</td>
             </tr>
         </table>
     </div>
