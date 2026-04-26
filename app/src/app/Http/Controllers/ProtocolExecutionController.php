@@ -7,6 +7,7 @@ use App\Models\Pig;
 use App\Models\ProtocolExecution;
 use App\Models\ProtocolRule;
 use App\Models\Vaccination;
+use App\Services\ProtocolEligibilityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -67,6 +68,25 @@ class ProtocolExecutionController extends Controller
         if (!$rule->is_active || !$rule->template || !$rule->template->is_active) {
             return back()
                 ->withErrors(['protocol_rule_id' => 'Selected protocol rule is not active.'])
+                ->withInput();
+        }
+
+        $pig->loadMissing([
+            'birthCycle:id,actual_farrow_date',
+            'reproductionCyclesAsSow:id,sow_id,service_date,actual_farrow_date',
+            'protocolExecutions.medication',
+            'protocolExecutions.vaccination',
+        ]);
+
+        if (!(new ProtocolEligibilityService())->qualifiesForAnyClientProtocol($pig)) {
+            return back()
+                ->withErrors(['protocol_rule_id' => 'This pig is not eligible for a client medication program.'])
+                ->withInput();
+        }
+
+        if (!$this->protocolOccurrenceBelongsToCurrentSummary($pig, $rule, $validated['scheduled_for_date'])) {
+            return back()
+                ->withErrors(['protocol_rule_id' => 'Selected protocol occurrence does not belong to this pig current medication program.'])
                 ->withInput();
         }
 
@@ -180,6 +200,28 @@ class ProtocolExecutionController extends Controller
         return redirect()
             ->route('pigs.show', $pig->id)
             ->with('success', $successMessage);
+    }
+
+    private function protocolOccurrenceBelongsToCurrentSummary(Pig $pig, ProtocolRule $rule, string $scheduledForDate): bool
+    {
+        $summary = $pig->protocol_summary;
+
+        if (!is_array($summary)) {
+            return false;
+        }
+
+        foreach (['due_today', 'upcoming', 'overdue'] as $bucket) {
+            foreach (($summary[$bucket] ?? []) as $row) {
+                if (
+                    (int) ($row['rule_id'] ?? 0) === (int) $rule->id
+                    && (string) ($row['due_start'] ?? '') === (string) $scheduledForDate
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private function syncDetailedAdministrationRecord(
