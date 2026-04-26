@@ -225,7 +225,7 @@
                     <span class="badge orange">Summary</span>
                 </div>
                 <div class="stat-value">₱ {{ number_format($netPosition, 2) }}</div>
-                <div class="stat-sub">Farm value after recorded costs and losses.</div>
+                <div class="stat-sub">Active pig value after sale income, losses, and recorded costs.</div>
             </div>
         </div>
     </div>
@@ -264,21 +264,26 @@
                 <div class="stat-sub">Recorded breeding-related cost.</div>
             </div>
 
-            <div class="stat-card">
-                <div class="stat-top">
-                    <span class="label">Operating Cost</span>
-                    <span class="badge orange">Total</span>
+            {{--
+                Future advanced accounting card.
+                Kept for future client update if detailed operating-cost visibility is requested again.
+
+                <div class="stat-card">
+                    <div class="stat-top">
+                        <span class="label">Operating Cost</span>
+                        <span class="badge orange">Total</span>
+                    </div>
+                    <div class="stat-value">₱ {{ number_format($totalOperatingCost, 2) }}</div>
+                    <div class="stat-sub">Recorded farm operating cost.</div>
                 </div>
-                <div class="stat-value">₱ {{ number_format($totalOperatingCost, 2) }}</div>
-                <div class="stat-sub">Recorded farm operating cost.</div>
-            </div>
+            --}}
         </div>
     </div>
 
     <div class="dashboard-section">
         <div>
             <div class="dashboard-section-title">Financial Snapshot</div>
-            <div class="dashboard-section-sub">Sale income, mortality loss, and recorded farm cost position.</div>
+            <div class="dashboard-section-sub">Sale income, mortality loss, recorded costs, and current farm position.</div>
         </div>
 
         <div class="dashboard-grid">
@@ -302,12 +307,26 @@
 
             <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">Care Liability</span>
+                    <span class="label">Recorded Costs</span>
                     <span class="badge orange">Cost</span>
                 </div>
-                <div class="stat-value">₱ {{ number_format($totalCareLiability, 2) }}</div>
-                <div class="stat-sub">Recorded care/input cost attached to pigs.</div>
+                <div class="stat-value">₱ {{ number_format($totalOperatingCost, 2) }}</div>
+                <div class="stat-sub">Costs saved from breeding and medication program records.</div>
             </div>
+
+            {{--
+                Future advanced accounting card.
+                Kept for future client update if care/input liability visibility is requested again.
+
+                <div class="stat-card">
+                    <div class="stat-top">
+                        <span class="label">Care Liability</span>
+                        <span class="badge orange">Cost</span>
+                    </div>
+                    <div class="stat-value">₱ {{ number_format($totalCareLiability, 2) }}</div>
+                    <div class="stat-sub">Recorded care/input cost attached to pigs.</div>
+                </div>
+            --}}
 
             <div class="stat-card metric-card-highlight">
                 <div class="stat-top">
@@ -315,7 +334,7 @@
                     <span class="badge blue">Position</span>
                 </div>
                 <div class="stat-value">₱ {{ number_format($netPosition, 2) }}</div>
-                <div class="stat-sub">Active value + sales - mortality loss - operating cost.</div>
+                <div class="stat-sub">Active value + sale income - mortality loss - recorded costs.</div>
             </div>
         </div>
     </div>
