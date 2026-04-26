@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BreedingStockValueController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FarmSettingController;
 use App\Http\Controllers\FarmSummaryReportController;
@@ -106,6 +107,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/pigs/{pig}', [PigController::class, 'show'])->name('pigs.show');
     Route::get('/pigs/{pig}/edit', [PigController::class, 'edit'])->name('pigs.edit');
     Route::put('/pigs/{pig}', [PigController::class, 'update'])->name('pigs.update');
+    Route::put('/pigs/{pig}/breeding-stock-value', [BreedingStockValueController::class, 'update'])->name('pigs.breeding-stock-value.update');
     Route::delete('/pigs/{pig}', [PigController::class, 'destroy'])->name('pigs.destroy');
     Route::post('/pigs/{pig}/restore', [PigController::class, 'restore'])->name('pigs.restore');
     Route::delete('/pigs/{pig}/force-delete', [PigController::class, 'forceDelete'])->name('pigs.force-delete');
