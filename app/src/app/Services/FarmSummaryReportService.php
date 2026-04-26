@@ -41,6 +41,8 @@ class FarmSummaryReportService
         $totalRevenue = (float) $soldPigs->flatMap->sales->sum('price');
         $mortalityLoss = (float) $deadPigs->sum(fn (Pig $pig) => (float) $pig->frozen_mortality_value);
 
+        // Legacy detailed cost buckets stay calculated for future reactivation,
+        // but the current client-facing report only exposes breeding cost.
         $totalFeedCost = (float) $pigs->sum(fn (Pig $pig) => (float) $pig->total_feed_cost);
         $totalMedicationCost = (float) $pigs->sum(fn (Pig $pig) => (float) $pig->total_medication_cost);
         $totalVaccinationCost = (float) $pigs->sum(fn (Pig $pig) => (float) $pig->total_vaccination_cost);
@@ -48,7 +50,8 @@ class FarmSummaryReportService
         $totalCareLiability = (float) $pigs->sum(fn (Pig $pig) => (float) $pig->total_care_liability);
         $totalOperatingCost = (float) $pigs->sum(fn (Pig $pig) => (float) $pig->total_operating_cost);
 
-        $netPosition = $totalAssetValue + $totalRevenue - $mortalityLoss - $totalOperatingCost;
+        $totalRecordedClientCost = $totalBreedingCost;
+        $netPosition = $totalAssetValue + $totalRevenue - $mortalityLoss - $totalRecordedClientCost;
 
         $protocolDueTodayRows = [];
         $protocolOverdueRows = [];
@@ -99,7 +102,8 @@ class FarmSummaryReportService
             'total_vaccination_cost' => $totalVaccinationCost,
             'total_breeding_cost' => $totalBreedingCost,
             'total_care_liability' => $totalCareLiability,
-            'total_operating_cost' => $totalOperatingCost,
+            'total_recorded_client_cost' => $totalRecordedClientCost,
+            'total_operating_cost' => $totalRecordedClientCost,
             'net_position' => $netPosition,
         ];
 
@@ -133,15 +137,10 @@ class FarmSummaryReportService
             ['metric' => 'stale_weight_pigs', 'value' => $metrics['stale_weight_pigs']],
             ['metric' => 'protocol_due_today', 'value' => $metrics['protocol_due_today']],
             ['metric' => 'protocol_overdue', 'value' => $metrics['protocol_overdue']],
-            ['metric' => 'total_asset_value', 'value' => $this->money($metrics['total_asset_value'])],
-            ['metric' => 'total_revenue', 'value' => $this->money($metrics['total_revenue'])],
+            ['metric' => 'live_asset_value', 'value' => $this->money($metrics['total_asset_value'])],
+            ['metric' => 'sale_revenue', 'value' => $this->money($metrics['total_revenue'])],
             ['metric' => 'mortality_loss', 'value' => $this->money($metrics['mortality_loss'])],
-            ['metric' => 'total_feed_cost', 'value' => $this->money($metrics['total_feed_cost'])],
-            ['metric' => 'total_medication_cost', 'value' => $this->money($metrics['total_medication_cost'])],
-            ['metric' => 'total_vaccination_cost', 'value' => $this->money($metrics['total_vaccination_cost'])],
-            ['metric' => 'total_breeding_cost', 'value' => $this->money($metrics['total_breeding_cost'])],
-            ['metric' => 'total_care_liability', 'value' => $this->money($metrics['total_care_liability'])],
-            ['metric' => 'total_operating_cost', 'value' => $this->money($metrics['total_operating_cost'])],
+            ['metric' => 'breeding_cost', 'value' => $this->money($metrics['total_breeding_cost'])],
             ['metric' => 'net_position', 'value' => $this->money($metrics['net_position'])],
         ];
     }
@@ -185,12 +184,12 @@ class FarmSummaryReportService
     {
         return [
             [
-                'item' => 'Resolve overdue protocol items',
+                'item' => 'Review overdue medication program items',
                 'count' => $metrics['protocol_overdue'],
                 'status' => $metrics['protocol_overdue'] > 0 ? 'Needs action' : 'Clear',
             ],
             [
-                'item' => 'Handle protocol items due today',
+                'item' => 'Handle medication program items due today',
                 'count' => $metrics['protocol_due_today'],
                 'status' => $metrics['protocol_due_today'] > 0 ? 'Due today' : 'Clear',
             ],

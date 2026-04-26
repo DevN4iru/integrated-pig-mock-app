@@ -191,7 +191,7 @@
 
     <div class="header">
         <h1>Pigstep Farm Summary Report</h1>
-        <p>Manual farm operations, herd, protocol, breeding, housing, and financial summary.</p>
+        <p>Manual farm operations, herd, medication program, breeding, housing, and simplified financial summary.</p>
 
         <table class="header-meta">
             <tr>
@@ -213,30 +213,30 @@
                 <span class="metric-value">{{ $count('active_pigs') }}</span>
             </td>
             <td>
-                <span class="metric-label">Active Pig Value</span>
-                <span class="metric-value">{{ $money('total_asset_value') }}</span>
-            </td>
-            <td>
-                <span class="metric-label">Operating Cost</span>
-                <span class="metric-value">{{ $money('total_operating_cost') }}</span>
+                <span class="metric-label">Mortality</span>
+                <span class="metric-value">{{ $count('dead_pigs') }}</span>
             </td>
             <td>
                 <span class="metric-label">Net Position</span>
                 <span class="metric-value">{{ $money('net_position') }}</span>
             </td>
+            <td>
+                <span class="metric-label">Live Asset Value</span>
+                <span class="metric-value">{{ $money('total_asset_value') }}</span>
+            </td>
         </tr>
         <tr>
             <td>
-                <span class="metric-label">Protocol Due Today</span>
-                <span class="metric-value">{{ $count('protocol_due_today') }}</span>
+                <span class="metric-label">Sale Revenue</span>
+                <span class="metric-value">{{ $money('total_revenue') }}</span>
             </td>
             <td>
-                <span class="metric-label">Protocol Overdue</span>
-                <span class="metric-value">{{ $count('protocol_overdue') }}</span>
+                <span class="metric-label">Mortality Loss</span>
+                <span class="metric-value">{{ $money('mortality_loss') }}</span>
             </td>
             <td>
-                <span class="metric-label">Farrowing Due Soon</span>
-                <span class="metric-value">{{ $count('farrowing_due_soon') }}</span>
+                <span class="metric-label">Breeding Cost</span>
+                <span class="metric-value">{{ $money('total_breeding_cost') }}</span>
             </td>
             <td>
                 <span class="metric-label">Stale Weight Pigs</span>
@@ -315,13 +315,13 @@
         </tbody>
     </table>
 
-    <h2>Health & Protocol Alerts</h2>
+    <h2>Medication Program Alerts</h2>
     <table class="data">
         <thead>
             <tr>
                 <th>Stale Weight Pigs</th>
-                <th>Protocol Due Today</th>
-                <th>Protocol Overdue</th>
+                <th>Medication Due Today</th>
+                <th>Medication Overdue</th>
             </tr>
         </thead>
         <tbody>
@@ -333,9 +333,9 @@
         </tbody>
     </table>
 
-    <h3>Overdue Protocol Items</h3>
+    <h3>Overdue Medication Program Items</h3>
     @if (empty($summary['protocol_overdue_rows']))
-        <p class="muted">No overdue protocol items.</p>
+        <p class="muted">No overdue medication program items.</p>
     @else
         <table class="data">
             <thead>
@@ -366,7 +366,7 @@
     <h2>Financial Summary</h2>
     <div class="formula">
         <strong>Formula:</strong>
-        Net Position = Active Pig Value + Revenue - Mortality Loss - Operating Cost
+        Net Position = Live Asset Value + Sale Revenue - Mortality Loss - Breeding Cost
     </div>
 
     <table class="data">
@@ -377,15 +377,10 @@
             </tr>
         </thead>
         <tbody>
-            <tr><td>Total Asset Value</td><td>{{ $money('total_asset_value') }}</td></tr>
-            <tr><td>Total Revenue</td><td>{{ $money('total_revenue') }}</td></tr>
+            <tr><td>Live Asset Value</td><td>{{ $money('total_asset_value') }}</td></tr>
+            <tr><td>Sale Revenue</td><td>{{ $money('total_revenue') }}</td></tr>
             <tr><td>Mortality Loss</td><td>{{ $money('mortality_loss') }}</td></tr>
-            <tr><td>Feed Cost</td><td>{{ $money('total_feed_cost') }}</td></tr>
-            <tr><td>Medication Cost</td><td>{{ $money('total_medication_cost') }}</td></tr>
-            <tr><td>Vaccination Cost</td><td>{{ $money('total_vaccination_cost') }}</td></tr>
             <tr><td>Breeding Cost</td><td>{{ $money('total_breeding_cost') }}</td></tr>
-            <tr><td>Care Liability</td><td>{{ $money('total_care_liability') }}</td></tr>
-            <tr><td>Operating Cost</td><td>{{ $money('total_operating_cost') }}</td></tr>
             <tr><td><strong>Net Position</strong></td><td><strong>{{ $money('net_position') }}</strong></td></tr>
         </tbody>
     </table>
