@@ -144,7 +144,7 @@ class PigController extends Controller
             'pig_source' => ['required', Rule::in(['birthed', 'purchased'])],
             'age_value' => ['required', 'numeric', 'min:0'],
             'age_unit' => ['required', Rule::in(['days', 'weeks', 'months'])],
-            'date_added' => ['required', 'date'],
+            'date_added' => ['required', 'date', 'before_or_equal:today'],
             'latest_weight' => ['required', 'numeric', 'min:0'],
         ]);
 
@@ -342,7 +342,7 @@ class PigController extends Controller
             'pig_source' => ['required', Rule::in(['birthed', 'purchased'])],
             'age_value' => ['required', 'numeric', 'min:0'],
             'age_unit' => ['required', Rule::in(['days', 'weeks', 'months'])],
-            'date_added' => ['required', 'date'],
+            'date_added' => ['required', 'date', 'before_or_equal:today'],
             'latest_weight' => ['required', 'numeric', 'min:0'],
         ]);
 
