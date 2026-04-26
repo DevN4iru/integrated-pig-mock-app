@@ -31,7 +31,7 @@ class DashboardController extends Controller
         $soldPigs = $groupedPigs->get('sold', collect());
         $deadPigs = $groupedPigs->get('dead', collect());
 
-        $totalAssetValue = (float) $livePigs->sum(fn ($pig) => (float) $pig->active_live_value);
+        $totalAssetValue = (float) $livePigs->sum(fn ($pig) => $pig->exclude_from_value_computation ? 0 : (float) $pig->active_live_value);
         $totalRevenue = (float) $soldPigs->flatMap->sales->sum('price');
         $totalLossValue = (float) $deadPigs->sum(fn ($pig) => (float) $pig->frozen_mortality_value);
 
