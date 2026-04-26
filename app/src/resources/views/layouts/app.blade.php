@@ -817,10 +817,6 @@
                     <span>Add Pig</span>
                 </a>
 
-                <a href="{{ route('protocol-programs.index') }}" class="{{ request()->routeIs('protocol-programs.*') ? 'active' : '' }}">
-                    <span>Medication Programs</span>
-                </a>
-
                 <a href="{{ route('settings.farm.edit') }}" class="{{ request()->routeIs('settings.*') ? 'active' : '' }}">
                     <span>Settings</span>
                 </a>
