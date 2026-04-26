@@ -34,10 +34,31 @@
     font-size: 13px;
 }
 
+.dashboard-section > div:first-child {
+    position: relative;
+}
+
+.dashboard-section > div:first-child::after {
+    content: "";
+    display: block;
+    height: 1px;
+    margin-top: 10px;
+    background: linear-gradient(90deg, rgba(37, 99, 235, 0.18), rgba(226, 232, 240, 0.85), transparent);
+}
+
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
+}
+
+.dashboard-grid .stat-card {
+    border-color: #dbe4f0;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.055);
+}
+
+.dashboard-grid .stat-card.metric-card-highlight {
+    border-color: rgba(37, 99, 235, 0.22);
 }
 
 .dashboard-quick-actions {
@@ -47,11 +68,20 @@
 }
 
 .dashboard-toggle {
-    border: 1px solid var(--line);
+    border: 1px solid #dbe4f0;
     border-radius: 18px;
     background: #fff;
-    box-shadow: var(--shadow-soft);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055);
     overflow: hidden;
+    position: relative;
+}
+
+.dashboard-toggle::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), rgba(37, 99, 235, 0.18), transparent);
 }
 
 .dashboard-toggle summary {
@@ -64,6 +94,12 @@
     gap: 14px;
     font-weight: 800;
     color: var(--text);
+    border-bottom: 1px solid transparent;
+}
+
+.dashboard-toggle[open] summary {
+    border-bottom-color: #dbe4f0;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
 }
 
 .dashboard-toggle summary::-webkit-details-marker {
@@ -109,7 +145,27 @@
     gap: 14px;
     align-items: center;
     padding: 14px 18px;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid #e2e8f0;
+    position: relative;
+}
+
+.dashboard-detail-row::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 3px;
+    border-radius: 999px;
+    background: transparent;
+}
+
+.dashboard-detail-row:hover {
+    background: #fbfdff;
+}
+
+.dashboard-detail-row:hover::before {
+    background: rgba(37, 99, 235, 0.28);
 }
 
 .dashboard-detail-row:last-child {
@@ -134,6 +190,8 @@
     color: var(--muted);
     font-size: 13px;
     line-height: 1.4;
+    border-left: 1px solid #e2e8f0;
+    padding-left: 14px;
 }
 
 .dashboard-record-list {
@@ -246,6 +304,13 @@
         grid-template-columns: 1fr;
         gap: 6px;
         padding: 14px;
+    }
+
+    .dashboard-detail-note {
+        border-left: 0;
+        padding-left: 0;
+        padding-top: 6px;
+        border-top: 1px dashed #e2e8f0;
     }
 
     .dashboard-detail-value {
