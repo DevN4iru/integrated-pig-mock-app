@@ -33,11 +33,13 @@ class ProtocolEligibilityService
         if ($pig->relationLoaded('reproductionCyclesAsSow')) {
             return $pig->reproductionCyclesAsSow
                 ->filter(fn ($cycle) => $cycle->actual_farrow_date !== null)
-                ->sortByDesc(fn ($cycle) => sprintf(
-                    '%s-%010d',
-                    optional($cycle->actual_farrow_date)->format('Y-m-d') ?? (string) $cycle->actual_farrow_date,
-                    (int) $cycle->id
-                ))
+                ->sortByDesc(function ($cycle): string {
+                    $date = $cycle->actual_farrow_date
+                        ? Carbon::parse($cycle->actual_farrow_date)->format('Y-m-d')
+                        : '';
+
+                    return sprintf('%s-%010d', $date, (int) $cycle->id);
+                })
                 ->first();
         }
 
@@ -60,14 +62,19 @@ class ProtocolEligibilityService
 
         $birthCycle = $pig->birthCycle()
             ->whereNotNull('actual_farrow_date')
-            ->first();
+            ->first(['id', 'actual_farrow_date']);
 
-        if ($birthCycle?->actual_farrow_date) {
-            return Carbon::parse($birthCycle->actual_farrow_date)->startOfDay();
-        }
+        return $birthCycle?->actual_farrow_date
+            ? Carbon::parse($birthCycle->actual_farrow_date)->startOfDay()
+            : null;
+    }
 
-        return $pig->date_added
-            ? Carbon::parse($pig->date_added)->startOfDay()
+    public function lactatingSowAnchorDate(Pig $pig): ?Carbon
+    {
+        $cycle = $this->latestActualFarrowingCycle($pig);
+
+        return $cycle?->actual_farrow_date
+            ? Carbon::parse($cycle->actual_farrow_date)->startOfDay()
             : null;
     }
 
