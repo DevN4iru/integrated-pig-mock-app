@@ -83,6 +83,7 @@ class NotificationGenerationService
         $this->activePigCache = Pig::query()
             ->activeLifecycle()
             ->with([
+                'birthCycle:id,actual_farrow_date',
                 'healthLogs' => function ($query) {
                     $query
                         ->select(['id', 'pig_id', 'purpose', 'weight', 'log_date'])
@@ -155,8 +156,13 @@ class NotificationGenerationService
     protected function protocolNotificationCandidates(): array
     {
         $candidates = [];
+        $eligibility = new ProtocolEligibilityService();
 
         foreach ($this->activePigs() as $pig) {
+            if (!$eligibility->qualifiesForAnyClientProtocol($pig)) {
+                continue;
+            }
+
             $summary = $pig->protocol_summary;
 
             if (!is_array($summary)) {
