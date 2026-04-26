@@ -86,6 +86,8 @@
             'pen',
             'healthLogs',
             'feedLogs',
+            'motherSow',
+            'sireBoar',
             'birthCycle:id,actual_farrow_date',
             'reproductionCyclesAsSow.boar',
             'protocolExecutions.rule.template',
@@ -230,6 +232,32 @@
                     @endif
                 </div>
             @endif
+        </div>
+
+        <div class="panel-card">
+            <div class="client-section-head">
+                <div>
+                    <h3>Lineage</h3>
+                    <p>Basic parent and birth record information.</p>
+                </div>
+            </div>
+
+            <div class="client-info-grid">
+                <div class="client-field">
+                    <label>Dam / Mother Sow</label>
+                    <strong>{{ $pig->motherSow?->ear_tag ?? '—' }}</strong>
+                </div>
+
+                <div class="client-field">
+                    <label>Sire / Boar</label>
+                    <strong>{{ $pig->sireBoar?->ear_tag ?? '—' }}</strong>
+                </div>
+
+                <div class="client-field">
+                    <label>Birth Case</label>
+                    <strong>{{ $pig->birthCycle?->actual_farrow_date ? $pig->birthCycle->actual_farrow_date->format('Y-m-d') : '—' }}</strong>
+                </div>
+            </div>
         </div>
 
         @if ($protocol)

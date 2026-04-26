@@ -297,6 +297,7 @@ class PigController extends Controller
                 'transfers.fromPen',
                 'transfers.toPen',
                 'motherSow',
+                'sireBoar',
                 'birthCycle',
                 'reproductionCyclesAsSow.boar',
                 'protocolExecutions.rule.template',
