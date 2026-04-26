@@ -266,6 +266,148 @@
         width: fit-content;
     }
 }
+
+/* Dashboard-style Pig List polish */
+.panel-card {
+    border-color: #dbe4f0;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055);
+    position: relative;
+    overflow: hidden;
+}
+
+.panel-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), rgba(37, 99, 235, 0.18), transparent);
+}
+
+.section-title {
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 18px;
+}
+
+.section-title h3 {
+    letter-spacing: -0.02em;
+}
+
+.section-title p {
+    line-height: 1.45;
+}
+
+.form-grid input,
+.form-grid select,
+.form-grid textarea {
+    border-color: #dbe4f0;
+    min-height: 44px;
+}
+
+.form-grid input:focus,
+.form-grid select:focus,
+.form-grid textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.batch-panel {
+    border-top: 1px solid #dbe4f0;
+}
+
+.batch-toolbar {
+    padding-top: 2px;
+}
+
+.pen-group-stack > .panel-card {
+    margin-top: 0;
+}
+
+.pen-group-card {
+    border: 1px solid #dbe4f0;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    box-shadow: none;
+}
+
+.pen-group-card::before {
+    background: transparent;
+}
+
+.pen-group-meta {
+    padding-bottom: 13px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.pen-group-sub {
+    margin-top: 2px;
+}
+
+.table-wrap {
+    border: 1px solid #dbe4f0;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.data-table {
+    border: 0;
+}
+
+.data-table thead th {
+    background: #f8fbff;
+    border-bottom: 1px solid #dbe4f0;
+}
+
+.data-table tbody tr + tr td {
+    border-top: 1px solid #e2e8f0;
+}
+
+.data-table tbody tr:hover td {
+    background: #fbfdff;
+}
+
+.pig-meta strong {
+    color: var(--text);
+}
+
+.alert-badge {
+    border: 1px solid #fde68a;
+}
+
+.pig-lifecycle-stack {
+    margin: 18px 0 20px;
+}
+
+.pig-lifecycle-collapse {
+    border-color: #dbe4f0;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055);
+}
+
+.pig-lifecycle-collapse summary {
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.pig-lifecycle-title h3 {
+    letter-spacing: -0.02em;
+}
+
+.pig-preview-pill,
+.pig-lifecycle-toggle {
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+}
+
+.pig-lifecycle-body {
+    border-top: 1px solid #e2e8f0;
+    background: #fbfdff;
+}
+
+.empty-state {
+    border-color: #dbe4f0;
+    background: #fbfdff;
+}
+
+
 @endsection
 
 @section('content')
