@@ -344,6 +344,199 @@
     </form>
 </div>
 
+@if ($showSoldSection || $showDeadSection || $showArchivedSection)
+<div class="pig-lifecycle-stack">
+@if ($showSoldSection)
+    <details class="panel-card pig-lifecycle-collapse">
+        <summary>
+            <div class="pig-lifecycle-title">
+                <h3>Sold Pigs</h3>
+                <p>Completed sale records. Kept separate from live farm operations.</p>
+            </div>
+
+            <div class="pig-lifecycle-preview">
+                <span class="pig-preview-pill strong">{{ $soldPigCount }} sold pig(s)</span>
+                <span class="pig-preview-pill">₱ {{ number_format((float) $soldRevenuePreview, 2) }} sale value</span>
+                <span class="pig-lifecycle-toggle"></span>
+            </div>
+        </summary>
+
+        <div class="pig-lifecycle-body">
+            @if ($soldPigs->isEmpty())
+                <div class="empty-state">No sold pigs match the current filters.</div>
+            @else
+                <div class="table-wrap">
+                    <table class="data-table pig-table">
+                        <thead>
+                            <tr>
+                                <th>Ear Tag</th>
+                                <th>Breed</th>
+                                <th>Age</th>
+                                <th>Pen</th>
+                                <th>Latest Weight</th>
+                                <th>Latest Sale Price</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($soldPigs as $pig)
+                                @php
+                                    $latestSale = $pig->sales->sortByDesc('sold_date')->first();
+                                @endphp
+                                <tr>
+                                    <td>{{ $pig->ear_tag }}</td>
+                                    <td>{{ $pig->breed }}</td>
+                                    <td>{{ $pig->age_display }}</td>
+                                    <td>{{ $pig->pen?->name ?? $pig->pen_location ?? '—' }}</td>
+                                    <td>{{ $pig->computed_weight !== null ? number_format((float) $pig->computed_weight, 2) . ' kg' : '—' }}</td>
+                                    <td>{{ $latestSale ? '₱ ' . number_format((float) $latestSale->price, 2) : '—' }}</td>
+                                    <td>
+                                        <div class="inline-actions">
+                                            <a href="{{ route('pigs.show', $pig) }}" class="btn">View</a>
+                                            <button type="button" class="btn btn-danger" onclick="confirmPigRemoveFromRecords('{{ route('pigs.remove-records', $pig) }}')">
+                                                Remove from Records
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+    </details>
+@endif
+
+@if ($showDeadSection)
+    <details class="panel-card pig-lifecycle-collapse">
+        <summary>
+            <div class="pig-lifecycle-title">
+                <h3>Dead Pigs</h3>
+                <p>Mortality records remain separated from live operations.</p>
+            </div>
+
+            <div class="pig-lifecycle-preview">
+                <span class="pig-preview-pill strong">{{ $deadPigCount }} dead pig(s)</span>
+                <span class="pig-preview-pill">mortality records</span>
+                <span class="pig-lifecycle-toggle"></span>
+            </div>
+        </summary>
+
+        <div class="pig-lifecycle-body">
+            @if ($deadPigs->isEmpty())
+                <div class="empty-state">No dead pigs match the current filters.</div>
+            @else
+                <div class="table-wrap">
+                    <table class="data-table pig-table">
+                        <thead>
+                            <tr>
+                                <th>Ear Tag</th>
+                                <th>Breed</th>
+                                <th>Age</th>
+                                <th>Pen</th>
+                                <th>Latest Weight</th>
+                                <th>Mortality Cause</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($deadPigs as $pig)
+                                @php
+                                    $latestMortality = $pig->mortalityLogs->sortByDesc('death_date')->first();
+                                @endphp
+                                <tr>
+                                    <td>{{ $pig->ear_tag }}</td>
+                                    <td>{{ $pig->breed }}</td>
+                                    <td>{{ $pig->age_display }}</td>
+                                    <td>{{ $pig->pen?->name ?? $pig->pen_location ?? '—' }}</td>
+                                    <td>{{ $pig->computed_weight !== null ? number_format((float) $pig->computed_weight, 2) . ' kg' : '—' }}</td>
+                                    <td>{{ $latestMortality?->cause ?? '—' }}</td>
+                                    <td>
+                                        <div class="inline-actions">
+                                            <a href="{{ route('pigs.show', $pig) }}" class="btn">View</a>
+                                            <button type="button" class="btn btn-danger" onclick="confirmPigRemoveFromRecords('{{ route('pigs.remove-records', $pig) }}')">
+                                                Remove from Records
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+    </details>
+@endif
+
+@if ($showArchivedSection)
+    <details class="panel-card pig-lifecycle-collapse">
+        <summary>
+            <div class="pig-lifecycle-title">
+                <h3>Archived Pigs</h3>
+                <p>Archived pigs no longer count as active and do not occupy pen capacity.</p>
+            </div>
+
+            <div class="pig-lifecycle-preview">
+                <span class="pig-preview-pill strong">{{ $archivedPigCount }} archived pig(s)</span>
+                <span class="pig-preview-pill">₱ {{ number_format((float) $archivedValuePreview, 2) }} value</span>
+                <span class="pig-lifecycle-toggle"></span>
+            </div>
+        </summary>
+
+        <div class="pig-lifecycle-body">
+            @if ($archivedPigs->isEmpty())
+                <div class="empty-state">No archived pigs match the current filters.</div>
+            @else
+                <div class="table-wrap">
+                    <table class="data-table pig-table">
+                        <thead>
+                            <tr>
+                                <th>Ear Tag</th>
+                                <th>Breed</th>
+                                <th>Age</th>
+                                <th>Pen</th>
+                                <th>Source</th>
+                                <th>Value</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($archivedPigs as $pig)
+                                <tr>
+                                    <td>{{ $pig->ear_tag }}</td>
+                                    <td>{{ $pig->breed }}</td>
+                                    <td>{{ $pig->age_display }}</td>
+                                    <td>{{ $pig->pen?->name ?? $pig->pen_location ?? '—' }}</td>
+                                    <td>{{ ucfirst($pig->pig_source) }}</td>
+                                    <td>₱ {{ number_format((float) $pig->display_value_amount, 2) }}</td>
+                                    <td>
+                                        <div class="inline-actions">
+                                            <a href="{{ route('pigs.show', $pig) }}" class="btn">View</a>
+
+                                            <form method="POST" action="{{ route('pigs.restore', $pig) }}">
+                                                @csrf
+                                                <button class="btn" type="submit">Restore</button>
+                                            </form>
+
+                                            <button type="button" class="btn btn-danger" onclick="confirmPigPermanentDelete('{{ route('pigs.force-delete', $pig) }}')">
+                                                Permanent Delete
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+    </details>
+@endif
+</div>
+@endif
+
 @if ($showActiveSection)
 <div class="panel-card batch-panel">
     <div class="section-title">
@@ -617,196 +810,6 @@
 </div>
 @endif
 
-@if ($showSoldSection)
-<div class="pig-lifecycle-stack">
-    <details class="panel-card pig-lifecycle-collapse">
-        <summary>
-            <div class="pig-lifecycle-title">
-                <h3>Sold Pigs</h3>
-                <p>Completed sale records. Kept separate from live farm operations.</p>
-            </div>
-
-            <div class="pig-lifecycle-preview">
-                <span class="pig-preview-pill strong">{{ $soldPigCount }} sold pig(s)</span>
-                <span class="pig-preview-pill">₱ {{ number_format((float) $soldRevenuePreview, 2) }} sale value</span>
-                <span class="pig-lifecycle-toggle"></span>
-            </div>
-        </summary>
-
-        <div class="pig-lifecycle-body">
-            @if ($soldPigs->isEmpty())
-                <div class="empty-state">No sold pigs match the current filters.</div>
-            @else
-                <div class="table-wrap">
-                    <table class="data-table pig-table">
-                        <thead>
-                            <tr>
-                                <th>Ear Tag</th>
-                                <th>Breed</th>
-                                <th>Age</th>
-                                <th>Pen</th>
-                                <th>Latest Weight</th>
-                                <th>Latest Sale Price</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($soldPigs as $pig)
-                                @php
-                                    $latestSale = $pig->sales->sortByDesc('sold_date')->first();
-                                @endphp
-                                <tr>
-                                    <td>{{ $pig->ear_tag }}</td>
-                                    <td>{{ $pig->breed }}</td>
-                                    <td>{{ $pig->age_display }}</td>
-                                    <td>{{ $pig->pen?->name ?? $pig->pen_location ?? '—' }}</td>
-                                    <td>{{ $pig->computed_weight !== null ? number_format((float) $pig->computed_weight, 2) . ' kg' : '—' }}</td>
-                                    <td>{{ $latestSale ? '₱ ' . number_format((float) $latestSale->price, 2) : '—' }}</td>
-                                    <td>
-                                        <div class="inline-actions">
-                                            <a href="{{ route('pigs.show', $pig) }}" class="btn">View</a>
-                                            <button type="button" class="btn btn-danger" onclick="confirmPigRemoveFromRecords('{{ route('pigs.remove-records', $pig) }}')">
-                                                Remove from Records
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
-    </details>
-@endif
-
-@if ($showDeadSection)
-    <details class="panel-card pig-lifecycle-collapse">
-        <summary>
-            <div class="pig-lifecycle-title">
-                <h3>Dead Pigs</h3>
-                <p>Mortality records remain separated from live operations.</p>
-            </div>
-
-            <div class="pig-lifecycle-preview">
-                <span class="pig-preview-pill strong">{{ $deadPigCount }} dead pig(s)</span>
-                <span class="pig-preview-pill">mortality records</span>
-                <span class="pig-lifecycle-toggle"></span>
-            </div>
-        </summary>
-
-        <div class="pig-lifecycle-body">
-            @if ($deadPigs->isEmpty())
-                <div class="empty-state">No dead pigs match the current filters.</div>
-            @else
-                <div class="table-wrap">
-                    <table class="data-table pig-table">
-                        <thead>
-                            <tr>
-                                <th>Ear Tag</th>
-                                <th>Breed</th>
-                                <th>Age</th>
-                                <th>Pen</th>
-                                <th>Latest Weight</th>
-                                <th>Mortality Cause</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($deadPigs as $pig)
-                                @php
-                                    $latestMortality = $pig->mortalityLogs->sortByDesc('death_date')->first();
-                                @endphp
-                                <tr>
-                                    <td>{{ $pig->ear_tag }}</td>
-                                    <td>{{ $pig->breed }}</td>
-                                    <td>{{ $pig->age_display }}</td>
-                                    <td>{{ $pig->pen?->name ?? $pig->pen_location ?? '—' }}</td>
-                                    <td>{{ $pig->computed_weight !== null ? number_format((float) $pig->computed_weight, 2) . ' kg' : '—' }}</td>
-                                    <td>{{ $latestMortality?->cause ?? '—' }}</td>
-                                    <td>
-                                        <div class="inline-actions">
-                                            <a href="{{ route('pigs.show', $pig) }}" class="btn">View</a>
-                                            <button type="button" class="btn btn-danger" onclick="confirmPigRemoveFromRecords('{{ route('pigs.remove-records', $pig) }}')">
-                                                Remove from Records
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
-    </details>
-@endif
-
-@if ($showArchivedSection)
-    <details class="panel-card pig-lifecycle-collapse">
-        <summary>
-            <div class="pig-lifecycle-title">
-                <h3>Archived Pigs</h3>
-                <p>Archived pigs no longer count as active and do not occupy pen capacity.</p>
-            </div>
-
-            <div class="pig-lifecycle-preview">
-                <span class="pig-preview-pill strong">{{ $archivedPigCount }} archived pig(s)</span>
-                <span class="pig-preview-pill">₱ {{ number_format((float) $archivedValuePreview, 2) }} value</span>
-                <span class="pig-lifecycle-toggle"></span>
-            </div>
-        </summary>
-
-        <div class="pig-lifecycle-body">
-            @if ($archivedPigs->isEmpty())
-                <div class="empty-state">No archived pigs match the current filters.</div>
-            @else
-                <div class="table-wrap">
-                    <table class="data-table pig-table">
-                        <thead>
-                            <tr>
-                                <th>Ear Tag</th>
-                                <th>Breed</th>
-                                <th>Age</th>
-                                <th>Pen</th>
-                                <th>Source</th>
-                                <th>Value</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($archivedPigs as $pig)
-                                <tr>
-                                    <td>{{ $pig->ear_tag }}</td>
-                                    <td>{{ $pig->breed }}</td>
-                                    <td>{{ $pig->age_display }}</td>
-                                    <td>{{ $pig->pen?->name ?? $pig->pen_location ?? '—' }}</td>
-                                    <td>{{ ucfirst($pig->pig_source) }}</td>
-                                    <td>₱ {{ number_format((float) $pig->display_value_amount, 2) }}</td>
-                                    <td>
-                                        <div class="inline-actions">
-                                            <a href="{{ route('pigs.show', $pig) }}" class="btn">View</a>
-
-                                            <form method="POST" action="{{ route('pigs.restore', $pig) }}">
-                                                @csrf
-                                                <button class="btn" type="submit">Restore</button>
-                                            </form>
-
-                                            <button type="button" class="btn btn-danger" onclick="confirmPigPermanentDelete('{{ route('pigs.force-delete', $pig) }}')">
-                                                Permanent Delete
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
-    </details>
-</div>
-@endif
 @endsection
 
 @section('scripts')
