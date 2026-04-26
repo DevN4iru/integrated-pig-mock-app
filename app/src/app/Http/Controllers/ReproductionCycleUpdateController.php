@@ -38,9 +38,9 @@ class ReproductionCycleUpdateController extends Controller
 
         $validated = $request->validate([
             'event_type' => ['required', Rule::in(array_keys(ReproductionCycleUpdate::eventOptions()))],
-            'event_date' => ['required', 'date', 'after_or_equal:' . $minimumEventDate],
+            'event_date' => ['required', 'date', 'after_or_equal:' . $minimumEventDate, 'before_or_equal:today'],
             'pregnancy_result' => ['nullable', Rule::in(array_keys(ReproductionCycle::pregnancyResultOptions()))],
-            'actual_farrow_date' => ['nullable', 'date', 'after_or_equal:' . $reproductionCycle->service_date->toDateString()],
+            'actual_farrow_date' => ['nullable', 'date', 'after_or_equal:' . $reproductionCycle->service_date->toDateString(), 'before_or_equal:today'],
             'total_born' => ['nullable', 'integer', 'min:0'],
             'born_alive' => ['nullable', 'integer', 'min:0'],
             'stillborn' => ['nullable', 'integer', 'min:0'],
@@ -49,7 +49,9 @@ class ReproductionCycleUpdateController extends Controller
             'notes' => ['nullable', 'string'],
         ], [
             'event_date.after_or_equal' => 'Event date cannot be earlier than the latest breeding timeline entry.',
+            'event_date.before_or_equal' => 'Event date cannot be in the future.',
             'actual_farrow_date.after_or_equal' => 'Actual farrowing date cannot be earlier than the service date.',
+            'actual_farrow_date.before_or_equal' => 'Actual farrowing date cannot be in the future.',
         ]);
 
         $errors = [];
