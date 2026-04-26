@@ -73,6 +73,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
     Route::post('/notifications/{notification}/dismiss', [NotificationController::class, 'dismiss'])->name('notifications.dismiss');
+    Route::delete('/notifications/history', [NotificationController::class, 'clearHistory'])->name('notifications.history.clear');
 
     /*
     |--------------------------------------------------------------------------

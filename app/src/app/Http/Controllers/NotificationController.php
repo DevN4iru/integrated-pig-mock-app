@@ -46,4 +46,13 @@ class NotificationController extends Controller
 
         return redirect()->back()->with('success', 'Notification dismissed.');
     }
+
+    public function clearHistory(): RedirectResponse
+    {
+        $deletedCount = Notification::query()
+            ->history()
+            ->delete();
+
+        return redirect()->back()->with('success', $deletedCount.' notification history item(s) deleted.');
+    }
 }

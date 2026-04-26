@@ -69,6 +69,17 @@
     margin: 0;
 }
 
+.notification-history-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.notification-history-actions form {
+    margin: 0;
+}
+
 .notification-pager {
     display: flex;
     justify-content: space-between;
@@ -109,6 +120,8 @@
             'active' => 0,
             'history' => 0,
         ];
+
+        $canClearHistory = \Illuminate\Support\Facades\Route::has('notifications.history.clear');
     @endphp
 
     <div class="notification-stack">
@@ -243,7 +256,18 @@
                     <h3>Notification History</h3>
                     <p>Dismissed or resolved notifications kept for reference.</p>
                 </div>
-                <span class="badge blue">{{ $counts['history'] }}</span>
+
+                <div class="notification-history-actions">
+                    <span class="badge blue">{{ $counts['history'] }}</span>
+
+                    @if ($canClearHistory && ($counts['history'] ?? 0) > 0)
+                        <form method="POST" action="{{ route('notifications.history.clear') }}" onsubmit="return confirm('Delete notification history? Active notifications will stay.');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger">Delete History</button>
+                        </form>
+                    @endif
+                </div>
             </div>
 
             @if ($historyNotifications->isEmpty())
