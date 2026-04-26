@@ -30,12 +30,14 @@ class MedicationController extends Controller
         $validated = $request->validate([
             'medication_name' => ['required', 'string', 'max:255'],
             'dosage' => ['required', 'string', 'max:255'],
-            'cost' => ['required', 'numeric', 'min:0'],
             'administered_at' => ['required', 'date'],
             'notes' => ['nullable', 'string'],
         ]);
 
         $validated['pig_id'] = $pig->id;
+        $validated['cost'] = 0;
+        $validated['notes'] = isset($validated['notes']) ? trim((string) $validated['notes']) : null;
+        $validated['notes'] = $validated['notes'] === '' ? null : $validated['notes'];
 
         Medication::create($validated);
 
@@ -82,10 +84,13 @@ class MedicationController extends Controller
         $validated = $request->validate([
             'medication_name' => ['required', 'string', 'max:255'],
             'dosage' => ['required', 'string', 'max:255'],
-            'cost' => ['required', 'numeric', 'min:0'],
             'administered_at' => ['required', 'date'],
             'notes' => ['nullable', 'string'],
         ]);
+
+        $validated['cost'] = 0;
+        $validated['notes'] = isset($validated['notes']) ? trim((string) $validated['notes']) : null;
+        $validated['notes'] = $validated['notes'] === '' ? null : $validated['notes'];
 
         $medication->update($validated);
 
