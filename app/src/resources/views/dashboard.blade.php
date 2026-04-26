@@ -2,13 +2,12 @@
 
 @section('title', 'Dashboard')
 @section('page_title', 'Dashboard')
-@section('page_subtitle', 'Farm financials, reproductive workflow alerts, and operational overview.')
+@section('page_subtitle', 'Simple farm overview for daily handling.')
 
 @section('top_actions')
-    <a href="{{ route('settings.farm.edit') }}" class="btn">Farm Settings</a>
-    <a href="{{ route('reproduction-cycles.index') }}" class="btn">Breeding Records</a>
-    <a href="{{ route('protocol-programs.index') }}" class="btn">Protocol Programs</a>
     <a href="{{ route('pigs.index') }}" class="btn">View Pigs</a>
+    <a href="{{ route('reproduction-cycles.index') }}" class="btn">Breeding Records</a>
+    <a href="{{ route('settings.farm.edit') }}" class="btn">Farm Settings</a>
     <a href="{{ route('pigs.create') }}" class="btn primary">+ Add Pig</a>
 @endsection
 
@@ -20,14 +19,14 @@
 
 .dashboard-section {
     display: grid;
-    gap: 16px;
+    gap: 14px;
 }
 
 .dashboard-section-title {
     font-size: 18px;
     font-weight: 800;
     letter-spacing: -0.02em;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
 }
 
 .dashboard-section-sub {
@@ -35,208 +34,99 @@
     font-size: 13px;
 }
 
-.dashboard-mini-grid {
+.dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
 }
 
-.dashboard-compact-card {
-    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+.dashboard-grid-three {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.dashboard-list {
+    display: grid;
+    gap: 10px;
+}
+
+.dashboard-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 0.45fr) minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
     border: 1px solid var(--line);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-sm);
-    padding: 18px;
+    border-radius: 14px;
+    background: #fff;
+    padding: 12px;
 }
 
-.dashboard-compact-card .stat-value {
-    margin-bottom: 0;
+.dashboard-row strong {
+    display: block;
+    color: var(--text);
 }
 
-.section-accent-green,
-.section-accent-blue,
-.section-accent-red,
-.section-accent-orange {
-    position: relative;
-    padding-left: 14px;
-}
-
-.section-accent-green::before,
-.section-accent-blue::before,
-.section-accent-red::before,
-.section-accent-orange::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 2px;
-    bottom: 2px;
-    width: 4px;
-    border-radius: 999px;
-}
-
-.section-accent-green::before { background: #22c55e; }
-.section-accent-blue::before { background: #3b82f6; }
-.section-accent-red::before { background: #ef4444; }
-.section-accent-orange::before { background: #f97316; }
-
-.metric-card-highlight {
-    background: linear-gradient(135deg, rgba(37,99,235,0.05), rgba(255,255,255,0.95));
-}
-
-.trend-up { font-weight: 700; color: #16a34a; }
-.trend-down { font-weight: 700; color: #dc2626; }
-.trend-flat { font-weight: 700; color: #64748b; }
-
-.repro-pen-note {
+.dashboard-row span {
+    display: block;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 13px;
+    margin-top: 2px;
 }
 
-@media (max-width: 1200px) {
-    .dashboard-mini-grid {
+.dashboard-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.dashboard-note {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel-2);
+    padding: 14px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+@media (max-width: 1100px) {
+    .dashboard-grid,
+    .dashboard-grid-three {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
-@media (max-width: 640px) {
-    .dashboard-mini-grid {
+@media (max-width: 700px) {
+    .dashboard-grid,
+    .dashboard-grid-three,
+    .dashboard-row {
         grid-template-columns: 1fr;
     }
 }
 @endsection
 
 @section('content')
-@php
-    use App\Models\ReproductionCycle;
-
-    $cycleBadgeClass = function (string $displayStatus) {
-        return match ($displayStatus) {
-            ReproductionCycle::STATUS_PREGNANT => 'green',
-            ReproductionCycle::STATUS_DUE_SOON => 'blue',
-            ReproductionCycle::STATUS_FARROWED => 'blue',
-            ReproductionCycle::STATUS_NOT_PREGNANT => 'red',
-            ReproductionCycle::STATUS_RETURNED_TO_HEAT => 'orange',
-            ReproductionCycle::STATUS_CLOSED => 'orange',
-            default => 'orange',
-        };
-    };
-@endphp
-
 <div class="dashboard-stack">
-
     <div class="dashboard-section">
         <div>
-            <div class="dashboard-section-title">Financial Overview</div>
-            <div class="dashboard-section-sub">High-level farm position using current active value, recorded revenue, mortality-linked losses, and full operating costs.</div>
+            <div class="dashboard-section-title">Farm Summary</div>
+            <div class="dashboard-section-sub">Only the core numbers needed for daily farm decisions.</div>
         </div>
 
-        <div class="grid stats">
+        <div class="dashboard-grid">
             <div class="stat-card metric-card-highlight">
                 <div class="stat-top">
                     <span class="label">Live Asset Value</span>
                     <span class="badge green">Active</span>
                 </div>
                 <div class="stat-value">₱ {{ number_format($totalAssetValue, 2) }}</div>
-                <div class="stat-sub">Current value of pigs that are still active.</div>
+                <div class="stat-sub">Active pigs counted in farm value.</div>
             </div>
 
-            <div class="stat-card">
-                <div class="stat-top">
-                    <span class="label">Total Revenue</span>
-                    <span class="badge blue">Sales</span>
-                </div>
-                <div class="stat-value">₱ {{ number_format($totalRevenue, 2) }}</div>
-                <div class="stat-sub">Accumulated income from recorded pig sales.</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-top">
-                    <span class="label">Loss Value</span>
-                    <span class="badge red">Mortality</span>
-                </div>
-                <div class="stat-value">₱ {{ number_format($totalLossValue, 2) }}</div>
-                <div class="stat-sub">Estimated value lost from pigs with mortality records.</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-top">
-                    <span class="label">Net Position</span>
-                    <span class="badge orange">Summary</span>
-                </div>
-                <div class="stat-value">₱ {{ number_format($netPosition, 2) }}</div>
-                <div class="stat-sub">Live assets + revenue − mortality loss − operating cost.</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="dashboard-section">
-        <div>
-            <div class="dashboard-section-title">Cost & Liability</div>
-            <div class="dashboard-section-sub">Consolidated operating costs, breeding expenses, and care-related exposure across the herd.</div>
-        </div>
-
-        <div class="dashboard-mini-grid">
-            <div class="dashboard-compact-card">
-                <div class="stat-top">
-                    <span class="label">Feed Cost</span>
-                    <span class="badge orange">Cost</span>
-                </div>
-                <div class="stat-value">₱ {{ number_format($totalFeedCost, 2) }}</div>
-            </div>
-
-            <div class="dashboard-compact-card">
-                <div class="stat-top">
-                    <span class="label">Medication Cost</span>
-                    <span class="badge red">Care</span>
-                </div>
-                <div class="stat-value">₱ {{ number_format($totalMedicationCost, 2) }}</div>
-            </div>
-
-            <div class="dashboard-compact-card">
-                <div class="stat-top">
-                    <span class="label">Vaccination Cost</span>
-                    <span class="badge blue">Care</span>
-                </div>
-                <div class="stat-value">₱ {{ number_format($totalVaccinationCost, 2) }}</div>
-            </div>
-
-            <div class="dashboard-compact-card">
-                <div class="stat-top">
-                    <span class="label">Breeding Cost</span>
-                    <span class="badge green">Reproduction</span>
-                </div>
-                <div class="stat-value">₱ {{ number_format($totalBreedingCost, 2) }}</div>
-            </div>
-
-            <div class="dashboard-compact-card">
-                <div class="stat-top">
-                    <span class="label">Care Liability</span>
-                    <span class="badge orange">Liability</span>
-                </div>
-                <div class="stat-value">₱ {{ number_format($totalCareLiability, 2) }}</div>
-            </div>
-
-            <div class="dashboard-compact-card">
-                <div class="stat-top">
-                    <span class="label">Operating Cost</span>
-                    <span class="badge red">Total</span>
-                </div>
-                <div class="stat-value">₱ {{ number_format($totalOperatingCost, 2) }}</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="dashboard-section">
-        <div>
-            <div class="dashboard-section-title">Herd Status</div>
-            <div class="dashboard-section-sub">Quick view of total records and current herd distribution.</div>
-        </div>
-
-        <div class="grid stats">
             <div class="stat-card">
                 <div class="stat-top">
                     <span class="label">Total Pigs</span>
-                    <span class="badge blue">All</span>
+                    <span class="badge blue">Records</span>
                 </div>
                 <div class="stat-value">{{ $pigs->count() }}</div>
                 <div class="stat-sub">All pig records in the system.</div>
@@ -248,798 +138,194 @@
                     <span class="badge green">Live</span>
                 </div>
                 <div class="stat-value">{{ $livePigs->count() }}</div>
-                <div class="stat-sub">Pigs without sale or mortality records.</div>
+                <div class="stat-sub">Pigs currently in the farm.</div>
             </div>
 
             <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">Sold Pigs</span>
-                    <span class="badge orange">Closed</span>
+                    <span class="label">Net Position</span>
+                    <span class="badge orange">Summary</span>
                 </div>
-                <div class="stat-value">{{ $soldPigs->count() }}</div>
-                <div class="stat-sub">Pigs with at least one sale record.</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-top">
-                    <span class="label">Dead Pigs</span>
-                    <span class="badge red">Loss</span>
-                </div>
-                <div class="stat-value">{{ $deadPigs->count() }}</div>
-                <div class="stat-sub">Pigs with recorded mortality.</div>
+                <div class="stat-value">₱ {{ number_format($netPosition, 2) }}</div>
+                <div class="stat-sub">Farm value after recorded costs and losses.</div>
             </div>
         </div>
     </div>
 
     <div class="dashboard-section">
         <div>
-            <div class="dashboard-section-title">Growth Monitoring</div>
-            <div class="dashboard-section-sub">Snapshot of herd growth behavior based on weight-update health logs.</div>
+            <div class="dashboard-section-title">Basic Counts</div>
+            <div class="dashboard-section-sub">Simple record status for quick checking.</div>
         </div>
 
-        <div class="dashboard-mini-grid">
-            <div class="dashboard-compact-card">
+        <div class="dashboard-grid">
+            <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">Growing Well</span>
-                    <span class="badge green">Good</span>
+                    <span class="label">Sold Pigs</span>
+                    <span class="badge orange">Closed</span>
                 </div>
-                <div class="stat-value">{{ $growthSummary['good'] }}</div>
+                <div class="stat-value">{{ $soldPigs->count() }}</div>
+                <div class="stat-sub">Pigs with sale records.</div>
             </div>
 
-            <div class="dashboard-compact-card">
+            <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">Declining</span>
-                    <span class="badge red">Alert</span>
+                    <span class="label">Mortality</span>
+                    <span class="badge red">Loss</span>
                 </div>
-                <div class="stat-value">{{ $growthSummary['declining'] }}</div>
+                <div class="stat-value">{{ $deadPigs->count() }}</div>
+                <div class="stat-sub">Pigs with mortality records.</div>
             </div>
 
-            <div class="dashboard-compact-card">
+            <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">Stagnant</span>
-                    <span class="badge orange">Monitor</span>
+                    <span class="label">Breeding Cost</span>
+                    <span class="badge blue">Breeding</span>
                 </div>
-                <div class="stat-value">{{ $growthSummary['stagnant'] }}</div>
+                <div class="stat-value">₱ {{ number_format($totalBreedingCost, 2) }}</div>
+                <div class="stat-sub">Recorded breeding-related cost.</div>
             </div>
 
-            <div class="dashboard-compact-card">
+            <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">No Data</span>
-                    <span class="badge blue">Unknown</span>
+                    <span class="label">Operating Cost</span>
+                    <span class="badge orange">Total</span>
                 </div>
-                <div class="stat-value">{{ $growthSummary['no_data'] }}</div>
+                <div class="stat-value">₱ {{ number_format($totalOperatingCost, 2) }}</div>
+                <div class="stat-sub">Recorded farm operating cost.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-section">
+        <div>
+            <div class="dashboard-section-title">Quick Actions</div>
+            <div class="dashboard-section-sub">Common tasks for the handler.</div>
+        </div>
+
+        <div class="panel-card">
+            <div class="dashboard-quick-actions">
+                <a href="{{ route('pigs.create') }}" class="btn primary">Add Pig</a>
+                <a href="{{ route('pigs.index') }}" class="btn">Open Pig List</a>
+                <a href="{{ route('reproduction-cycles.index') }}" class="btn">Open Breeding Records</a>
+                <a href="{{ route('settings.farm.edit') }}" class="btn">Download / Email Summary</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-section">
+        <div>
+            <div class="dashboard-section-title">Breeding Follow-up</div>
+            <div class="dashboard-section-sub">Only the breeding items that need attention soon.</div>
+        </div>
+
+        <div class="dashboard-grid-three">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="label">Upcoming Farrowing</span>
+                    <span class="badge green">Prepare</span>
+                </div>
+                <div class="stat-value">{{ $upcomingFarrowings->count() }}</div>
+                <div class="stat-sub">Expected within the alert window.</div>
             </div>
 
-            <div class="dashboard-compact-card">
+            <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">Farm Feed Efficiency</span>
-                    <span class="badge green">Ratio</span>
-                </div>
-                <div class="stat-value">{{ $farmFeedEfficiency !== null ? number_format($farmFeedEfficiency, 2) : '—' }}</div>
-            </div>
-
-            <div class="dashboard-compact-card">
-                <div class="stat-top">
-                    <span class="label">Active Breeding Cycles</span>
-                    <span class="badge green">Live</span>
+                    <span class="label">Active Breeding</span>
+                    <span class="badge blue">Open</span>
                 </div>
                 <div class="stat-value">{{ $activeBreedingCycles->count() }}</div>
+                <div class="stat-sub">Breeding records still in progress.</div>
             </div>
 
-            <div class="dashboard-compact-card">
+            <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">Due Soon</span>
-                    <span class="badge blue">114-Day</span>
-                </div>
-                <div class="stat-value">{{ $dueSoonCycles->count() }}</div>
-            </div>
-
-            <div class="dashboard-compact-card">
-                <div class="stat-top">
-                    <span class="label">Returned to Heat</span>
-                    <span class="badge orange">Repeat</span>
-                </div>
-                <div class="stat-value">{{ $returnedToHeatCycles->count() }}</div>
-            </div>
-
-            <div class="dashboard-compact-card">
-                <div class="stat-top">
-                    <span class="label">Pending Checks</span>
-                    <span class="badge blue">Serviced</span>
+                    <span class="label">Pregnancy Checks</span>
+                    <span class="badge orange">Pending</span>
                 </div>
                 <div class="stat-value">{{ $pendingPregnancyChecks->count() }}</div>
+                <div class="stat-sub">Sows waiting for pregnancy confirmation.</div>
             </div>
         </div>
     </div>
 
-    <div class="grid overview-panels">
-        <div class="panel-card">
-            <div class="section-title section-accent-green">
-                <div>
-                    <h3>Upcoming Farrowing Alerts</h3>
-                    <p>Pregnant or due-soon sows expected to farrow within the next 14 days.</p>
-                </div>
-                <a href="{{ route('reproduction-cycles.index') }}" class="btn">View Breeding</a>
-            </div>
+    <div class="dashboard-section">
+        <div>
+            <div class="dashboard-section-title">Upcoming Farrowing</div>
+            <div class="dashboard-section-sub">Sows that may need preparation soon.</div>
+        </div>
 
+        <div class="panel-card">
             @if($upcomingFarrowings->isEmpty())
-                <div class="empty-state">No upcoming farrowing alerts in the next 14 days.</div>
+                <div class="empty-state">No upcoming farrowing alerts right now.</div>
             @else
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Sow</th>
-                                <th>Status</th>
-                                <th>Type</th>
-                                <th>Boar</th>
-                                <th>Expected Farrow</th>
-                                <th>Recommended Pen</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($upcomingFarrowings as $cycle)
-                                <tr>
-                                    <td>{{ $cycle->sow?->ear_tag ?? '—' }}</td>
-                                    <td>
-                                        <span class="badge {{ $cycleBadgeClass($cycle->display_status) }}">
-                                            {{ $cycle->status_label }}
-                                        </span>
-                                    </td>
-                                    <td>{{ $cycle->breeding_type_label }}</td>
-                                    <td>{{ $cycle->boar?->ear_tag ?? '—' }}</td>
-                                    <td>{{ $cycle->expected_farrow_date?->format('Y-m-d') ?? '—' }}</td>
-                                    <td>
-                                        {{ $cycle->recommended_pen_type ?? '—' }}
-                                        @if($cycle->sow?->pen?->type && $cycle->recommended_pen_type && $cycle->sow->pen->type !== $cycle->recommended_pen_type)
-                                            <div class="repro-pen-note">Current pen differs</div>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($cycle->sow)
-                                            <a href="{{ route('pigs.show', $cycle->sow->id) }}" class="btn">Go to Sow</a>
-                                        @else
-                                            —
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
+                <div class="dashboard-list">
+                    @foreach($upcomingFarrowings as $cycle)
+                        <div class="dashboard-row">
+                            <div>
+                                <strong>{{ $cycle->sow?->ear_tag ?? '—' }}</strong>
+                                <span>Sow</span>
+                            </div>
 
-        <div class="panel-card">
-            <div class="section-title section-accent-blue">
-                <div>
-                    <h3>Active Breeding Cycles</h3>
-                    <p>Serviced, pregnant, and due-soon reproduction records currently in progress.</p>
-                </div>
-                <a href="{{ route('reproduction-cycles.index') }}" class="btn">View Breeding</a>
-            </div>
+                            <div>
+                                <strong>{{ $cycle->expected_farrow_date?->format('Y-m-d') ?? 'No date' }}</strong>
+                                <span>
+                                    {{ $cycle->status_label ?? 'Breeding record' }}
+                                    @if($cycle->recommended_pen_type)
+                                        · Recommended pen: {{ $cycle->recommended_pen_type }}
+                                    @endif
+                                </span>
+                            </div>
 
-            @if($activeBreedingCycles->isEmpty())
-                <div class="empty-state">No active breeding cycles yet.</div>
-            @else
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Sow</th>
-                                <th>Status</th>
-                                <th>Pregnancy Result</th>
-                                <th>Service Date</th>
-                                <th>Recommended Pen</th>
-                                <th>Cost</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($activeBreedingCycles as $cycle)
-                                <tr>
-                                    <td>{{ $cycle->sow?->ear_tag ?? '—' }}</td>
-                                    <td>
-                                        <span class="badge {{ $cycleBadgeClass($cycle->display_status) }}">
-                                            {{ $cycle->status_label }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge {{ $cycle->pregnancy_result === ReproductionCycle::PREGNANCY_RESULT_PREGNANT ? 'green' : ($cycle->pregnancy_result === ReproductionCycle::PREGNANCY_RESULT_NOT_PREGNANT ? 'red' : 'blue') }}">
-                                            {{ $cycle->pregnancy_result_label }}
-                                        </span>
-                                    </td>
-                                    <td>{{ $cycle->service_date?->format('Y-m-d') ?? '—' }}</td>
-                                    <td>{{ $cycle->recommended_pen_type ?? '—' }}</td>
-                                    <td>₱ {{ number_format((float) $cycle->breeding_cost, 2) }}</td>
-                                    <td>
-                                        @if($cycle->sow)
-                                            <a href="{{ route('pigs.show', $cycle->sow->id) }}" class="btn">Go to Sow</a>
-                                        @else
-                                            —
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                            @if($cycle->sow)
+                                <a href="{{ route('pigs.show', $cycle->sow->id) }}" class="btn">Open Sow</a>
+                            @else
+                                <span class="client-muted">—</span>
+                            @endif
+                        </div>
+                    @endforeach
                 </div>
             @endif
         </div>
     </div>
 
-    <div class="grid overview-panels">
-        <div class="panel-card">
-            <div class="section-title section-accent-orange">
-                <div>
-                    <h3>Returned to Heat</h3>
-                    <p>Sows that were not pregnant and are now back in repeat-service workflow.</p>
-                </div>
-                <a href="{{ route('reproduction-cycles.index') }}" class="btn">View Breeding</a>
-            </div>
-
-            @if($returnedToHeatCycles->isEmpty())
-                <div class="empty-state">No returned-to-heat cycles right now.</div>
-            @else
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Sow</th>
-                                <th>Pregnancy Check</th>
-                                <th>Result</th>
-                                <th>Recommended Pen</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($returnedToHeatCycles as $cycle)
-                                <tr>
-                                    <td>{{ $cycle->sow?->ear_tag ?? '—' }}</td>
-                                    <td>{{ $cycle->pregnancy_check_date?->format('Y-m-d') ?? '—' }}</td>
-                                    <td>{{ $cycle->pregnancy_result_label }}</td>
-                                    <td>{{ $cycle->recommended_pen_type ?? '—' }}</td>
-                                    <td>
-                                        @if($cycle->sow)
-                                            <a href="{{ route('pigs.show', $cycle->sow->id) }}" class="btn">Go to Sow</a>
-                                        @else
-                                            —
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
+    <div class="dashboard-section">
+        <div>
+            <div class="dashboard-section-title">Pending Pregnancy Checks</div>
+            <div class="dashboard-section-sub">Recently serviced sows waiting for confirmation.</div>
         </div>
 
         <div class="panel-card">
-            <div class="section-title section-accent-blue">
-                <div>
-                    <h3>Pending Pregnancy Checks</h3>
-                    <p>Recently serviced sows still waiting for pregnancy confirmation.</p>
-                </div>
-                <a href="{{ route('reproduction-cycles.index') }}" class="btn">View Breeding</a>
-            </div>
-
             @if($pendingPregnancyChecks->isEmpty())
                 <div class="empty-state">No pending pregnancy checks right now.</div>
             @else
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Sow</th>
-                                <th>Service Date</th>
-                                <th>Status</th>
-                                <th>Recommended Pen</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($pendingPregnancyChecks as $cycle)
-                                <tr>
-                                    <td>{{ $cycle->sow?->ear_tag ?? '—' }}</td>
-                                    <td>{{ $cycle->service_date?->format('Y-m-d') ?? '—' }}</td>
-                                    <td>
-                                        <span class="badge {{ $cycleBadgeClass($cycle->display_status) }}">
-                                            {{ $cycle->status_label }}
-                                        </span>
-                                    </td>
-                                    <td>{{ $cycle->recommended_pen_type ?? '—' }}</td>
-                                    <td>
-                                        @if($cycle->sow)
-                                            <a href="{{ route('pigs.show', $cycle->sow->id) }}" class="btn">Go to Sow</a>
-                                        @else
-                                            —
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                <div class="dashboard-list">
+                    @foreach($pendingPregnancyChecks as $cycle)
+                        <div class="dashboard-row">
+                            <div>
+                                <strong>{{ $cycle->sow?->ear_tag ?? '—' }}</strong>
+                                <span>Sow</span>
+                            </div>
+
+                            <div>
+                                <strong>{{ $cycle->service_date?->format('Y-m-d') ?? 'No service date' }}</strong>
+                                <span>{{ $cycle->status_label ?? 'Pending check' }}</span>
+                            </div>
+
+                            @if($cycle->sow)
+                                <a href="{{ route('pigs.show', $cycle->sow->id) }}" class="btn">Open Sow</a>
+                            @else
+                                <span class="client-muted">—</span>
+                            @endif
+                        </div>
+                    @endforeach
                 </div>
             @endif
         </div>
     </div>
 
-    <div class="grid overview-panels">
-        <div class="panel-card">
-            <div class="section-title section-accent-green">
-                <div>
-                    <h3>Best Cost Performers</h3>
-                    <p>Pigs with positive gain and the lowest cost per kg gain.</p>
-                </div>
-                <a href="{{ route('pigs.index') }}" class="btn">View Pigs</a>
-            </div>
-
-            @if($bestPerformers->isEmpty())
-                <div class="empty-state">No pigs have enough cost-and-gain data yet.</div>
-            @else
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Ear Tag</th>
-                                <th>Latest Weight</th>
-                                <th>Operating Cost</th>
-                                <th>Cost / kg Gain</th>
-                                <th>Performance</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($bestPerformers as $pig)
-                                <tr>
-                                    <td>{{ $pig->ear_tag }}</td>
-                                    <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
-                                    <td>₱ {{ number_format((float) $pig->total_operating_cost, 2) }}</td>
-                                    <td>₱ {{ number_format((float) $pig->cost_per_kg_gain, 2) }}</td>
-                                    <td>
-                                        <span class="badge {{ match($pig->performance_status) {
-                                            'good' => 'green',
-                                            'inefficient' => 'orange',
-                                            'risk' => 'red',
-                                            'monitor' => 'orange',
-                                            default => 'blue',
-                                        } }}">
-                                            {{ match($pig->performance_status) {
-                                                'good' => 'Efficient',
-                                                'inefficient' => 'Inefficient',
-                                                'risk' => 'Risk',
-                                                'monitor' => 'Monitor',
-                                                default => 'No Data',
-                                            } }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
-
-        <div class="panel-card">
-            <div class="section-title section-accent-red">
-                <div>
-                    <h3>High Cost / Low Gain Risks</h3>
-                    <p>Pigs that are inefficient or currently weight-negative.</p>
-                </div>
-                <a href="{{ route('pigs.index') }}" class="btn">View Pigs</a>
-            </div>
-
-            @if($riskPigs->isEmpty())
-                <div class="empty-state">No pigs are currently flagged as high-cost or risk.</div>
-            @else
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Ear Tag</th>
-                                <th>Latest Weight</th>
-                                <th>Operating Cost</th>
-                                <th>Cost / kg Gain</th>
-                                <th>Performance</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($riskPigs as $pig)
-                                <tr>
-                                    <td>{{ $pig->ear_tag }}</td>
-                                    <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
-                                    <td>₱ {{ number_format((float) $pig->total_operating_cost, 2) }}</td>
-                                    <td>{{ $pig->cost_per_kg_gain !== null ? '₱ ' . number_format((float) $pig->cost_per_kg_gain, 2) : '—' }}</td>
-                                    <td>
-                                        <span class="badge {{ $pig->performance_status === 'risk' ? 'red' : 'orange' }}">
-                                            {{ $pig->performance_status === 'risk' ? 'Risk' : 'Inefficient' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
+    <div class="dashboard-note">
+        Dashboard is intentionally simplified for client use. Detailed records remain available inside Pig Profile, Breeding Records, Farm Settings, and Reports.
     </div>
-
-    <div class="grid overview-panels">
-        <div class="panel-card">
-            <div class="section-title section-accent-green">
-                <div>
-                    <h3>Growing Well Pigs</h3>
-                    <p>Pigs currently showing positive growth.</p>
-                </div>
-                <a href="{{ route('pigs.index') }}" class="btn">View Pigs</a>
-            </div>
-
-            @if($growthGroups['good']->isEmpty())
-                <div class="empty-state">No pigs currently marked as growing well.</div>
-            @else
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Ear Tag</th>
-                                <th>Latest Weight</th>
-                                <th>Weight Gain</th>
-                                <th>Daily Gain</th>
-                                <th>Feed Cost</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($growthGroups['good'] as $pig)
-                                <tr>
-                                    <td>{{ $pig->ear_tag }}</td>
-                                    <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
-                                    <td>{{ $pig->weight_gain !== null ? number_format((float) $pig->weight_gain, 2) . ' kg' : '—' }}</td>
-                                    <td>{{ $pig->daily_gain !== null ? number_format((float) $pig->daily_gain, 2) . ' kg/day' : '—' }}</td>
-                                    <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
-                                    <td>
-                                        <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
-
-        <div class="panel-card">
-            <div class="section-title section-accent-red">
-                <div>
-                    <h3>Declining Pigs</h3>
-                    <p>Pigs currently showing weight loss.</p>
-                </div>
-                <a href="{{ route('pigs.index') }}" class="btn">View Pigs</a>
-            </div>
-
-            @if($growthGroups['declining']->isEmpty())
-                <div class="empty-state">No pigs currently marked as declining.</div>
-            @else
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Ear Tag</th>
-                                <th>Latest Weight</th>
-                                <th>Weight Gain</th>
-                                <th>Daily Gain</th>
-                                <th>Feed Cost</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($growthGroups['declining'] as $pig)
-                                <tr>
-                                    <td>{{ $pig->ear_tag }}</td>
-                                    <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
-                                    <td>{{ $pig->weight_gain !== null ? number_format((float) $pig->weight_gain, 2) . ' kg' : '—' }}</td>
-                                    <td>{{ $pig->daily_gain !== null ? number_format((float) $pig->daily_gain, 2) . ' kg/day' : '—' }}</td>
-                                    <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
-                                    <td>
-                                        <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
-    </div>
-
-    <div class="grid overview-panels">
-        <div class="panel-card">
-            <div class="section-title section-accent-orange">
-                <div>
-                    <h3>Stagnant Pigs</h3>
-                    <p>Pigs with no recent weight change.</p>
-                </div>
-                <a href="{{ route('pigs.index') }}" class="btn">View Pigs</a>
-            </div>
-
-            @if($growthGroups['stagnant']->isEmpty())
-                <div class="empty-state">No pigs currently marked as stagnant.</div>
-            @else
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Ear Tag</th>
-                                <th>Latest Weight</th>
-                                <th>Weight Gain</th>
-                                <th>Daily Gain</th>
-                                <th>Feed Cost</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($growthGroups['stagnant'] as $pig)
-                                <tr>
-                                    <td>{{ $pig->ear_tag }}</td>
-                                    <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
-                                    <td>{{ $pig->weight_gain !== null ? number_format((float) $pig->weight_gain, 2) . ' kg' : '—' }}</td>
-                                    <td>{{ $pig->daily_gain !== null ? number_format((float) $pig->daily_gain, 2) . ' kg/day' : '—' }}</td>
-                                    <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
-                                    <td>
-                                        <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
-
-        <div class="panel-card">
-            <div class="section-title section-accent-blue">
-                <div>
-                    <h3>No Data Pigs</h3>
-                    <p>Pigs with insufficient weight logs for growth analysis.</p>
-                </div>
-                <a href="{{ route('pigs.index') }}" class="btn">View Pigs</a>
-            </div>
-
-            @if($growthGroups['no_data']->isEmpty())
-                <div class="empty-state">All pigs already have enough weight data.</div>
-            @else
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Ear Tag</th>
-                                <th>Latest Weight</th>
-                                <th>Growth Status</th>
-                                <th>Feed Cost</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($growthGroups['no_data'] as $pig)
-                                <tr>
-                                    <td>{{ $pig->ear_tag }}</td>
-                                    <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
-                                    <td><span class="badge blue">No Data</span></td>
-                                    <td>₱ {{ number_format((float) $pig->total_feed_cost, 2) }}</td>
-                                    <td>
-                                        <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
-    </div>
-
-    <div class="grid overview-panels">
-        <div class="panel-card">
-            <div class="section-title section-accent-blue">
-                <div>
-                    <h3>Recent Sales</h3>
-                    <p>Latest sale activity in the farm.</p>
-                </div>
-            </div>
-
-            @if($recentSales->isEmpty())
-                <div class="empty-state">No sales recorded yet.</div>
-            @else
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Ear Tag</th>
-                                <th>Buyer</th>
-                                <th>Price</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($recentSales as $sale)
-                                <tr>
-                                    <td>{{ $sale->sold_date }}</td>
-                                    <td>{{ $sale->pig->ear_tag ?? '—' }}</td>
-                                    <td>{{ $sale->buyer ?: '—' }}</td>
-                                    <td>₱ {{ number_format((float) $sale->price, 2) }}</td>
-                                    <td>
-                                        @if($sale->pig)
-                                            <a href="{{ route('pigs.show', $sale->pig->id) }}" class="btn">Go to Pig</a>
-                                        @else
-                                            —
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
-
-        <div class="panel-card">
-            <div class="section-title section-accent-red">
-                <div>
-                    <h3>Recent Mortality</h3>
-                    <p>Latest loss events recorded.</p>
-                </div>
-            </div>
-
-            @if($recentMortality->isEmpty())
-                <div class="empty-state">No mortality records yet.</div>
-            @else
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Ear Tag</th>
-                                <th>Cause</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($recentMortality as $mortality)
-                                <tr>
-                                    <td>{{ $mortality->death_date }}</td>
-                                    <td>{{ $mortality->pig->ear_tag ?? '—' }}</td>
-                                    <td>{{ $mortality->cause }}</td>
-                                    <td>
-                                        @if($mortality->pig)
-                                            <a href="{{ route('pigs.show', $mortality->pig->id) }}" class="btn">Go to Pig</a>
-                                        @else
-                                            —
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
-    </div>
-
-    <div class="panel-card">
-        <div class="section-title section-accent-orange">
-            <div>
-                <h3>Health Alerts</h3>
-                <p>Recent sickness, injury, and recovery-related logs that may need attention.</p>
-            </div>
-            <a href="{{ route('pigs.index') }}" class="btn">View Pigs</a>
-        </div>
-
-        @if($recentHealthAlerts->isEmpty())
-            <div class="empty-state">No recent health alerts.</div>
-        @else
-            <div class="table-wrap">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Ear Tag</th>
-                            <th>Purpose</th>
-                            <th>Condition</th>
-                            <th>Notes</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($recentHealthAlerts as $log)
-                            @php
-                                $healthBadgeClass = match($log->purpose) {
-                                    'sick' => 'red',
-                                    'recovered' => 'green',
-                                    'injury' => 'orange',
-                                    default => 'blue',
-                                };
-                            @endphp
-                            <tr>
-                                <td>{{ $log->log_date }}</td>
-                                <td>{{ $log->pig->ear_tag ?? '—' }}</td>
-                                <td>
-                                    <span class="badge {{ $healthBadgeClass }}">
-                                        {{ ucfirst(str_replace('_', ' ', $log->purpose)) }}
-                                    </span>
-                                </td>
-                                <td>{{ $log->condition }}</td>
-                                <td>{{ $log->notes ?: '—' }}</td>
-                                <td>
-                                    @if($log->pig)
-                                        <a href="{{ route('pigs.show', $log->pig->id) }}" class="btn">Go to Pig</a>
-                                    @else
-                                        —
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
-    </div>
-
-    <div class="panel-card">
-        <div class="section-title section-accent-green">
-            <div>
-                <h3>Weight Monitoring Alerts</h3>
-                <p>Pigs with no recent weight updates in the last 7 or more days.</p>
-            </div>
-            <a href="{{ route('pigs.index') }}" class="btn">View Pigs</a>
-        </div>
-
-        @if($staleWeightPigs->isEmpty())
-            <div class="empty-state">All pigs have recent weight updates.</div>
-        @else
-            <div class="table-wrap">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Ear Tag</th>
-                            <th>Last Weight</th>
-                            <th>Trend</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($staleWeightPigs as $pig)
-                            <tr>
-                                <td>{{ $pig->ear_tag }}</td>
-                                <td>{{ number_format((float) $pig->computed_weight, 2) }} kg</td>
-                                <td>
-                                    @if($pig->recent_weight_trend_direction === 'up')
-                                        <span class="trend-up">{{ $pig->recent_weight_trend_symbol }} {{ $pig->recent_weight_trend_label }}</span>
-                                    @elseif($pig->recent_weight_trend_direction === 'down')
-                                        <span class="trend-down">{{ $pig->recent_weight_trend_symbol }} {{ $pig->recent_weight_trend_label }}</span>
-                                    @else
-                                        <span class="trend-flat">{{ $pig->recent_weight_trend_symbol }} {{ $pig->recent_weight_trend_label }}</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <a href="{{ route('pigs.show', $pig->id) }}" class="btn">Go to Pig</a>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
-    </div>
-
 </div>
 @endsection
