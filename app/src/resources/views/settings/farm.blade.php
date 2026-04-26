@@ -11,13 +11,30 @@
 @section('styles')
 .settings-stack {
     display: grid;
-    gap: 18px;
+    gap: 20px;
+}
+
+.settings-stack > .panel-card,
+.settings-utility-grid > .panel-card {
+    border-color: #dbe4f0;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055);
+    position: relative;
+    overflow: hidden;
+}
+
+.settings-stack > .panel-card::before,
+.settings-utility-grid > .panel-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), rgba(37, 99, 235, 0.18), transparent);
 }
 
 .settings-utility-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
-    gap: 18px;
+    gap: 20px;
     align-items: start;
 }
 
@@ -54,23 +71,36 @@
     font-weight: 800;
 }
 
-.settings-action-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+.settings-stack input[type="time"],
+.settings-stack input[type="number"],
+.settings-stack input[type="email"] {
+    width: 100%;
+    border: 1px solid #dbe4f0;
+    background: #fff;
+    color: var(--text);
+    padding: 11px 13px;
+    border-radius: 12px;
+    outline: none;
+    transition: 0.18s ease;
+    min-height: 44px;
 }
 
-.settings-action-grid .btn,
-.settings-action-grid form,
-.settings-action-grid form button {
-    width: 100%;
+.settings-stack input[type="time"]:focus,
+.settings-stack input[type="number"]:focus,
+.settings-stack input[type="email"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.settings-stack .form-group {
+    position: relative;
 }
 
 .settings-soft-box {
     border: 1px solid #dbe4f0;
     border-radius: 16px;
-    background: #f8fbff;
-    padding: 14px 16px;
+    background: linear-gradient(180deg, #f8fbff 0%, #f6f9fd 100%);
+    padding: 16px;
 }
 
 .settings-soft-box strong {
@@ -82,7 +112,19 @@
     margin: 0 0 0 18px;
     color: var(--muted);
     font-size: 13px;
-    line-height: 1.55;
+    line-height: 1.6;
+}
+
+.settings-action-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.settings-action-grid .btn,
+.settings-action-grid form,
+.settings-action-grid form button {
+    width: 100%;
 }
 
 .settings-account-grid {
@@ -96,7 +138,7 @@
     gap: 12px;
     align-items: center;
     border: 1px solid #dbe4f0;
-    background: #f8fbff;
+    background: linear-gradient(180deg, #f8fbff 0%, #f6f9fd 100%);
     border-radius: 14px;
     padding: 12px;
 }
@@ -120,6 +162,15 @@
     padding-top: 18px;
 }
 
+.settings-muted-note {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 12px;
+}
+
 @media (max-width: 980px) {
     .settings-utility-grid {
         grid-template-columns: 1fr;
@@ -140,6 +191,10 @@
 }
 
 @media (max-width: 640px) {
+    .settings-stack {
+        gap: 16px;
+    }
+
     .settings-account-line {
         grid-template-columns: 1fr;
         gap: 4px;
@@ -254,7 +309,7 @@
                     </form>
                 </div>
 
-                <p class="text-muted" style="margin-top: 12px; font-size: 13px;">
+                <p class="settings-muted-note">
                     Email sends the current PDF and CSV report to the alert recipient saved above.
                 </p>
             </div>
