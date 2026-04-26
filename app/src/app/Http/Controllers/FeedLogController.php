@@ -40,8 +40,12 @@ class FeedLogController extends Controller
 
         $validated['pig_id'] = $pig->id;
         $validated['cost'] = 0;
-        $validated['feeding_time'] = $validated['feeding_time'] ?: 'Assigned period';
-        $validated['status'] = $validated['status'] ?: 'ongoing';
+        $validated['feeding_time'] = trim((string) ($validated['feeding_time'] ?? '')) !== ''
+            ? trim((string) $validated['feeding_time'])
+            : 'Assigned period';
+        $validated['status'] = trim((string) ($validated['status'] ?? '')) !== ''
+            ? trim((string) $validated['status'])
+            : 'ongoing';
         $validated['notes'] = isset($validated['notes']) ? trim((string) $validated['notes']) : null;
         $validated['notes'] = $validated['notes'] === '' ? null : $validated['notes'];
 
@@ -87,8 +91,12 @@ class FeedLogController extends Controller
         ]);
 
         $validated['cost'] = 0;
-        $validated['feeding_time'] = $validated['feeding_time'] ?: 'Assigned period';
-        $validated['status'] = $validated['status'] ?: 'ongoing';
+        $validated['feeding_time'] = trim((string) ($validated['feeding_time'] ?? '')) !== ''
+            ? trim((string) $validated['feeding_time'])
+            : 'Assigned period';
+        $validated['status'] = trim((string) ($validated['status'] ?? '')) !== ''
+            ? trim((string) $validated['status'])
+            : 'ongoing';
         $validated['notes'] = isset($validated['notes']) ? trim((string) $validated['notes']) : null;
         $validated['notes'] = $validated['notes'] === '' ? null : $validated['notes'];
 
