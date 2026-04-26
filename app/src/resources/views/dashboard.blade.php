@@ -199,6 +199,51 @@
 
     <div class="dashboard-section">
         <div>
+            <div class="dashboard-section-title">Financial Snapshot</div>
+            <div class="dashboard-section-sub">Sale income, mortality loss, and recorded farm cost position.</div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="label">Sale Revenue</span>
+                    <span class="badge green">Income</span>
+                </div>
+                <div class="stat-value">₱ {{ number_format($totalRevenue, 2) }}</div>
+                <div class="stat-sub">Total recorded income from sold pigs.</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="label">Mortality Loss</span>
+                    <span class="badge red">Loss</span>
+                </div>
+                <div class="stat-value">₱ {{ number_format($totalLossValue, 2) }}</div>
+                <div class="stat-sub">Frozen value lost from dead pigs.</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="label">Care Liability</span>
+                    <span class="badge orange">Cost</span>
+                </div>
+                <div class="stat-value">₱ {{ number_format($totalCareLiability, 2) }}</div>
+                <div class="stat-sub">Recorded care/input cost attached to pigs.</div>
+            </div>
+
+            <div class="stat-card metric-card-highlight">
+                <div class="stat-top">
+                    <span class="label">Net Position</span>
+                    <span class="badge blue">Position</span>
+                </div>
+                <div class="stat-value">₱ {{ number_format($netPosition, 2) }}</div>
+                <div class="stat-sub">Active value + sales - mortality loss - operating cost.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-section">
+        <div>
             <div class="dashboard-section-title">Quick Actions</div>
             <div class="dashboard-section-sub">Common tasks for the handler.</div>
         </div>
