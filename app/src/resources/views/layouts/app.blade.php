@@ -131,21 +131,27 @@
         .nav {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 7px;
         }
 
         .nav a {
             color: #d7e0ee;
-            padding: 13px 14px;
-            border-radius: 16px;
+            padding: 12px 14px;
+            border-radius: 15px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 14px;
+            justify-content: flex-start;
+            gap: 10px;
             border: 1px solid transparent;
             transition: 0.18s ease;
             font-size: 14px;
             background: transparent;
+        }
+
+        .nav-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+            margin: 8px 8px;
         }
 
         .nav a span {
@@ -193,6 +199,53 @@
             color: #cbd5e1;
             font-size: 12px;
             line-height: 1.55;
+        }
+
+        .sidebar-note-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .sidebar-note-header h3 {
+            margin: 0;
+        }
+
+        .sidebar-status-pill {
+            font-size: 10px;
+            font-weight: 800;
+            color: #16a34a;
+            background: #dcfce7;
+            border-radius: 999px;
+            padding: 5px 8px;
+            white-space: nowrap;
+        }
+
+        .sidebar-status-list {
+            display: grid;
+            gap: 7px;
+            list-style: none;
+            color: #cbd5e1;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .sidebar-status-list li {
+            position: relative;
+            padding-left: 14px;
+        }
+
+        .sidebar-status-list li::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0.55em;
+            width: 5px;
+            height: 5px;
+            border-radius: 999px;
+            background: #60a5fa;
         }
 
         .content {
@@ -740,47 +793,51 @@
                 <p>Pig Health & Lifecycle Tracking System</p>
             </div>
 
-            <div class="nav-group-label">Navigation</div>
+            <div class="nav-group-label">Farm</div>
             <nav class="nav">
                 <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <span>Dashboard</span>
-                    <small>Overview</small>
                 </a>
 
                 <a href="{{ route('pigs.index') }}" class="{{ request()->routeIs('pigs.*') && ! request()->routeIs('pigs.create') ? 'active' : '' }}">
                     <span>Pigs</span>
-                    <small>Ear tags</small>
                 </a>
 
                 <a href="{{ route('reproduction-cycles.index') }}" class="{{ request()->routeIs('reproduction-cycles.*') ? 'active' : '' }}">
-                    <span>Breeding Records</span>
-                    <small>Reproduction</small>
-                </a>
-
-                <a href="{{ route('protocol-programs.index') }}" class="{{ request()->routeIs('protocol-programs.*') ? 'active' : '' }}">
-                    <span>Protocol Programs</span>
-                    <small>Shared rules</small>
+                    <span>Breeding</span>
                 </a>
 
                 <a href="{{ route('pens.index') }}" class="{{ request()->routeIs('pens.*') ? 'active' : '' }}">
                     <span>Pens</span>
-                    <small>Housing</small>
                 </a>
+
+                <div class="nav-divider"></div>
 
                 <a href="{{ route('pigs.create') }}" class="{{ request()->routeIs('pigs.create') ? 'active' : '' }}">
                     <span>Add Pig</span>
-                    <small>New record</small>
+                </a>
+
+                <a href="{{ route('protocol-programs.index') }}" class="{{ request()->routeIs('protocol-programs.*') ? 'active' : '' }}">
+                    <span>Medication Programs</span>
                 </a>
 
                 <a href="{{ route('settings.farm.edit') }}" class="{{ request()->routeIs('settings.*') ? 'active' : '' }}">
                     <span>Settings</span>
-                    <small>Farm config</small>
                 </a>
             </nav>
 
             <div class="sidebar-note">
-                <h3>System status</h3>
-                <p>Laravel backend is connected. The breeding module is now designed to track sow reproduction records, upcoming farrowing dates, and breeding-related cost exposure.</p>
+                <div class="sidebar-note-header">
+                    <h3>Farm System</h3>
+                    <span class="sidebar-status-pill">Ready</span>
+                </div>
+
+                <ul class="sidebar-status-list">
+                    <li>Pig records and pens are active.</li>
+                    <li>Breeding and piglet lineage are tracked.</li>
+                    <li>Medication programs follow farrowing dates.</li>
+                    <li>Reports are available in Settings.</li>
+                </ul>
             </div>
         </aside>
 
