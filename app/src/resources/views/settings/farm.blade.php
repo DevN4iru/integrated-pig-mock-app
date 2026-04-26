@@ -36,6 +36,41 @@
         <div class="panel-card">
             <div class="section-title">
                 <div>
+                    <h3>Account / Session</h3>
+                    <p>Current logged-in owner account. Logout is placed here to keep daily pages clean.</p>
+                </div>
+            </div>
+
+            @auth
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Signed in as</label>
+                        <input type="text" value="{{ auth()->user()->name }}" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" value="{{ auth()->user()->email }}" readonly>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <form
+                        method="POST"
+                        action="{{ route('logout') }}"
+                        style="display: inline-flex; margin: 0;"
+                        onsubmit="return confirm('Are you sure you want to log out of Pigstep?');"
+                    >
+                        @csrf
+                        <button type="submit" class="btn btn-danger">Logout</button>
+                    </form>
+                </div>
+            @endauth
+        </div>
+
+        <div class="panel-card">
+            <div class="section-title">
+                <div>
                     <h3>Global Price Per Kilo</h3>
                     <p>This value is used to auto-compute pig asset value: latest weight × price per kilo.</p>
                 </div>

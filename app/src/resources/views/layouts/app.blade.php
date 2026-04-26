@@ -814,11 +814,6 @@
                                 <span>{{ auth()->user()->name }}</span>
                                 <small>{{ auth()->user()->email }}</small>
                             </span>
-
-                            <form method="POST" action="{{ route('logout') }}" class="logout-form">
-                                @csrf
-                                <button type="submit" class="btn">Logout</button>
-                            </form>
                         @endauth
                     </div>
                 </header>
