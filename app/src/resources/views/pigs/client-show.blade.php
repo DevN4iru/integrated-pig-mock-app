@@ -20,6 +20,8 @@
             <a href="{{ route('health-logs.create', $pig) }}" class="btn primary">Update Weight</a>
             <a href="{{ route('feed-logs.create', $pig) }}" class="btn">Assign Feed</a>
             <a href="{{ route('pig-transfers.create', $pig) }}" class="btn">Transfer Pig</a>
+            <a href="{{ route('sales.create', $pig) }}" class="btn btn-warning">Record Sale</a>
+            <a href="{{ route('mortality.create', $pig) }}" class="btn btn-danger">Record Mortality</a>
 
             @if ($isFemaleTop)
                 <a href="{{ route('reproduction-cycles.create', $pig) }}" class="btn">Add Breeding Record</a>
@@ -86,6 +88,8 @@
             'pen',
             'healthLogs',
             'feedLogs',
+            'sales',
+            'mortalityLogs',
             'motherSow',
             'sireBoar',
             'birthCycle:id,actual_farrow_date',
@@ -128,6 +132,22 @@
         $assignedFeeds = $pig->feedLogs
             ->sortByDesc(fn ($feed) => sprintf('%s-%010d', (string) ($feed->start_feed_date ?? ''), (int) $feed->id))
             ->values();
+
+        $latestSale = $pig->sales
+            ->sortByDesc(fn ($sale) => sprintf(
+                '%s-%010d',
+                optional($sale->sold_date)->format('Y-m-d') ?? (string) $sale->sold_date,
+                (int) $sale->id
+            ))
+            ->first();
+
+        $latestMortality = $pig->mortalityLogs
+            ->sortByDesc(fn ($mortality) => sprintf(
+                '%s-%010d',
+                optional($mortality->death_date)->format('Y-m-d') ?? (string) $mortality->death_date,
+                (int) $mortality->id
+            ))
+            ->first();
 
         $breedingRecords = $pig->reproductionCyclesAsSow
             ->sortByDesc(fn ($cycle) => sprintf(
@@ -258,6 +278,106 @@
                     <strong>{{ $pig->birthCycle?->actual_farrow_date ? $pig->birthCycle->actual_farrow_date->format('Y-m-d') : '—' }}</strong>
                 </div>
             </div>
+        </div>
+
+        <div class="panel-card">
+            <div class="client-section-head">
+                <div>
+                    <h3>Sale / Mortality Records</h3>
+                    <p>Lifecycle records are kept visible for sold or dead pigs.</p>
+                </div>
+
+                @if (!$latestSale && !$latestMortality && !$pig->isOperationallyLocked())
+                    <div class="client-protocol-actions">
+                        <a href="{{ route('sales.create', $pig) }}" class="btn btn-warning">Record Sale</a>
+                        <a href="{{ route('mortality.create', $pig) }}" class="btn btn-danger">Record Mortality</a>
+                    </div>
+                @endif
+            </div>
+
+            @if ($latestSale)
+                <div class="client-info-grid">
+                    <div class="client-field">
+                        <label>Sale Date</label>
+                        <strong>{{ $latestSale->sold_date ? $latestSale->sold_date->toDateString() : '—' }}</strong>
+                    </div>
+
+                    <div class="client-field">
+                        <label>Final Sale Price</label>
+                        <strong>₱ {{ number_format((float) $latestSale->price, 2) }}</strong>
+                    </div>
+
+                    <div class="client-field">
+                        <label>Buyer</label>
+                        <strong>{{ $latestSale->buyer ?: '—' }}</strong>
+                    </div>
+
+                    <div class="client-field">
+                        <label>Weight at Sale</label>
+                        <strong>{{ $latestSale->weight_at_sale !== null ? number_format((float) $latestSale->weight_at_sale, 2) . ' kg' : '—' }}</strong>
+                    </div>
+
+                    <div class="client-field">
+                        <label>Price/kg Snapshot</label>
+                        <strong>{{ $latestSale->price_per_kg_at_sale !== null ? '₱ ' . number_format((float) $latestSale->price_per_kg_at_sale, 2) : '—' }}</strong>
+                    </div>
+
+                    <div class="client-field">
+                        <label>Recommended Price Snapshot</label>
+                        <strong>{{ $latestSale->recommended_price !== null ? '₱ ' . number_format((float) $latestSale->recommended_price, 2) : '—' }}</strong>
+                    </div>
+                </div>
+
+                @if (!$pig->trashed())
+                    <div class="form-actions" style="margin-top: 14px;">
+                        <a href="{{ route('sales.edit', [$pig, $latestSale]) }}" class="btn">Edit Sale Record</a>
+                    </div>
+                @endif
+            @endif
+
+            @if ($latestMortality)
+                <div class="client-info-grid" style="{{ $latestSale ? 'margin-top: 14px;' : '' }}">
+                    <div class="client-field">
+                        <label>Date of Death</label>
+                        <strong>{{ $latestMortality->death_date ? $latestMortality->death_date->toDateString() : '—' }}</strong>
+                    </div>
+
+                    <div class="client-field">
+                        <label>Cause</label>
+                        <strong>{{ $latestMortality->cause ?: '—' }}</strong>
+                    </div>
+
+                    <div class="client-field">
+                        <label>Loss Value Snapshot</label>
+                        <strong>{{ $latestMortality->loss_value !== null ? '₱ ' . number_format((float) $latestMortality->loss_value, 2) : '—' }}</strong>
+                    </div>
+
+                    <div class="client-field">
+                        <label>Weight at Death</label>
+                        <strong>{{ $latestMortality->weight_at_death !== null ? number_format((float) $latestMortality->weight_at_death, 2) . ' kg' : '—' }}</strong>
+                    </div>
+
+                    <div class="client-field">
+                        <label>Price/kg Snapshot</label>
+                        <strong>{{ $latestMortality->price_per_kg_at_death !== null ? '₱ ' . number_format((float) $latestMortality->price_per_kg_at_death, 2) : '—' }}</strong>
+                    </div>
+
+                    <div class="client-field">
+                        <label>Notes</label>
+                        <strong>{{ $latestMortality->notes ?: '—' }}</strong>
+                    </div>
+                </div>
+
+                @if (!$pig->trashed())
+                    <div class="form-actions" style="margin-top: 14px;">
+                        <a href="{{ route('mortality.edit', [$pig, $latestMortality]) }}" class="btn">Edit Mortality Record</a>
+                    </div>
+                @endif
+            @endif
+
+            @if (!$latestSale && !$latestMortality)
+                <div class="empty-state">No sale or mortality record yet.</div>
+            @endif
         </div>
 
         @if ($protocol)
