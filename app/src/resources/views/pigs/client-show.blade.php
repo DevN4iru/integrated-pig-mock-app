@@ -92,13 +92,16 @@
             ->sortByDesc(fn ($cycle) => sprintf('%s-%010d', optional($cycle->service_date)->format('Y-m-d') ?? (string) $cycle->service_date, (int) $cycle->id))
             ->values();
 
-        $latestSowCycle = $breedingRecords->first();
+        $latestActualFarrowingCycle = $breedingRecords
+            ->filter(fn ($cycle) => $cycle->actual_farrow_date !== null)
+            ->sortByDesc(fn ($cycle) => sprintf('%s-%010d', optional($cycle->actual_farrow_date)->format('Y-m-d') ?? '', (int) $cycle->id))
+            ->first();
+
         $isBornPigletProtocolCandidate = strtolower((string) $pig->pig_source) === 'birthed'
             && $pig->reproduction_cycle_id !== null
             && $breedingRecords->isEmpty();
         $isLactatingSowProtocolCandidate = strtolower((string) $pig->sex) === 'female'
-            && $latestSowCycle
-            && $latestSowCycle->actual_farrow_date !== null;
+            && $latestActualFarrowingCycle !== null;
 
         $protocol = ($isBornPigletProtocolCandidate || $isLactatingSowProtocolCandidate)
             ? $pig->protocol_summary
