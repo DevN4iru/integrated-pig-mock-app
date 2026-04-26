@@ -26,8 +26,7 @@
             @endif
         @endif
     @else
-        <form method="POST" action="{{ route('pigs.restore', $pig->id) }}" style="display:inline-block;"
-            onsubmit="return confirm('Restore this pig back to the active list?');">
+        <form method="POST" action="{{ route('pigs.restore', $pig->id) }}" style="display:inline-block;" onsubmit="return confirm('Restore this pig back to the active list?');">
             @csrf
             <button type="submit" class="btn">Restore</button>
         </form>
@@ -35,121 +34,24 @@
 @endsection
 
 @section('styles')
-.client-profile-stack {
-    display: grid;
-    gap: 20px;
-}
-
-.client-grid-two {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr);
-    gap: 20px;
-    align-items: start;
-}
-
-.client-info-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-}
-
-.client-field {
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: var(--panel-2);
-    padding: 13px;
-}
-
-.client-field label {
-    display: block;
-    color: var(--muted);
-    font-size: 12px;
-    margin-bottom: 4px;
-}
-
-.client-field strong {
-    display: block;
-    color: var(--text);
-    font-size: 15px;
-}
-
-.client-section-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 14px;
-}
-
-.client-section-head h3 {
-    margin: 0 0 4px;
-}
-
-.client-section-head p {
-    color: var(--muted);
-    font-size: 13px;
-}
-
-.client-list {
-    display: grid;
-    gap: 10px;
-}
-
-.client-row {
-    display: grid;
-    grid-template-columns: minmax(120px, 0.35fr) minmax(0, 1fr) auto;
-    gap: 12px;
-    align-items: center;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: #fff;
-    padding: 12px;
-}
-
-.client-row-main strong {
-    display: block;
-    margin-bottom: 3px;
-}
-
-.client-row-main span,
-.client-row-date,
-.client-muted {
-    color: var(--muted);
-    font-size: 13px;
-}
-
-.client-protocol-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-}
-
-.client-protocol-box {
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: var(--panel-2);
-    padding: 14px;
-}
-
-.client-protocol-box label {
-    color: var(--muted);
-    font-size: 12px;
-    display: block;
-    margin-bottom: 4px;
-}
-
-.client-protocol-box strong {
-    font-size: 24px;
-}
-
-@media (max-width: 980px) {
-    .client-grid-two,
-    .client-info-grid,
-    .client-protocol-grid,
-    .client-row {
-        grid-template-columns: 1fr;
-    }
-}
+.client-profile-stack { display: grid; gap: 20px; }
+.client-grid-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr); gap: 20px; align-items: start; }
+.client-info-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.client-field { border: 1px solid var(--line); border-radius: 14px; background: var(--panel-2); padding: 13px; }
+.client-field label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+.client-field strong { display: block; color: var(--text); font-size: 15px; }
+.client-section-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.client-section-head h3 { margin: 0 0 4px; }
+.client-section-head p { color: var(--muted); font-size: 13px; }
+.client-list { display: grid; gap: 10px; }
+.client-row { display: grid; grid-template-columns: minmax(120px, 0.35fr) minmax(0, 1fr) auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 14px; background: #fff; padding: 12px; }
+.client-row-main strong { display: block; margin-bottom: 3px; }
+.client-row-main span, .client-row-date, .client-muted { color: var(--muted); font-size: 13px; }
+.client-protocol-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.client-protocol-box { border: 1px solid var(--line); border-radius: 14px; background: var(--panel-2); padding: 14px; }
+.client-protocol-box label { color: var(--muted); font-size: 12px; display: block; margin-bottom: 4px; }
+.client-protocol-box strong { font-size: 24px; }
+@media (max-width: 980px) { .client-grid-two, .client-info-grid, .client-protocol-grid, .client-row { grid-template-columns: 1fr; } }
 @endsection
 
 @section('content')
@@ -192,13 +94,12 @@
         $protocolDueToday = collect($protocol['due_today'] ?? []);
         $protocolUpcoming = collect($protocol['upcoming'] ?? []);
         $protocolOverdue = collect($protocol['overdue'] ?? []);
+        $protocolOverdueIds = $protocolOverdue->pluck('rule_id')->map(fn ($id) => (string) $id)->all();
     @endphp
 
     <div class="client-profile-stack">
         @if ($pig->isOperationallyLocked())
-            <div class="flash error">
-                {{ $pig->operationalLockMessage('records') }}
-            </div>
+            <div class="flash error">{{ $pig->operationalLockMessage('records') }}</div>
         @endif
 
         <div class="panel-card">
@@ -211,30 +112,12 @@
             </div>
 
             <div class="client-info-grid">
-                <div class="client-field">
-                    <label>Breed</label>
-                    <strong>{{ $pig->breed ?: '—' }}</strong>
-                </div>
-                <div class="client-field">
-                    <label>Sex</label>
-                    <strong>{{ ucfirst((string) $pig->sex) ?: '—' }}</strong>
-                </div>
-                <div class="client-field">
-                    <label>Pen</label>
-                    <strong>{{ $penName }}</strong>
-                </div>
-                <div class="client-field">
-                    <label>Age</label>
-                    <strong>{{ $pig->age_display }}</strong>
-                </div>
-                <div class="client-field">
-                    <label>Date Added</label>
-                    <strong>{{ $dateAdded }}</strong>
-                </div>
-                <div class="client-field">
-                    <label>Current Weight</label>
-                    <strong>{{ $weight }}</strong>
-                </div>
+                <div class="client-field"><label>Breed</label><strong>{{ $pig->breed ?: '—' }}</strong></div>
+                <div class="client-field"><label>Sex</label><strong>{{ ucfirst((string) $pig->sex) ?: '—' }}</strong></div>
+                <div class="client-field"><label>Pen</label><strong>{{ $penName }}</strong></div>
+                <div class="client-field"><label>Age</label><strong>{{ $pig->age_display }}</strong></div>
+                <div class="client-field"><label>Date Added</label><strong>{{ $dateAdded }}</strong></div>
+                <div class="client-field"><label>Current Weight</label><strong>{{ $weight }}</strong></div>
             </div>
         </div>
 
@@ -248,18 +131,9 @@
                 </div>
 
                 <div class="client-protocol-grid">
-                    <div class="client-protocol-box">
-                        <label>Due Today</label>
-                        <strong>{{ $protocolDueToday->count() }}</strong>
-                    </div>
-                    <div class="client-protocol-box">
-                        <label>Upcoming</label>
-                        <strong>{{ $protocolUpcoming->count() }}</strong>
-                    </div>
-                    <div class="client-protocol-box">
-                        <label>Overdue</label>
-                        <strong>{{ $protocolOverdue->count() }}</strong>
-                    </div>
+                    <div class="client-protocol-box"><label>Due Today</label><strong>{{ $protocolDueToday->count() }}</strong></div>
+                    <div class="client-protocol-box"><label>Upcoming</label><strong>{{ $protocolUpcoming->count() }}</strong></div>
+                    <div class="client-protocol-box"><label>Overdue</label><strong>{{ $protocolOverdue->count() }}</strong></div>
                 </div>
 
                 @php
@@ -269,6 +143,10 @@
                 @if ($programItems->isNotEmpty())
                     <div class="client-list" style="margin-top: 14px;">
                         @foreach ($programItems as $item)
+                            @php
+                                $itemRuleId = (string) ($item['rule_id'] ?? '');
+                                $isOverdueItem = $itemRuleId !== '' && in_array($itemRuleId, $protocolOverdueIds, true);
+                            @endphp
                             <div class="client-row">
                                 <div class="client-row-date">
                                     {{ $item['due_start'] ?? '—' }}
@@ -280,8 +158,8 @@
                                     <strong>{{ $item['action'] ?? 'Medication item' }}</strong>
                                     <span>{{ $item['product_note'] ?? $item['dosage_note'] ?? 'Follow program guide.' }}</span>
                                 </div>
-                                <span class="badge {{ in_array($item, $protocolOverdue->all(), true) ? 'orange' : 'blue' }}">
-                                    {{ $item['execution_status'] ? ucfirst($item['execution_status']) : 'Pending' }}
+                                <span class="badge {{ $isOverdueItem ? 'orange' : 'blue' }}">
+                                    {{ ($item['execution_status'] ?? null) ? ucfirst((string) $item['execution_status']) : 'Pending' }}
                                 </span>
                             </div>
                         @endforeach
@@ -295,7 +173,7 @@
                 <div class="client-section-head">
                     <div>
                         <h3>Weight History</h3>
-                        <p>Dated weight records only. Health/sick records are not used in this client view.</p>
+                        <p>Dated weight records only.</p>
                     </div>
                     @if (!$pig->isOperationallyLocked())
                         <a href="{{ route('health-logs.create', $pig) }}" class="btn primary">Update Weight</a>
