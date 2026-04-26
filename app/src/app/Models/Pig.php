@@ -24,10 +24,15 @@ class Pig extends Model
         'date_added',
         'latest_weight',
         'asset_value',
+        'exclude_from_value_computation',
     ];
 
     protected $casts = [
         'age' => 'integer',
+        'date_added' => 'date',
+        'latest_weight' => 'decimal:2',
+        'asset_value' => 'decimal:2',
+        'exclude_from_value_computation' => 'boolean',
     ];
 
     protected $appends = [
@@ -366,6 +371,27 @@ class Pig extends Model
         return $this->reproductionCyclesAsSow()->exists();
     }
 
+    protected function linkedBirthActualFarrowDate(): ?Carbon
+    {
+        if ($this->reproduction_cycle_id === null) {
+            return null;
+        }
+
+        if ($this->relationLoaded('birthCycle')) {
+            return $this->birthCycle?->actual_farrow_date
+                ? Carbon::parse($this->birthCycle->actual_farrow_date)->startOfDay()
+                : null;
+        }
+
+        $birthCycle = $this->birthCycle()
+            ->whereNotNull('actual_farrow_date')
+            ->first(['id', 'actual_farrow_date']);
+
+        return $birthCycle?->actual_farrow_date
+            ? Carbon::parse($birthCycle->actual_farrow_date)->startOfDay()
+            : null;
+    }
+
     protected function approximateBirthAnchorDate(): ?Carbon
     {
         if (!$this->date_added) {
@@ -430,7 +456,7 @@ class Pig extends Model
 
     protected function qualifiesForLactatingSowProtocol(?ProtocolTemplate $template = null): bool
     {
-        if ($this->sex !== 'female') {
+        if (strtolower((string) $this->sex) !== 'female') {
             return false;
         }
 
@@ -447,6 +473,14 @@ class Pig extends Model
 
     protected function qualifiesForPigletProtocol(?ProtocolTemplate $template = null): bool
     {
+        if (strtolower((string) $this->pig_source) !== 'birthed') {
+            return false;
+        }
+
+        if ($this->reproduction_cycle_id === null) {
+            return false;
+        }
+
         if ($this->qualifiesForLactatingSowProtocol()) {
             return false;
         }
@@ -490,14 +524,14 @@ class Pig extends Model
         }
 
         if ($template->anchor_event === ProtocolTemplate::ANCHOR_BIRTH) {
-            return $this->approximateBirthAnchorDate();
+            return $this->linkedBirthActualFarrowDate();
         }
 
         if ($template->anchor_event === ProtocolTemplate::ANCHOR_FARROWING) {
             $cycle = $this->latestFarrowingCycle();
 
             return $cycle?->actual_farrow_date
-                ? Carbon::parse($cycle->actual_farrow_date)
+                ? Carbon::parse($cycle->actual_farrow_date)->startOfDay()
                 : null;
         }
 
@@ -511,7 +545,7 @@ class Pig extends Model
         }
 
         return match ($rule->condition_key) {
-            ProtocolRule::CONDITION_SEX_MALE => $this->sex === 'male',
+            ProtocolRule::CONDITION_SEX_MALE => strtolower((string) $this->sex) === 'male',
             default => true,
         };
     }
@@ -569,10 +603,10 @@ class Pig extends Model
                 continue;
             }
 
-            $start = $anchorDate->copy()->addDays((int) $rule->day_offset_start);
+            $start = $anchorDate->copy()->addDays((int) $rule->day_offset_start)->startOfDay();
             $end = $rule->day_offset_end !== null
-                ? $anchorDate->copy()->addDays((int) $rule->day_offset_end)
-                : $start;
+                ? $anchorDate->copy()->addDays((int) $rule->day_offset_end)->startOfDay()
+                : $start->copy();
 
             $occurrenceKey = $rule->id . '|' . $start->toDateString();
             $execution = $executionMap[$occurrenceKey] ?? null;
@@ -934,6 +968,10 @@ class Pig extends Model
 
     public function getComputedAssetValueAttribute()
     {
+        if ((bool) ($this->exclude_from_value_computation ?? false)) {
+            return 0;
+        }
+
         $weight = $this->computed_weight;
 
         if ($weight === null || $weight === '') {
@@ -946,6 +984,10 @@ class Pig extends Model
     public function getActiveLiveValueAttribute(): float
     {
         if (!$this->is_active_lifecycle) {
+            return 0.0;
+        }
+
+        if ((bool) ($this->exclude_from_value_computation ?? false)) {
             return 0.0;
         }
 
