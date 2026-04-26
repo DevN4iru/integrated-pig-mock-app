@@ -55,6 +55,17 @@
 .client-protocol-box strong { font-size: 24px; }
 .client-protocol-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
 .client-protocol-actions form { margin: 0; }
+.client-protocol-history { margin-top: 14px; border: 1px solid #dbe4f0; border-radius: 16px; background: #fff; overflow: hidden; }
+.client-protocol-history summary { list-style: none; cursor: pointer; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-weight: 800; color: var(--text); background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%); }
+.client-protocol-history summary::-webkit-details-marker { display: none; }
+.client-protocol-history summary small { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; font-weight: 500; }
+.client-protocol-history summary::after { content: "View"; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; font-size: 12px; color: var(--primary); background: #f8fbff; }
+.client-protocol-history[open] summary::after { content: "Hide"; }
+.client-protocol-history-list { display: grid; gap: 10px; padding: 14px; border-top: 1px solid #e2e8f0; background: #fbfdff; }
+.client-history-row { display: grid; grid-template-columns: minmax(120px, 0.25fr) minmax(0, 1fr) auto; gap: 12px; align-items: center; border: 1px solid #dbe4f0; border-radius: 14px; background: #fff; padding: 12px; }
+.client-history-row strong { display: block; color: var(--text); margin-bottom: 3px; }
+.client-history-row span { display: block; color: var(--muted); font-size: 13px; line-height: 1.35; }
+.client-history-date { color: var(--muted); font-size: 13px; }
 .client-value-toggle { margin-top: 14px; border: 1px solid var(--line); border-radius: 14px; background: #fff; padding: 14px; display: flex; justify-content: space-between; gap: 14px; align-items: center; }
 .client-value-toggle h4 { margin: 0 0 4px; }
 .client-value-toggle p { color: var(--muted); font-size: 13px; margin: 0; }
@@ -74,6 +85,15 @@
     .client-protocol-actions,
     .client-value-form {
         justify-content: flex-start;
+    }
+
+    .client-history-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .client-protocol-history summary {
+        align-items: flex-start;
     }
 
     .client-value-toggle {
@@ -168,6 +188,15 @@
         $protocolUpcoming = collect($protocol['upcoming'] ?? []);
         $protocolOverdue = collect($protocol['overdue'] ?? []);
         $protocolOverdueIds = $protocolOverdue->pluck('rule_id')->map(fn ($id) => (string) $id)->all();
+
+        $protocolHistory = $pig->protocolExecutions
+            ->filter(fn ($execution) => strtolower((string) $execution->status) === 'completed')
+            ->sortByDesc(fn ($execution) => sprintf(
+                '%s-%010d',
+                optional($execution->executed_date)->format('Y-m-d') ?? (string) ($execution->executed_date ?? $execution->scheduled_for_date ?? ''),
+                (int) $execution->id
+            ))
+            ->values();
     @endphp
 
     <div class="client-profile-stack">
@@ -477,6 +506,46 @@
                 @else
                     <div class="empty-state" style="margin-top: 14px;">No pending medication program items.</div>
                 @endif
+
+                <details class="client-protocol-history">
+                    <summary>
+                        <span>
+                            Protocol History
+                            <small>Completed medication program items for this pig.</small>
+                        </span>
+                    </summary>
+
+                    @if ($protocolHistory->isEmpty())
+                        <div class="client-protocol-history-list">
+                            <div class="empty-state">No completed protocol items yet.</div>
+                        </div>
+                    @else
+                        <div class="client-protocol-history-list">
+                            @foreach ($protocolHistory as $historyItem)
+                                <div class="client-history-row">
+                                    <div class="client-history-date">
+                                        {{ $historyItem->executed_date ? $historyItem->executed_date->toDateString() : ($historyItem->scheduled_for_date ? $historyItem->scheduled_for_date->toDateString() : '—') }}
+                                    </div>
+
+                                    <div>
+                                        <strong>{{ $historyItem->rule?->action ?? 'Protocol item' }}</strong>
+                                        <span>
+                                            {{ $historyItem->actual_product_name ?: ($historyItem->rule?->product_note ?? 'No product recorded') }}
+                                            @if ($historyItem->actual_dose)
+                                                · {{ $historyItem->actual_dose }}
+                                            @endif
+                                            @if ($historyItem->notes)
+                                                · {{ $historyItem->notes }}
+                                            @endif
+                                        </span>
+                                    </div>
+
+                                    <span class="badge green">Done</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </details>
             </div>
         @endif
 
