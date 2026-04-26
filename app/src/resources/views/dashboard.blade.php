@@ -97,10 +97,88 @@
 }
 
 @media (max-width: 700px) {
+    .dashboard-stack {
+        gap: 18px;
+    }
+
+    .dashboard-section {
+        gap: 12px;
+    }
+
+    .dashboard-section-title {
+        font-size: 17px;
+        line-height: 1.2;
+    }
+
+    .dashboard-section-sub {
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
     .dashboard-grid,
     .dashboard-grid-three,
     .dashboard-row {
         grid-template-columns: 1fr;
+    }
+
+    .dashboard-grid,
+    .dashboard-grid-three {
+        gap: 12px;
+    }
+
+    .stat-card {
+        padding: 16px;
+    }
+
+    .stat-top {
+        gap: 8px;
+    }
+
+    .stat-value {
+        font-size: 26px;
+        line-height: 1.1;
+        overflow-wrap: anywhere;
+    }
+
+    .stat-sub {
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .dashboard-quick-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .dashboard-quick-actions .btn,
+    .dashboard-row .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .dashboard-row {
+        align-items: stretch;
+        padding: 14px;
+    }
+
+    .dashboard-row strong {
+        overflow-wrap: anywhere;
+    }
+
+    .dashboard-note {
+        font-size: 12px;
+        line-height: 1.45;
+    }
+}
+
+@media (max-width: 420px) {
+    .stat-value {
+        font-size: 24px;
+    }
+
+    .badge {
+        font-size: 11px;
     }
 }
 @endsection
