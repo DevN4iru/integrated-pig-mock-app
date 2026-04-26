@@ -66,7 +66,98 @@
 }
 
 .pen-group {
-    margin-bottom: 28px;
+    margin-bottom: 18px;
+    padding: 0;
+    overflow: hidden;
+    border-color: #dbe4f0;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055);
+}
+
+.pen-group::before {
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), rgba(37, 99, 235, 0.18), transparent);
+}
+
+.pen-group summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 18px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    border-bottom: 1px solid transparent;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.pen-group summary::-webkit-details-marker {
+    display: none;
+}
+
+.pen-group[open] summary {
+    border-bottom-color: #e2e8f0;
+}
+
+.pen-category-title {
+    display: grid;
+    gap: 4px;
+}
+
+.pen-category-title h3 {
+    font-size: 19px;
+    letter-spacing: -0.02em;
+}
+
+.pen-category-title p {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.pen-category-preview {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.pen-preview-pill {
+    border: 1px solid #dbe4f0;
+    background: #f8fbff;
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.pen-preview-pill.strong {
+    color: var(--accent);
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.pen-group-body {
+    padding: 18px;
+}
+
+.pen-group-toggle {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--accent);
+    background: #fff;
+}
+
+.pen-group summary .pen-group-toggle::after {
+    content: "View";
+}
+
+.pen-group[open] summary .pen-group-toggle::after {
+    content: "Hide";
 }
 
 .pen-card {
@@ -285,6 +376,20 @@
         grid-template-columns: 1fr;
     }
 
+    .pen-group summary {
+        display: grid;
+        grid-template-columns: 1fr;
+        padding: 16px;
+    }
+
+    .pen-category-preview {
+        justify-content: flex-start;
+    }
+
+    .pen-group-body {
+        padding: 14px;
+    }
+
     .pen-heat-card .btn,
     .pen-heat-card form,
     .pen-heat-card input,
@@ -357,18 +462,33 @@
                 $typePens = $penGroups[$type] ?? collect();
             @endphp
 
-            <div class="panel-card pen-group">
-                <div class="section-title">
-                    <div>
-                        <h3>{{ $type }}</h3>
-                        <p>Pens classified under {{ strtolower($type) }}.</p>
-                    </div>
-                </div>
+            @php
+                $categoryPenCount = $typePens->count();
+                $categoryActivePens = $typePens->filter(fn ($pen) => $pen->occupiedCount() > 0)->count();
+                $categoryPigCount = $typePens->sum(fn ($pen) => $pen->occupiedCount());
+                $categoryCapacity = $typePens->sum(fn ($pen) => (int) $pen->capacity);
+            @endphp
 
-                @if ($typePens->isEmpty())
-                    <div class="empty-state">No {{ strtolower($type) }} pens yet.</div>
-                @else
-                    <div class="table-wrap">
+            <details class="panel-card pen-group" {{ $typePens->isNotEmpty() ? 'open' : '' }}>
+                <summary>
+                    <div class="pen-category-title">
+                        <h3>{{ $type }}</h3>
+                        <p>{{ $categoryActivePens }} active pen(s) • {{ $categoryPigCount }} total pig(s) in {{ strtolower($type) }} • {{ $categoryCapacity }} total slot(s)</p>
+                    </div>
+
+                    <div class="pen-category-preview">
+                        <span class="pen-preview-pill strong">{{ $categoryPenCount }} pen(s)</span>
+                        <span class="pen-preview-pill">{{ $categoryPigCount }} pig(s)</span>
+                        <span class="pen-preview-pill">{{ $categoryCapacity }} capacity</span>
+                        <span class="pen-group-toggle"></span>
+                    </div>
+                </summary>
+
+                <div class="pen-group-body">
+                    @if ($typePens->isEmpty())
+                        <div class="empty-state">No {{ strtolower($type) }} pens yet.</div>
+                    @else
+                        <div class="table-wrap">
                         <table class="data-table">
                             <thead>
                                 <tr>
@@ -446,9 +566,10 @@
                                 @endforeach
                             </tbody>
                         </table>
-                    </div>
-                @endif
-            </div>
+                        </div>
+                    @endif
+                </div>
+            </details>
         @endforeach
     </div>
 
@@ -473,18 +594,33 @@
                 $typePens = $penGroups[$type] ?? collect();
             @endphp
 
-            <div class="panel-card pen-group">
-                <div class="section-title">
-                    <div>
-                        <h3>{{ $type }}</h3>
-                        <p>Heatmap grid for {{ strtolower($type) }} pens.</p>
-                    </div>
-                </div>
+            @php
+                $categoryPenCount = $typePens->count();
+                $categoryActivePens = $typePens->filter(fn ($pen) => $pen->occupiedCount() > 0)->count();
+                $categoryPigCount = $typePens->sum(fn ($pen) => $pen->occupiedCount());
+                $categoryCapacity = $typePens->sum(fn ($pen) => (int) $pen->capacity);
+            @endphp
 
-                @if ($typePens->isEmpty())
-                    <div class="empty-state">No {{ strtolower($type) }} pens yet.</div>
-                @else
-                    <div class="pen-heat-grid">
+            <details class="panel-card pen-group" {{ $typePens->isNotEmpty() ? 'open' : '' }}>
+                <summary>
+                    <div class="pen-category-title">
+                        <h3>{{ $type }}</h3>
+                        <p>{{ $categoryActivePens }} active pen(s) • {{ $categoryPigCount }} total pig(s) in {{ strtolower($type) }} • {{ $categoryCapacity }} total slot(s)</p>
+                    </div>
+
+                    <div class="pen-category-preview">
+                        <span class="pen-preview-pill strong">{{ $categoryPenCount }} pen(s)</span>
+                        <span class="pen-preview-pill">{{ $categoryPigCount }} pig(s)</span>
+                        <span class="pen-preview-pill">{{ $categoryCapacity }} capacity</span>
+                        <span class="pen-group-toggle"></span>
+                    </div>
+                </summary>
+
+                <div class="pen-group-body">
+                    @if ($typePens->isEmpty())
+                        <div class="empty-state">No {{ strtolower($type) }} pens yet.</div>
+                    @else
+                        <div class="pen-heat-grid">
                         @foreach ($typePens as $pen)
                             @php
                                 $occupied = $pen->occupiedCount();
@@ -549,9 +685,10 @@
                                 </form>
                             </div>
                         @endforeach
-                    </div>
-                @endif
-            </div>
+                        </div>
+                    @endif
+                </div>
+            </details>
         @endforeach
     </div>
 
