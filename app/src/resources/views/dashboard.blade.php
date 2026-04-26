@@ -360,7 +360,7 @@
         <summary>
             <span>
                 View Financial Details
-                <small>Show sale income, mortality loss, and recorded costs.</small>
+                <small>Show sale income, mortality loss, and net farm position.</small>
             </span>
         </summary>
 
@@ -377,11 +377,17 @@
                 <div class="dashboard-detail-note">Frozen value lost from dead pigs.</div>
             </div>
 
-            <div class="dashboard-detail-row">
-                <div class="dashboard-detail-label">Recorded Costs</div>
-                <div class="dashboard-detail-value">₱ {{ number_format($totalOperatingCost, 2) }}</div>
-                <div class="dashboard-detail-note">Costs saved from breeding and medication program records.</div>
-            </div>
+            {{--
+                Future advanced accounting row.
+                Kept for future client update if total recorded-cost visibility is requested again.
+                Hidden for now because current client-facing recorded costs are effectively represented by Breeding Cost.
+
+                <div class="dashboard-detail-row">
+                    <div class="dashboard-detail-label">Recorded Costs</div>
+                    <div class="dashboard-detail-value">₱ {{ number_format($totalOperatingCost, 2) }}</div>
+                    <div class="dashboard-detail-note">Currently includes recorded breeding costs.</div>
+                </div>
+            --}}
 
             <div class="dashboard-detail-row">
                 <div class="dashboard-detail-label">Net Position</div>
