@@ -2,29 +2,13 @@
 
 @section('title', 'Breeding Case')
 @section('page_title', 'Breeding Case')
-@section('page_subtitle', 'Parent case summary, append-only progress updates, attempt history, and piglet lineage flow.')
+@section('page_subtitle', 'Breeding case summary, progress updates, attempts, and piglet registration.')
 
 @section('top_actions')
-    @php
-        $registeredBornPigletsCount = (int) ($cycle->born_piglets_count ?? 0);
-        $canRegisterBornPigletsTop = $cycle->actual_farrow_date && (int) ($cycle->born_alive ?? 0) > 0 && $registeredBornPigletsCount === 0;
-        $canStartNextAttemptTop = $cycle->display_status === \App\Models\ReproductionCycle::STATUS_RETURNED_TO_HEAT;
-        $nextAttemptNumberTop = $cycle->current_attempt_number + 1;
-    @endphp
-
     <a href="{{ route('reproduction-cycles.index') }}" class="btn">Back to Breeding</a>
 
     @if($cycle->sow)
         <a href="{{ route('pigs.show', $cycle->sow) }}" class="btn">Open Sow Profile</a>
-    @endif
-
-    @if($canStartNextAttemptTop)
-        <a href="{{ route('reproduction-cycles.attempts.create', $cycle) }}" class="btn primary">Start Attempt {{ $nextAttemptNumberTop }}</a>
-        <a href="{{ route('reproduction-cycles.show', ['reproductionCycle' => $cycle, 'event_type' => \App\Models\ReproductionCycleUpdate::EVENT_CYCLE_CLOSED]) }}#progress-update-card" class="btn">Quick Close Cycle</a>
-    @endif
-
-    @if($canRegisterBornPigletsTop)
-        <a href="{{ route('pigs.create-born-batch', $cycle) }}" class="btn primary">Register Born Piglets</a>
     @endif
 
     <a href="{{ route('reproduction-cycles.edit', $cycle) }}" class="btn">Edit Metadata</a>
@@ -115,6 +99,144 @@
     background: #fbfdff;
 }
 
+.case-grid > .panel-card,
+.case-grid-two > .panel-card {
+    border-color: #dbe4f0;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055);
+    position: relative;
+    overflow: hidden;
+}
+
+.case-grid > .panel-card::before,
+.case-grid-two > .panel-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), rgba(37, 99, 235, 0.18), transparent);
+}
+
+.case-grid .section-title {
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 18px;
+}
+
+.case-status-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.case-next-step {
+    border: 1px solid #bfdbfe;
+    border-radius: 16px;
+    padding: 16px;
+    background: #eff6ff;
+    margin-bottom: 16px;
+}
+
+.case-next-step strong {
+    display: block;
+    color: #1e3a8a;
+    margin-bottom: 6px;
+}
+
+.case-next-step p {
+    color: #1e40af;
+    font-size: 13px;
+    line-height: 1.45;
+    margin-bottom: 12px;
+}
+
+.case-action-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.case-guide-toggle {
+    border: 1px solid #dbe4f0;
+    border-radius: 16px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.case-guide-toggle summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: center;
+    font-weight: 800;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.case-guide-toggle summary::-webkit-details-marker {
+    display: none;
+}
+
+.case-guide-toggle summary small {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 3px;
+}
+
+.case-guide-toggle summary::after {
+    content: "View";
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 12px;
+    color: var(--primary);
+    background: #f8fbff;
+}
+
+.case-guide-toggle[open] summary::after {
+    content: "Hide";
+}
+
+.case-guide-body {
+    display: grid;
+    gap: 10px;
+    padding: 14px;
+    border-top: 1px solid #e2e8f0;
+    background: #fbfdff;
+}
+
+.case-guide-row {
+    border: 1px solid #dbe4f0;
+    border-radius: 14px;
+    background: #fff;
+    padding: 12px;
+}
+
+.case-guide-row strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.case-guide-row span {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.timeline-item {
+    border-color: #dbe4f0;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.035);
+}
+
+.timeline-field {
+    border-color: #dbe4f0;
+    background: linear-gradient(180deg, #f8fbff 0%, #f6f9fd 100%);
+}
+
+
 @media (max-width: 1200px) {
     .case-grid-two,
     .timeline-fields {
@@ -174,7 +296,7 @@
                     <p>This parent record stores the latest state of the breeding case and the current active attempt metadata.</p>
                 </div>
 
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <div class="case-status-badges">
                     <span class="badge {{ $statusBadgeClass }}">{{ $cycle->status_label }}</span>
                     <span class="badge {{ $pregnancyBadgeClass }}">{{ $cycle->pregnancy_result_label }}</span>
                     <span class="badge blue">Attempt {{ $cycle->current_attempt_number }}</span>
@@ -207,7 +329,7 @@
 
             @if($canRegisterBornPiglets)
                 <div class="flash success" style="margin-bottom: 16px;">
-                    Farrowing is recorded with <strong>{{ (int) $cycle->born_alive }}</strong> born-alive piglet(s). Continue the workflow by clicking <strong>Register Born Piglets</strong>.
+                    Farrowing is recorded with <strong>{{ (int) $cycle->born_alive }}</strong> born-alive piglet(s). Use the <strong>Available Next Step</strong> box below to register the piglets.
                 </div>
             @endif
 
@@ -308,29 +430,46 @@
                 <div class="panel-card" style="height: fit-content;">
                     <div class="section-title">
                         <div>
-                            <h3>Workflow Note</h3>
-                            <p>Flow A with retry attempts is enforced in this breeding case.</p>
+                            <h3>Breeding Case Guide</h3>
+                            <p>How this case should be used.</p>
                         </div>
                     </div>
 
-                    <div class="summary-note">
-                        Pregnancy check records the diagnosis. Returned to heat is a separate event. Once the sow is returned to heat, you can either close the parent case or start the next attempt inside the same case. Projected farrow stays hidden until the case is pregnant.
-                    </div>
+                    <details class="case-guide-toggle">
+                        <summary>
+                            <span>
+                                View Case Guide
+                                <small>Explains attempts, pregnancy updates, farrowing, and piglet registration.</small>
+                            </span>
+                        </summary>
 
-                    <div class="flow-note">
-                        Breeding exposure now follows this rule: <strong>service / handling cost + semen cost</strong>. Progress-update added cost is only the service-side cost, while semen stays tied to service-attempt setup.
-                    </div>
+                        <div class="case-guide-body">
+                            <div class="case-guide-row">
+                                <strong>What is an attempt?</strong>
+                                <span>An attempt is one breeding service inside this same parent case. Attempt 1 is the first service. If the sow returns to heat, the next service becomes Attempt 2 inside the same case.</span>
+                            </div>
 
-                    @if($canStartNextAttempt)
-                        <div class="action-card" style="margin-top:16px;">
-                            <strong>Ready for Attempt {{ $nextAttemptNumber }}</strong>
-                            <p class="summary-note" style="margin-top:8px; margin-bottom:12px;">The previous attempt ended in return to heat. Start the next attempt with copied defaults, or quick-close this parent case if breeding will stop here.</p>
-                            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                                <a href="{{ route('reproduction-cycles.attempts.create', $cycle) }}" class="btn primary">Start Attempt {{ $nextAttemptNumber }}</a>
-                                <a href="{{ route('reproduction-cycles.show', ['reproductionCycle' => $cycle, 'event_type' => \App\Models\ReproductionCycleUpdate::EVENT_CYCLE_CLOSED]) }}#progress-update-card" class="btn">Quick Close Cycle</a>
+                            <div class="case-guide-row">
+                                <strong>Why keep attempts together?</strong>
+                                <span>This keeps the sow’s breeding story clean: service, pregnancy check, return-to-heat, retry, farrowing, and piglets all stay under one parent record instead of scattered duplicate records.</span>
+                            </div>
+
+                            <div class="case-guide-row">
+                                <strong>Pregnancy and return to heat</strong>
+                                <span>Pregnancy check records the diagnosis. Returned to heat is a separate progress event. Once returned to heat is recorded, the case can either be closed or continued with the next attempt.</span>
+                            </div>
+
+                            <div class="case-guide-row">
+                                <strong>Farrowing</strong>
+                                <span>Actual farrow date starts the sow and piglet medication schedule. Future farrow dates are blocked to protect protocol timing.</span>
+                            </div>
+
+                            <div class="case-guide-row">
+                                <strong>Registering piglets</strong>
+                                <span>Born piglets should be registered from this farrowed case. That links each piglet to the dam, birth case, lineage, and medication program.</span>
                             </div>
                         </div>
-                    @endif
+                    </details>
                 </div>
             </div>
         </div>
@@ -343,6 +482,25 @@
                         <p>Append a new event to the breeding case timeline. Each event has its own allowed fields.</p>
                     </div>
                 </div>
+
+                @if($canRegisterBornPiglets || $canStartNextAttempt)
+                    <div class="case-next-step">
+                        @if($canRegisterBornPiglets)
+                            <strong>Available Next Step: Register Born Piglets</strong>
+                            <p>This farrowing has {{ (int) $cycle->born_alive }} born-alive piglet(s). Register them here so lineage, birth case, and medication program tracking are connected correctly.</p>
+                            <div class="case-action-row">
+                                <a href="{{ route('pigs.create-born-batch', $cycle) }}" class="btn primary">Register Born Piglets</a>
+                            </div>
+                        @elseif($canStartNextAttempt)
+                            <strong>Available Next Step: Start Attempt {{ $nextAttemptNumber }}</strong>
+                            <p>The sow returned to heat. Continue this same parent case with the next attempt, or close the case if breeding will stop here.</p>
+                            <div class="case-action-row">
+                                <a href="{{ route('reproduction-cycles.attempts.create', $cycle) }}" class="btn primary">Start Attempt {{ $nextAttemptNumber }}</a>
+                                <a href="{{ route('reproduction-cycles.show', ['reproductionCycle' => $cycle, 'event_type' => \App\Models\ReproductionCycleUpdate::EVENT_CYCLE_CLOSED]) }}#progress-update-card" class="btn">Quick Close Cycle</a>
+                            </div>
+                        @endif
+                    </div>
+                @endif
 
                 @if($canAddProgress)
                     @include('reproduction-cycle-updates._form', [
