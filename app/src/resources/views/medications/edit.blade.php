@@ -2,7 +2,7 @@
 
 @section('title', 'Edit Manual Medication')
 @section('page_title', 'Edit Manual Medication')
-@section('page_subtitle', 'Update an unscheduled or ad hoc medication record for this pig.')
+@section('page_subtitle', 'Update this manual medication record for this pig.')
 
 @section('top_actions')
     <a href="{{ route('pigs.show', $pig) }}" class="btn">Back</a>
@@ -13,27 +13,24 @@
     <h3>Edit Manual Medication</h3>
 
     <div class="flash" style="margin: 14px 0 18px;">
-        This screen is for <strong>manual non-protocol care</strong> only. Protocol-scheduled medication must be updated from <strong>Protocol Schedule</strong> on the pig profile.
+        This screen is for <strong>manual medication records</strong>. Medication cost is not tracked in the client view.
     </div>
 
     <form method="POST" action="{{ route('medications.update', [$pig, $medication]) }}">
         @csrf
         @method('PUT')
 
+        <input type="hidden" name="cost" value="0">
+
         <div class="form-grid">
             <div class="form-group">
                 <label>Medication Name</label>
-                <input type="text" name="medication_name" value="{{ old('medication_name', $medication->medication_name) }}" required>
+                <input type="text" name="medication_name" value="{{ old('medication_name', $medication->medication_name) }}" required autofocus>
             </div>
 
             <div class="form-group">
                 <label>Dosage</label>
                 <input type="text" name="dosage" value="{{ old('dosage', $medication->dosage) }}" required>
-            </div>
-
-            <div class="form-group">
-                <label>Cost (₱)</label>
-                <input type="number" step="0.01" min="0" name="cost" value="{{ old('cost', $medication->cost ?? 0) }}" required>
             </div>
 
             <div class="form-group">
@@ -43,7 +40,7 @@
 
             <div class="form-group full">
                 <label>Notes</label>
-                <textarea name="notes">{{ old('notes', $medication->notes) }}</textarea>
+                <textarea name="notes" placeholder="Optional notes about this medication record.">{{ old('notes', $medication->notes) }}</textarea>
             </div>
         </div>
 
