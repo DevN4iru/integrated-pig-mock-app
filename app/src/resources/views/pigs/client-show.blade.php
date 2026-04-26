@@ -51,7 +51,9 @@
 .client-protocol-box { border: 1px solid var(--line); border-radius: 14px; background: var(--panel-2); padding: 14px; }
 .client-protocol-box label { color: var(--muted); font-size: 12px; display: block; margin-bottom: 4px; }
 .client-protocol-box strong { font-size: 24px; }
-@media (max-width: 980px) { .client-grid-two, .client-info-grid, .client-protocol-grid, .client-row { grid-template-columns: 1fr; } }
+.client-protocol-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.client-protocol-actions form { margin: 0; }
+@media (max-width: 980px) { .client-grid-two, .client-info-grid, .client-protocol-grid, .client-row { grid-template-columns: 1fr; } .client-protocol-actions { justify-content: flex-start; } }
 @endsection
 
 @section('content')
@@ -90,7 +92,18 @@
             ->sortByDesc(fn ($cycle) => sprintf('%s-%010d', optional($cycle->service_date)->format('Y-m-d') ?? (string) $cycle->service_date, (int) $cycle->id))
             ->values();
 
-        $protocol = $pig->protocol_summary;
+        $latestSowCycle = $breedingRecords->first();
+        $isBornPigletProtocolCandidate = strtolower((string) $pig->pig_source) === 'birthed'
+            && $pig->reproduction_cycle_id !== null
+            && $breedingRecords->isEmpty();
+        $isLactatingSowProtocolCandidate = strtolower((string) $pig->sex) === 'female'
+            && $latestSowCycle
+            && $latestSowCycle->actual_farrow_date !== null;
+
+        $protocol = ($isBornPigletProtocolCandidate || $isLactatingSowProtocolCandidate)
+            ? $pig->protocol_summary
+            : null;
+
         $protocolDueToday = collect($protocol['due_today'] ?? []);
         $protocolUpcoming = collect($protocol['upcoming'] ?? []);
         $protocolOverdue = collect($protocol['overdue'] ?? []);
@@ -126,7 +139,14 @@
                 <div class="client-section-head">
                     <div>
                         <h3>Medication Program</h3>
-                        <p>Only piglet and lactating sow programs appear here.</p>
+                        <p>
+                            @if ($isBornPigletProtocolCandidate)
+                                This program started from this registered piglet's birth date.
+                            @else
+                                This program started from the sow's recorded farrowing date.
+                            @endif
+                            Click <strong>Mark Done</strong> after the item is performed.
+                        </p>
                     </div>
                 </div>
 
@@ -146,6 +166,13 @@
                             @php
                                 $itemRuleId = (string) ($item['rule_id'] ?? '');
                                 $isOverdueItem = $itemRuleId !== '' && in_array($itemRuleId, $protocolOverdueIds, true);
+                                $executionStatus = $item['execution_status'] ?? null;
+                                $productForCompletion = trim((string) ($item['product_note'] ?? '')) !== ''
+                                    ? $item['product_note']
+                                    : ($item['action'] ?? 'Protocol item');
+                                $doseForCompletion = trim((string) ($item['dosage_note'] ?? '')) !== ''
+                                    ? $item['dosage_note']
+                                    : 'Recorded';
                             @endphp
                             <div class="client-row">
                                 <div class="client-row-date">
@@ -158,12 +185,31 @@
                                     <strong>{{ $item['action'] ?? 'Medication item' }}</strong>
                                     <span>{{ $item['product_note'] ?? $item['dosage_note'] ?? 'Follow program guide.' }}</span>
                                 </div>
-                                <span class="badge {{ $isOverdueItem ? 'orange' : 'blue' }}">
-                                    {{ ($item['execution_status'] ?? null) ? ucfirst((string) $item['execution_status']) : 'Pending' }}
-                                </span>
+                                <div class="client-protocol-actions">
+                                    <span class="badge {{ $isOverdueItem ? 'orange' : 'blue' }}">
+                                        {{ $executionStatus ? ucfirst((string) $executionStatus) : 'Pending' }}
+                                    </span>
+
+                                    @if (!$pig->isOperationallyLocked())
+                                        <form method="POST" action="{{ route('protocol-executions.upsert', $pig) }}">
+                                            @csrf
+                                            <input type="hidden" name="protocol_rule_id" value="{{ $item['rule_id'] }}">
+                                            <input type="hidden" name="scheduled_for_date" value="{{ $item['due_start'] }}">
+                                            <input type="hidden" name="status" value="completed">
+                                            <input type="hidden" name="executed_date" value="{{ now()->toDateString() }}">
+                                            <input type="hidden" name="actual_product_name" value="{{ $productForCompletion }}">
+                                            <input type="hidden" name="actual_dose" value="{{ $doseForCompletion }}">
+                                            <input type="hidden" name="actual_cost" value="0">
+                                            <input type="hidden" name="notes" value="Completed from client pig profile.">
+                                            <button type="submit" class="btn primary">Mark Done</button>
+                                        </form>
+                                    @endif
+                                </div>
                             </div>
                         @endforeach
                     </div>
+                @else
+                    <div class="empty-state" style="margin-top: 14px;">No pending medication program items.</div>
                 @endif
             </div>
         @endif
