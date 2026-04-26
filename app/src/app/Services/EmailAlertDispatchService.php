@@ -89,10 +89,12 @@ class EmailAlertDispatchService
     protected function dispatchProtocolAlerts(string $recipient, Carbon $now): void
     {
         $targetT3Date = $now->copy()->startOfDay()->addDays(3)->toDateString();
+        $eligibility = new ProtocolEligibilityService();
 
         $pigs = Pig::query()
             ->activeLifecycle()
             ->with([
+                'birthCycle:id,actual_farrow_date',
                 'healthLogs' => function ($query) {
                     $query
                         ->select(['id', 'pig_id', 'purpose', 'weight', 'log_date'])
@@ -110,6 +112,10 @@ class EmailAlertDispatchService
             ->get();
 
         foreach ($pigs as $pig) {
+            if (!$eligibility->qualifiesForAnyClientProtocol($pig)) {
+                continue;
+            }
+
             $summary = $pig->protocol_summary;
 
             if (!is_array($summary)) {
