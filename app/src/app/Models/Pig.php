@@ -327,7 +327,7 @@ class Pig extends Model
         $cycle = $this->latestBreedingRecordForStatus();
 
         if (!$cycle) {
-            return 'No Breeding Record';
+            return 'Heat Not Recorded';
         }
 
         $status = $cycle->display_status;
@@ -339,7 +339,7 @@ class Pig extends Model
         return match ($status) {
             ReproductionCycle::STATUS_DUE_SOON => 'Due Soon',
             ReproductionCycle::STATUS_PREGNANT => 'Pregnant',
-            ReproductionCycle::STATUS_RETURNED_TO_HEAT => 'Returned to Heat',
+            ReproductionCycle::STATUS_RETURNED_TO_HEAT => 'In Heat',
             ReproductionCycle::STATUS_SERVICED => 'Serviced',
             default => $cycle->display_status_label,
         };

@@ -456,7 +456,7 @@
                                     <th>Occupied</th>
                                     <th>Available</th>
                                     <th>Status</th>
-                                    <th>Breeding Status</th>
+                                    <th>Breeding / Heat Status</th>
                                     <th>Notes</th>
                                     <th>Actions</th>
                                 </tr>
@@ -609,7 +609,7 @@
                                     <div><span class="text-muted">Occupied:</span> {{ $occupied }}</div>
                                     <div><span class="text-muted">Available:</span> {{ $available }}</div>
                                     <div>
-                                        <span class="text-muted">Breeding:</span>
+                                        <span class="text-muted">Breeding / Heat:</span>
                                         <div class="breeding-status-badges" style="margin-top:6px;">
                                             @if ($femaleBreedingPigs->isEmpty())
                                                 <span class="text-muted">—</span>

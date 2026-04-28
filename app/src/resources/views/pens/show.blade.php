@@ -155,7 +155,7 @@
                             <th>Ear Tag</th>
                             <th>Breed</th>
                             <th>Sex</th>
-                            <th>Breeding Status</th>
+                            <th>Breeding / Heat Status</th>
                             <th>Age</th>
                             <th>Source</th>
                             <th>Latest Weight</th>
