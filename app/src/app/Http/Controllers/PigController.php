@@ -102,8 +102,6 @@ class PigController extends Controller
 
         $destinationPens = $pensForFilter;
         $reasonOptions = PigTransfer::reasonOptions();
-        $pricePerKg = FarmSetting::currentPricePerKg();
-
         return view('pigs.index', compact(
             'activePigs',
             'soldPigs',
@@ -116,8 +114,7 @@ class PigController extends Controller
             'penFilter',
             'pensForFilter',
             'destinationPens',
-            'reasonOptions',
-            'pricePerKg'
+            'reasonOptions'
         ));
     }
 

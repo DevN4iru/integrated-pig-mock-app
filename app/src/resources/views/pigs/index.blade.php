@@ -769,26 +769,15 @@
 
                 <div class="batch-grid">
                     <div class="form-grid">
-                        <div class="form-group">
-                            <label>Current Global Price per kg</label>
-                            <input type="text" value="₱ {{ number_format((float) $pricePerKg, 2) }}" readonly>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Recommended Pricing Logic</label>
-                            <input type="text" value="Current Weight × Current Global Price per kg" readonly>
-                            <div class="inline-note">Recommended prices are computed live for active pigs. Saved sale prices are historically locked once recorded.</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Recommended Total for Current Selection</label>
+<div class="form-group">
+                            <label>Selected Pig Value Total</label>
                             <input type="text" id="batchSaleRecommendedTotal" value="₱ 0.00" readonly>
                         </div>
 
                         <div class="form-group">
                             <label for="batch_sale_pricing_mode">Pricing Mode</label>
                             <select id="batch_sale_pricing_mode" name="pricing_mode" required onchange="toggleBatchSalePricingMode()">
-                                <option value="recommended" {{ old('pricing_mode', 'recommended') === 'recommended' ? 'selected' : '' }}>Use recommended price per pig</option>
+                                <option value="recommended" {{ old('pricing_mode', 'recommended') === 'recommended' ? 'selected' : '' }}>Use current farm value per pig</option>
                                 <option value="custom" {{ old('pricing_mode') === 'custom' ? 'selected' : '' }}>Use one custom price for every selected pig</option>
                             </select>
                         </div>
