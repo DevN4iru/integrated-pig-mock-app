@@ -245,7 +245,7 @@
             </div>
 
             <div class="flash" style="margin-top: 16px;">
-                The projected farrow date is still computed from <strong>service date + 114 days</strong>, but it stays hidden until the pregnancy check is recorded as <strong>pregnant</strong>. Breeding accounting follows <strong>service / handling cost + semen cost</strong>.
+                The projected farrow date is still computed from <strong>service date + {{ \App\Models\ReproductionCycle::gestationDays() }} days</strong>, but it stays hidden until the pregnancy check is recorded as <strong>pregnant</strong>. Breeding accounting follows <strong>service / handling cost + semen cost</strong>.
             </div>
 
             <div class="form-actions">

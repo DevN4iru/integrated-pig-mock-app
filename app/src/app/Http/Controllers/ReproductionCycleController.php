@@ -386,7 +386,7 @@ class ReproductionCycleController extends Controller
             'breeding_type' => $validated['breeding_type'],
             'service_date' => $validated['service_date'],
             'expected_farrow_date' => $shouldShowExpected
-                ? Carbon::parse($validated['service_date'])->addDays(114)->toDateString()
+                ? Carbon::parse($validated['service_date'])->addDays(ReproductionCycle::gestationDays())->toDateString()
                 : null,
             'semen_source_type' => $validated['semen_source_type'] ?? null,
             'semen_source_name' => $validated['semen_source_name'] ?? null,

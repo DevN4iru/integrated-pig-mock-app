@@ -237,7 +237,7 @@
             </div>
 
             <div class="flash" style="margin-top: 16px;">
-                The projected farrow date remains hidden until the case is on the pregnant path. If this case is already pregnant or farrowed, the saved expected farrow date still stays derived from <strong>service date + 114 days</strong>. Accounting uses <strong>service / handling cost + semen cost</strong>.
+                The projected farrow date remains hidden until the case is on the pregnant path. If this case is already pregnant or farrowed, the saved expected farrow date still stays derived from <strong>service date + {{ \App\Models\ReproductionCycle::gestationDays() }} days</strong>. Accounting uses <strong>service / handling cost + semen cost</strong>.
             </div>
 
             <div class="form-actions">

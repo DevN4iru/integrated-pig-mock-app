@@ -69,6 +69,8 @@ class ReproductionCycle extends Model
         'recommended_pen_type',
         'is_active_cycle',
         'is_due_soon',
+        'pregnancy_check_due_date',
+        'return_to_heat_window_end_date',
         'current_attempt_number',
         'total_attempts',
         'total_semen_cost',
@@ -166,8 +168,9 @@ class ReproductionCycle extends Model
         return $query
             ->where('status', self::STATUS_SERVICED)
             ->where('pregnancy_result', self::PREGNANCY_RESULT_PENDING)
-            ->orderByDesc('service_date')
-            ->orderByDesc('id');
+            ->whereDate('service_date', '<=', now()->copy()->subDays(static::pregnancyCheckStartDays())->toDateString())
+            ->orderBy('service_date')
+            ->orderBy('id');
     }
 
     public static function breedingTypeOptions(): array
@@ -220,6 +223,21 @@ class ReproductionCycle extends Model
     public static function dueSoonThresholdDays(): int
     {
         return 7;
+    }
+
+    public static function pregnancyCheckStartDays(): int
+    {
+        return 18;
+    }
+
+    public static function returnToHeatWindowEndDays(): int
+    {
+        return 24;
+    }
+
+    public static function gestationDays(): int
+    {
+        return 114;
     }
 
     public function currentAttemptServiceUpdate()
@@ -304,6 +322,20 @@ class ReproductionCycle extends Model
     public function getIsDueSoonAttribute(): bool
     {
         return $this->display_status === self::STATUS_DUE_SOON;
+    }
+
+    public function getPregnancyCheckDueDateAttribute()
+    {
+        return $this->service_date
+            ? $this->service_date->copy()->addDays(static::pregnancyCheckStartDays())->startOfDay()
+            : null;
+    }
+
+    public function getReturnToHeatWindowEndDateAttribute()
+    {
+        return $this->service_date
+            ? $this->service_date->copy()->addDays(static::returnToHeatWindowEndDays())->startOfDay()
+            : null;
     }
 
     public function getCurrentAttemptNumberAttribute(): int

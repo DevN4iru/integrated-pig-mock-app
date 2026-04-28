@@ -3,9 +3,11 @@
     $oldEventDate = old('event_date', now()->toDateString());
 
     $projectedExpectedFarrowDate = optional($cycle->expected_farrow_date)->copy()
-        ?? optional($cycle->service_date)->copy()?->addDays(114);
+        ?? optional($cycle->service_date)->copy()?->addDays(\App\Models\ReproductionCycle::gestationDays());
 
     $expectedFarrowDateValue = $projectedExpectedFarrowDate?->format('Y-m-d') ?? '';
+    $pregnancyCheckStartDateValue = $cycle->pregnancy_check_due_date?->format('Y-m-d') ?? '';
+    $returnToHeatWindowEndValue = $cycle->return_to_heat_window_end_date?->format('Y-m-d') ?? '';
     $farrowWindowStartValue = $projectedExpectedFarrowDate?->copy()->subMonthNoOverflow()->startOfMonth()->format('Y-m-d') ?? '';
     $farrowWindowEndValue = $projectedExpectedFarrowDate?->copy()->addMonthNoOverflow()->endOfMonth()->format('Y-m-d') ?? '';
 
@@ -26,6 +28,8 @@
     action="{{ route('reproduction-cycle-updates.store', $cycle) }}"
     id="reproduction-update-form"
     data-expected-farrow-date="{{ $expectedFarrowDateValue }}"
+    data-pregnancy-check-start-date="{{ $pregnancyCheckStartDateValue }}"
+    data-return-to-heat-window-end="{{ $returnToHeatWindowEndValue }}"
     data-farrow-window-start="{{ $farrowWindowStartValue }}"
     data-farrow-window-end="{{ $farrowWindowEndValue }}"
 >
@@ -56,7 +60,7 @@
                 value="{{ $oldEventDate }}"
                 required
             >
-            <small class="metric-note">Event Date is the timeline date for this update. For farrowing, keep it on the same day as the Actual Farrow Date or later.</small>
+            <small class="metric-note">Pregnancy / heat check usually starts on Day {{ \App\Models\ReproductionCycle::pregnancyCheckStartDays() }} after service. Early entries are allowed but will show a warning. For farrowing, keep Event Date on the same day as the Actual Farrow Date or later.</small>
             @error('event_date')
                 <div class="error-text">{{ $message }}</div>
             @enderror
@@ -64,6 +68,7 @@
 
         <div class="form-group full">
             <div id="event_help" class="flash success" style="display:none;"></div>
+            <div id="event_warning" class="flash" style="display:none; margin-top: 8px;"></div>
         </div>
 
         <div class="form-group event-specific" data-events="pregnancy_checked">
@@ -96,7 +101,7 @@
                 value=""
                 readonly
             >
-            <small class="metric-note" id="pregnancy_expected_preview_note">Computed from service date + 114 days.</small>
+            <small class="metric-note" id="pregnancy_expected_preview_note">Computed from service date + {{ \App\Models\ReproductionCycle::gestationDays() }} days.</small>
         </div>
 
         <div class="form-group event-specific" data-events="pregnancy_checked,farrowing_recorded">
@@ -225,6 +230,7 @@
     const notes = form.querySelector('#notes');
     const notesLabel = form.querySelector('#notes_label');
     const help = form.querySelector('#event_help');
+    const warning = form.querySelector('#event_warning');
     const groups = Array.from(form.querySelectorAll('.event-specific'));
 
     const pregnancyExpectedPreviewGroup = form.querySelector('#pregnancy_expected_preview_group');
@@ -232,6 +238,8 @@
     const pregnancyExpectedPreviewNote = form.querySelector('#pregnancy_expected_preview_note');
 
     const expectedFarrowDate = form.dataset.expectedFarrowDate || '';
+    const pregnancyCheckStartDate = form.dataset.pregnancyCheckStartDate || '';
+    const returnToHeatWindowEnd = form.dataset.returnToHeatWindowEnd || '';
     const farrowWindowStart = form.dataset.farrowWindowStart || '';
     const farrowWindowEnd = form.dataset.farrowWindowEnd || '';
 
@@ -240,12 +248,12 @@
 
     const configs = {
         pregnancy_checked: {
-            help: 'Pregnancy check records the diagnosis only. Choose Pregnant or Not Pregnant.',
-            notesLabel: 'Pregnancy Check Notes / Symptoms',
-            notesPlaceholder: 'Add pregnancy check findings, symptoms, or observations.'
+            help: `Pregnancy / heat check records the diagnosis. Normal check starts on ${pregnancyCheckStartDate || 'Day {{ \App\Models\ReproductionCycle::pregnancyCheckStartDays() }} after service'} and the return-to-heat watch window runs until ${returnToHeatWindowEnd || 'Day {{ \App\Models\ReproductionCycle::returnToHeatWindowEndDays() }}'}. Choose Pregnant or Not Pregnant.`,
+            notesLabel: 'Pregnancy / Heat Check Notes',
+            notesPlaceholder: 'Add pregnancy findings or heat-return observations.'
         },
         returned_to_heat: {
-            help: 'Returned to heat confirms that the failed attempt cycled back. After this, you can quick-close the parent case or start the next attempt from the case page.',
+            help: `Returned to heat confirms that the failed attempt cycled back. This is usually watched from Day {{ \App\Models\ReproductionCycle::pregnancyCheckStartDays() }} to Day {{ \App\Models\ReproductionCycle::returnToHeatWindowEndDays() }} after service. After this, you can quick-close the parent case or start the next attempt from the case page.`,
             notesLabel: 'Return-to-Heat Notes / Signs',
             notesPlaceholder: 'Describe the observed return-to-heat signs or repeat-service notes.'
         },
@@ -299,7 +307,7 @@
 
         if (pregnancyExpectedPreviewNote) {
             pregnancyExpectedPreviewNote.textContent = expectedFarrowDate
-                ? 'Computed from service date + 114 days.'
+                ? 'Computed from service date + {{ \App\Models\ReproductionCycle::gestationDays() }} days.'
                 : 'Expected farrow date cannot be computed because service date is unavailable.';
         }
     }
@@ -342,6 +350,22 @@
         }
     }
 
+    function updateEarlyEventWarning(selected) {
+        if (!warning) return;
+
+        const needsDay18Warning = ['pregnancy_checked', 'returned_to_heat'].includes(selected);
+        const chosenDate = eventDate ? eventDate.value : '';
+
+        if (!needsDay18Warning || !pregnancyCheckStartDate || !chosenDate || chosenDate >= pregnancyCheckStartDate) {
+            warning.style.display = 'none';
+            warning.textContent = '';
+            return;
+        }
+
+        warning.style.display = '';
+        warning.textContent = `Warning only: this is earlier than the usual Day {{ \App\Models\ReproductionCycle::pregnancyCheckStartDays() }} pregnancy / heat check date (${pregnancyCheckStartDate}). Saving is allowed for user flexibility.`;
+    }
+
     function refresh() {
         const selected = eventType.value;
 
@@ -378,6 +402,7 @@
 
             showPregnancyPreview(selected);
             syncActualFarrowDate();
+            updateEarlyEventWarning(selected);
             return;
         }
 
@@ -389,6 +414,7 @@
 
         showPregnancyPreview(selected);
         syncActualFarrowDate();
+        updateEarlyEventWarning(selected);
     }
 
     if (eventDate) {
@@ -398,6 +424,7 @@
 
         eventDate.addEventListener('change', function () {
             eventDateTouched = true;
+            updateEarlyEventWarning(eventType.value);
         });
     }
 

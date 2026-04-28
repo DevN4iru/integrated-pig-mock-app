@@ -327,7 +327,7 @@ class Pig extends Model
         $cycle = $this->latestBreedingRecordForStatus();
 
         if (!$cycle) {
-            return 'Heat Not Recorded';
+            return 'No Breeding Record Yet';
         }
 
         $status = $cycle->display_status;

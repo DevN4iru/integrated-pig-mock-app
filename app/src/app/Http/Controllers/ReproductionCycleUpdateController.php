@@ -291,7 +291,7 @@ class ReproductionCycleUpdateController extends Controller
 
             if ($update->pregnancy_result === ReproductionCycle::PREGNANCY_RESULT_PREGNANT) {
                 $payload['expected_farrow_date'] = Carbon::parse($reproductionCycle->service_date)
-                    ->addDays(114)
+                    ->addDays(ReproductionCycle::gestationDays())
                     ->toDateString();
             }
 
@@ -323,7 +323,7 @@ class ReproductionCycleUpdateController extends Controller
 
             if (empty($reproductionCycle->expected_farrow_date) && $reproductionCycle->service_date) {
                 $payload['expected_farrow_date'] = Carbon::parse($reproductionCycle->service_date)
-                    ->addDays(114)
+                    ->addDays(ReproductionCycle::gestationDays())
                     ->toDateString();
             }
         }
@@ -338,7 +338,7 @@ class ReproductionCycleUpdateController extends Controller
         }
 
         return Carbon::parse($reproductionCycle->service_date)
-            ->addDays(114)
+            ->addDays(ReproductionCycle::gestationDays())
             ->startOfDay();
     }
 

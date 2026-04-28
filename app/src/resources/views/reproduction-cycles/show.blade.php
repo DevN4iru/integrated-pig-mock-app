@@ -286,6 +286,9 @@
         $showExpectedFarrow = $cycle->pregnancy_result === \App\Models\ReproductionCycle::PREGNANCY_RESULT_PREGNANT || $cycle->actual_farrow_date;
         $canStartNextAttempt = $displayStatus === \App\Models\ReproductionCycle::STATUS_RETURNED_TO_HEAT;
         $nextAttemptNumber = $cycle->current_attempt_number + 1;
+        $pregnancyCheckDueDate = $cycle->pregnancy_check_due_date;
+        $returnToHeatWindowEndDate = $cycle->return_to_heat_window_end_date;
+        $pregnancyCheckIsDue = $pregnancyCheckDueDate && $pregnancyCheckDueDate->copy()->startOfDay()->lessThanOrEqualTo(now()->startOfDay());
     @endphp
 
     <div class="case-grid">
@@ -303,6 +306,23 @@
                 </div>
             </div>
 
+            @if($displayStatus === \App\Models\ReproductionCycle::STATUS_SERVICED && !$pregnancyCheckIsDue)
+                <div class="flash" style="margin-bottom: 16px;">
+                    Pregnancy / heat check is usually done starting
+                    <strong>{{ $pregnancyCheckDueDate?->format('Y-m-d') ?? '—' }}</strong>
+                    which is <strong>Day {{ \App\Models\ReproductionCycle::pregnancyCheckStartDays() }}</strong> after service.
+                    You may still record early if needed, but the system will show it as an early entry.
+                </div>
+            @endif
+
+            @if($displayStatus === \App\Models\ReproductionCycle::STATUS_SERVICED && $pregnancyCheckIsDue)
+                <div class="flash success" style="margin-bottom: 16px;">
+                    Pregnancy / heat check is now due. Watch for return-to-heat signs from
+                    <strong>{{ $pregnancyCheckDueDate?->format('Y-m-d') ?? '—' }}</strong>
+                    to <strong>{{ $returnToHeatWindowEndDate?->format('Y-m-d') ?? '—' }}</strong>.
+                </div>
+            @endif
+
             @if($showExpectedFarrow && in_array($displayStatus, [
                 \App\Models\ReproductionCycle::STATUS_PREGNANT,
                 \App\Models\ReproductionCycle::STATUS_DUE_SOON,
@@ -310,7 +330,7 @@
                 \App\Models\ReproductionCycle::STATUS_CLOSED,
             ], true))
                 <div class="flash success" style="margin-bottom: 16px;">
-                    Expected farrow date is automatically tracked from <strong>service date + 114 days</strong>. Current expected farrow date:
+                    Expected farrow date is automatically tracked from <strong>service date + {{ \App\Models\ReproductionCycle::gestationDays() }} days</strong>. Current expected farrow date:
                     <strong>{{ $cycle->expected_farrow_date?->format('Y-m-d') ?? '—' }}</strong>.
                 </div>
             @endif
@@ -367,7 +387,17 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Pregnancy Check Date</label>
+                        <label>Pregnancy / Heat Check Due</label>
+                        <input type="text" value="{{ $pregnancyCheckDueDate?->format('Y-m-d') ?? '—' }} — Day {{ \App\Models\ReproductionCycle::pregnancyCheckStartDays() }}" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Return-to-Heat Watch Window</label>
+                        <input type="text" value="{{ $pregnancyCheckDueDate?->format('Y-m-d') ?? '—' }} to {{ $returnToHeatWindowEndDate?->format('Y-m-d') ?? '—' }}" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Pregnancy Check Recorded</label>
                         <input type="text" value="{{ $cycle->pregnancy_check_date?->format('Y-m-d') ?? '—' }}" readonly>
                     </div>
 
@@ -456,7 +486,7 @@
 
                             <div class="case-guide-row">
                                 <strong>Pregnancy and return to heat</strong>
-                                <span>Pregnancy check records the diagnosis. Returned to heat is a separate progress event. Once returned to heat is recorded, the case can either be closed or continued with the next attempt.</span>
+                                <span>Pregnancy / heat check usually starts on Day {{ \App\Models\ReproductionCycle::pregnancyCheckStartDays() }} after service. Watch for return-to-heat signs until Day {{ \App\Models\ReproductionCycle::returnToHeatWindowEndDays() }}. If pregnant, expected farrow date is computed from service date + {{ \App\Models\ReproductionCycle::gestationDays() }} days.</span>
                             </div>
 
                             <div class="case-guide-row">
