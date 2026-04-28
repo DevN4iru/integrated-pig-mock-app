@@ -38,6 +38,23 @@
     flex-wrap: wrap;
 }
 
+.breeding-status-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.breeding-status-badges .badge {
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.badge.gray {
+    background: #f1f5f9;
+    color: #475569;
+}
+
 @media (max-width: 1200px) {
     .pen-detail-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -138,6 +155,7 @@
                             <th>Ear Tag</th>
                             <th>Breed</th>
                             <th>Sex</th>
+                            <th>Breeding Status</th>
                             <th>Age</th>
                             <th>Source</th>
                             <th>Latest Weight</th>
@@ -151,6 +169,13 @@
                                 <td>{{ $pig->ear_tag }}</td>
                                 <td>{{ $pig->breed }}</td>
                                 <td>{{ ucfirst($pig->sex) }}</td>
+                                <td>
+                                    <div class="breeding-status-badges">
+                                        <span class="badge {{ $pig->breeding_status_badge_class }}">
+                                            {{ $pig->breeding_status_label }}
+                                        </span>
+                                    </div>
+                                </td>
                                 <td>{{ (int) ($pig->age ?? 0) }}</td>
                                 <td>{{ ucfirst($pig->pig_source) }}</td>
                                 <td>{{ $pig->computed_weight !== null ? number_format((float) $pig->computed_weight, 2) . ' kg' : '—' }}</td>

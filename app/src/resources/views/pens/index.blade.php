@@ -253,6 +253,23 @@
     color: var(--green);
 }
 
+.breeding-status-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.breeding-status-badges .badge {
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.badge.gray {
+    background: #f1f5f9;
+    color: #475569;
+}
+
 
 
 
@@ -439,6 +456,7 @@
                                     <th>Occupied</th>
                                     <th>Available</th>
                                     <th>Status</th>
+                                    <th>Breeding Status</th>
                                     <th>Notes</th>
                                     <th>Actions</th>
                                 </tr>
@@ -450,6 +468,9 @@
                                         $available = $pen->availableSlots();
                                         $status = $pen->occupancyStatus();
                                         $occupancyPercent = $pen->occupancyPercent();
+                                        $femaleBreedingPigs = $pen->activePigs
+                                            ->filter(fn ($pig) => strtolower((string) $pig->sex) === 'female')
+                                            ->values();
                                     @endphp
                                     <tr>
                                         <td>
@@ -462,6 +483,23 @@
                                         <td>{{ $available }}</td>
                                         <td>
                                             <span class="pen-status-pill {{ $status }}">{{ ucfirst($status) }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="breeding-status-badges">
+                                                @if ($femaleBreedingPigs->isEmpty())
+                                                    <span class="text-muted">—</span>
+                                                @else
+                                                    @foreach ($femaleBreedingPigs->take(3) as $pig)
+                                                        <span class="badge {{ $pig->breeding_status_badge_class }}">
+                                                            {{ $pig->ear_tag }}: {{ $pig->breeding_status_label }}
+                                                        </span>
+                                                    @endforeach
+
+                                                    @if ($femaleBreedingPigs->count() > 3)
+                                                        <span class="badge gray">+{{ $femaleBreedingPigs->count() - 3 }} more</span>
+                                                    @endif
+                                                @endif
+                                            </div>
                                         </td>
                                         <td>{{ $pen->notes ?: '—' }}</td>
                                         <td>
@@ -549,6 +587,9 @@
                                 $available = $pen->availableSlots();
                                 $percent = $pen->occupancyPercent();
                                 $status = $pen->occupancyStatus();
+                                $femaleBreedingPigs = $pen->activePigs
+                                    ->filter(fn ($pig) => strtolower((string) $pig->sex) === 'female')
+                                    ->values();
                             @endphp
 
                             <div class="pen-simple-card">
@@ -567,6 +608,24 @@
                                     <div><span class="text-muted">Capacity:</span> {{ $pen->capacity }}</div>
                                     <div><span class="text-muted">Occupied:</span> {{ $occupied }}</div>
                                     <div><span class="text-muted">Available:</span> {{ $available }}</div>
+                                    <div>
+                                        <span class="text-muted">Breeding:</span>
+                                        <div class="breeding-status-badges" style="margin-top:6px;">
+                                            @if ($femaleBreedingPigs->isEmpty())
+                                                <span class="text-muted">—</span>
+                                            @else
+                                                @foreach ($femaleBreedingPigs->take(3) as $pig)
+                                                    <span class="badge {{ $pig->breeding_status_badge_class }}">
+                                                        {{ $pig->ear_tag }}: {{ $pig->breeding_status_label }}
+                                                    </span>
+                                                @endforeach
+
+                                                @if ($femaleBreedingPigs->count() > 3)
+                                                    <span class="badge gray">+{{ $femaleBreedingPigs->count() - 3 }} more</span>
+                                                @endif
+                                            @endif
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div style="margin-top: 4px; display:flex; gap:8px; flex-wrap:wrap;">

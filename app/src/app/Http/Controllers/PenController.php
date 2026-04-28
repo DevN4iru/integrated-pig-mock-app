@@ -11,7 +11,33 @@ class PenController extends Controller
 {
     public function index()
     {
-        $pens = Pen::withCount([
+        $pens = Pen::with([
+                'activePigs' => function ($query) {
+                    $query->select([
+                            'id',
+                            'pen_id',
+                            'ear_tag',
+                            'sex',
+                        ])
+                        ->with([
+                            'reproductionCyclesAsSow' => function ($query) {
+                                $query->select([
+                                        'id',
+                                        'sow_id',
+                                        'service_date',
+                                        'pregnancy_result',
+                                        'expected_farrow_date',
+                                        'actual_farrow_date',
+                                        'status',
+                                    ])
+                                    ->orderByDesc('service_date')
+                                    ->orderByDesc('id');
+                            },
+                        ])
+                        ->orderBy('ear_tag');
+                },
+            ])
+            ->withCount([
                 'activePigs as pigs_count',
             ])
             ->get()
@@ -47,6 +73,19 @@ class PenController extends Controller
                 'healthLogs',
                 'sales',
                 'mortalityLogs',
+                'reproductionCyclesAsSow' => function ($query) {
+                    $query->select([
+                            'id',
+                            'sow_id',
+                            'service_date',
+                            'pregnancy_result',
+                            'expected_farrow_date',
+                            'actual_farrow_date',
+                            'status',
+                        ])
+                        ->orderByDesc('service_date')
+                        ->orderByDesc('id');
+                },
             ])
             ->orderBy('ear_tag')
             ->get();

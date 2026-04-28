@@ -68,6 +68,8 @@ class Pig extends Model
         'cost_per_kg_gain',
         'performance_status',
         'protocol_summary',
+        'breeding_status_label',
+        'breeding_status_badge_class',
     ];
 
     public function pen()
@@ -286,6 +288,101 @@ class Pig extends Model
             ->orderByDesc('service_date')
             ->orderByDesc('id');
     }
+
+    public function latestBreedingRecordForStatus(): ?ReproductionCycle
+    {
+        if (strtolower((string) $this->sex) !== 'female') {
+            return null;
+        }
+
+        if ($this->relationLoaded('reproductionCyclesAsSow')) {
+            return $this->reproductionCyclesAsSow
+                ->sortByDesc(fn ($cycle) => sprintf(
+                    '%s-%010d',
+                    optional($cycle->service_date)->format('Y-m-d') ?? '',
+                    (int) $cycle->id
+                ))
+                ->first();
+        }
+
+        return $this->reproductionCyclesAsSow()
+            ->select([
+                'id',
+                'sow_id',
+                'service_date',
+                'pregnancy_result',
+                'expected_farrow_date',
+                'actual_farrow_date',
+                'status',
+            ])
+            ->first();
+    }
+
+    public function breedingStatusLabel(): string
+    {
+        if (strtolower((string) $this->sex) !== 'female') {
+            return '—';
+        }
+
+        $cycle = $this->latestBreedingRecordForStatus();
+
+        if (!$cycle) {
+            return 'No Breeding Record';
+        }
+
+        $status = $cycle->display_status;
+
+        if ($cycle->actual_farrow_date) {
+            return 'Farrowed';
+        }
+
+        return match ($status) {
+            ReproductionCycle::STATUS_DUE_SOON => 'Due Soon',
+            ReproductionCycle::STATUS_PREGNANT => 'Pregnant',
+            ReproductionCycle::STATUS_RETURNED_TO_HEAT => 'Returned to Heat',
+            ReproductionCycle::STATUS_SERVICED => 'Serviced',
+            default => $cycle->display_status_label,
+        };
+    }
+
+    public function breedingStatusBadgeClass(): string
+    {
+        if (strtolower((string) $this->sex) !== 'female') {
+            return 'gray';
+        }
+
+        $cycle = $this->latestBreedingRecordForStatus();
+
+        if (!$cycle) {
+            return 'gray';
+        }
+
+        $status = $cycle->display_status;
+
+        if ($cycle->actual_farrow_date) {
+            return 'green';
+        }
+
+        return match ($status) {
+            ReproductionCycle::STATUS_DUE_SOON => 'orange',
+            ReproductionCycle::STATUS_PREGNANT => 'green',
+            ReproductionCycle::STATUS_RETURNED_TO_HEAT,
+            ReproductionCycle::STATUS_NOT_PREGNANT => 'red',
+            ReproductionCycle::STATUS_SERVICED => 'blue',
+            default => 'gray',
+        };
+    }
+
+    public function getBreedingStatusLabelAttribute(): string
+    {
+        return $this->breedingStatusLabel();
+    }
+
+    public function getBreedingStatusBadgeClassAttribute(): string
+    {
+        return $this->breedingStatusBadgeClass();
+    }
+
 
     public function protocolExecutions()
     {
