@@ -293,7 +293,7 @@
         $preFarrowRows = collect();
 
         if ($cycle->expected_farrow_date && !$cycle->actual_farrow_date && $cycle->pregnancy_result === \App\Models\ReproductionCycle::PREGNANCY_RESULT_PREGNANT) {
-            $preFarrowRows = collect(\\App\\Services\\PreFarrowReminderSchedule::items())->map(function ($row) use ($cycle) {
+            $preFarrowRows = collect(\App\Services\PreFarrowReminderSchedule::items())->map(function ($row) use ($cycle) {
                 $dueDate = $cycle->expected_farrow_date->copy()->subDays((int) $row['days_before'])->startOfDay();
                 $today = now()->startOfDay();
 
