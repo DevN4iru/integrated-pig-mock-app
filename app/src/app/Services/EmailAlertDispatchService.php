@@ -25,6 +25,7 @@ class EmailAlertDispatchService
         }
 
         $this->dispatchFarrowingAlerts($recipient, $now);
+        $this->dispatchPreFarrowMedicationAlerts($recipient, $now);
         $this->dispatchProtocolAlerts($recipient, $now);
         $this->dispatchOperationalReminders($recipient, $now, $settings);
     }
@@ -80,6 +81,114 @@ class EmailAlertDispatchService
                         'sow_id' => $cycle->sow_id,
                         'expected_farrow_date' => $expectedDate,
                         'window_code' => $window['window_code'],
+                    ],
+                );
+            }
+        }
+    }
+
+    protected function preFarrowMedicationSchedule(): array
+    {
+        return [
+            [
+                'code' => 'pre_farrow_vaccine_review_35',
+                'days_before_farrow' => 35,
+                'title' => 'Pre-farrow vaccine/program review',
+                'message' => 'Review sow pre-farrow vaccine plan with the farm protocol or veterinarian. This is a prevention reminder before farrowing, not an automatic drug order.',
+            ],
+            [
+                'code' => 'parasite_check_21',
+                'days_before_farrow' => 21,
+                'title' => 'Pre-farrow parasite/deworming check',
+                'message' => 'Check internal/external parasite control plan before farrowing. Follow vet direction and product label timing.',
+            ],
+            [
+                'code' => 'booster_check_14',
+                'days_before_farrow' => 14,
+                'title' => 'Pre-farrow booster/vaccine check',
+                'message' => 'Check if a booster or pre-farrow vaccine action is due. Product choice and dose must follow vet/farm protocol.',
+            ],
+            [
+                'code' => 'final_prefarrow_check_7',
+                'days_before_farrow' => 7,
+                'title' => 'Final pre-farrow medication and hygiene check',
+                'message' => 'Final check for pre-farrow parasite control, udder/belly hygiene, farrowing area readiness, and any vet-directed medication.',
+            ],
+        ];
+    }
+
+    protected function dispatchPreFarrowMedicationAlerts(string $recipient, Carbon $now): void
+    {
+        $today = $now->copy()->startOfDay();
+
+        $cycles = ReproductionCycle::query()
+            ->with('sow')
+            ->whereIn('status', [
+                ReproductionCycle::STATUS_PREGNANT,
+                ReproductionCycle::STATUS_DUE_SOON,
+            ])
+            ->where('pregnancy_result', ReproductionCycle::PREGNANCY_RESULT_PREGNANT)
+            ->whereNotNull('expected_farrow_date')
+            ->whereNull('actual_farrow_date')
+            ->orderBy('expected_farrow_date')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($cycles as $cycle) {
+            $expectedFarrowDate = $this->normalizeDateString($cycle->expected_farrow_date);
+
+            if ($expectedFarrowDate === null) {
+                continue;
+            }
+
+            $expectedFarrow = Carbon::parse($expectedFarrowDate)->startOfDay();
+            $sowLabel = $this->pigLabel($cycle->sow, $cycle->sow_id);
+
+            foreach ($this->preFarrowMedicationSchedule() as $schedule) {
+                $dueDate = $expectedFarrow
+                    ->copy()
+                    ->subDays((int) $schedule['days_before_farrow'])
+                    ->startOfDay();
+
+                if ($dueDate->gt($today)) {
+                    continue;
+                }
+
+                $isOverdue = $dueDate->lt($today);
+                $windowCode = $isOverdue ? 'overdue' : 'd0';
+
+                $subject = $isOverdue
+                    ? '[Pigstep] Pre-farrow reminder overdue — ' . $sowLabel
+                    : '[Pigstep] Pre-farrow reminder due today — ' . $sowLabel;
+
+                $headline = $isOverdue
+                    ? 'Pre-farrow reminder overdue'
+                    : 'Pre-farrow reminder due today';
+
+                $lines = [
+                    'Sow ' . $sowLabel . ': ' . $schedule['title'] . '.',
+                    $schedule['message'],
+                    'Reminder due date: ' . $this->displayDate($dueDate->toDateString()) . '.',
+                    'Expected farrowing date: ' . $this->displayDate($expectedFarrowDate) . '.',
+                ];
+
+                $this->sendEmail(
+                    fingerprint: 'email:pre_farrow:' . $windowCode . ':' . $cycle->id . ':' . $schedule['code'] . ':' . $dueDate->toDateString(),
+                    alertType: 'pre_farrow.' . $windowCode,
+                    recipient: $recipient,
+                    subject: $subject,
+                    headline: $headline,
+                    lines: $lines,
+                    actionText: 'Open Breeding Record',
+                    actionUrl: $this->safeRoute('reproduction-cycles.show', ['reproductionCycle' => $cycle->id]),
+                    payload: [
+                        'reproduction_cycle_id' => $cycle->id,
+                        'sow_id' => $cycle->sow_id,
+                        'schedule_code' => $schedule['code'],
+                        'days_before_farrow' => (int) $schedule['days_before_farrow'],
+                        'due_date' => $dueDate->toDateString(),
+                        'expected_farrow_date' => $expectedFarrowDate,
+                        'window_code' => $windowCode,
                     ],
                 );
             }
@@ -231,30 +340,6 @@ class EmailAlertDispatchService
                 payload: [
                     'date' => $dateKey,
                     'scheduled_time' => '05:00',
-                    'catch_up_enabled' => true,
-                ],
-            );
-        }
-
-        $serverCloseTime = $this->normalizeTimeString($settings->server_close_reminder_time);
-
-        if ($this->isDailyReminderDue($now, $serverCloseTime)) {
-            $this->sendEmail(
-                fingerprint: 'email:ops:server_close:' . $dateKey,
-                alertType: 'ops.server_close',
-                recipient: $recipient,
-                subject: '[Pigstep] Server closing reminder',
-                headline: 'Server about to close',
-                lines: [
-                    'Pigstep server is about to close for the day.',
-                    'Service will resume at 5:00 AM.',
-                ],
-                actionText: 'Open Dashboard',
-                actionUrl: $this->safeRoute('dashboard'),
-                payload: [
-                    'date' => $dateKey,
-                    'close_time' => $serverCloseTime,
-                    'resume_time' => '05:00',
                     'catch_up_enabled' => true,
                 ],
             );

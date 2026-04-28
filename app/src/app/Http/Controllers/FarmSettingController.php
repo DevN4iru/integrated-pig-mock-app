@@ -18,7 +18,6 @@ class FarmSettingController extends Controller
     {
         $validated = $request->validate([
             'alert_recipient_email' => ['nullable', 'email:rfc'],
-            'server_close_reminder_time' => ['nullable', 'date_format:H:i'],
             'feed_reminder_time' => ['nullable', 'date_format:H:i'],
         ]);
 

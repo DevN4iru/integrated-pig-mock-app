@@ -9,7 +9,6 @@ class FarmSetting extends Model
     protected $fillable = [
         'price_per_kg',
         'alert_recipient_email',
-        'server_close_reminder_time',
         'feed_reminder_time',
     ];
 

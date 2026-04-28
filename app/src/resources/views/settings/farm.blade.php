@@ -236,16 +236,6 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="server_close_reminder_time">Server close reminder time</label>
-                        <input
-                            id="server_close_reminder_time"
-                            name="server_close_reminder_time"
-                            type="time"
-                            value="{{ old('server_close_reminder_time', $setting->server_close_reminder_time ? substr((string) $setting->server_close_reminder_time, 0, 5) : '') }}"
-                        >
-                    </div>
-
-                    <div class="form-group">
                         <label for="feed_reminder_time">Daily feed reminder time</label>
                         <input
                             id="feed_reminder_time"
@@ -260,7 +250,6 @@
                             <strong>Reminder behavior</strong>
                             <ul>
                                 <li>Server ready email is sent daily at 5:00 AM.</li>
-                                <li>Server close reminder uses the configured close time and says Pigstep will resume at 5:00 AM.</li>
                                 <li>Feed reminder uses the configured daily feed time.</li>
                                 <li>Farrowing emails are sent at T-3 and on the due day.</li>
                                 <li>Protocol emails are sent at T-3, on the due day/window, and once when an unresolved item becomes overdue.</li>
