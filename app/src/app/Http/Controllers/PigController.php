@@ -118,14 +118,33 @@ class PigController extends Controller
         ));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $pens = Pen::withCount(['activePigs as pigs_count'])
             ->get()
             ->sortBy(fn ($pen) => $pen->sortKey())
             ->values();
 
-        return view('pigs.create', compact('pens'));
+        $selectedPen = null;
+        $selectedPenId = $request->query('pen_id');
+
+        if ($selectedPenId !== null && $selectedPenId !== '') {
+            $selectedPen = $pens->firstWhere('id', (int) $selectedPenId);
+
+            if (!$selectedPen) {
+                return redirect()
+                    ->route('pens.index')
+                    ->with('error', 'Selected pen could not be found.');
+            }
+
+            if ($selectedPen->availableSlots() <= 0) {
+                return redirect()
+                    ->route('pens.show', $selectedPen)
+                    ->with('error', 'This pen is full. Add capacity or choose another pen before adding a pig.');
+            }
+        }
+
+        return view('pigs.create', compact('pens', 'selectedPen'));
     }
 
     public function store(Request $request)
@@ -158,7 +177,13 @@ class PigController extends Controller
 
         $validated['pen_location'] = $pen->name;
 
-        Pig::create($validated);
+        $pig = Pig::create($validated);
+
+        if ($request->boolean('return_to_pen')) {
+            return redirect()
+                ->route('pens.show', $pen)
+                ->with('success', "Pig {$pig->ear_tag} added to {$pen->name} successfully.");
+        }
 
         return redirect()->route('pigs.index')->with('success', 'Pig added successfully.');
     }

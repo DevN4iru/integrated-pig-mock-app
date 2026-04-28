@@ -6,7 +6,7 @@
 
 @section('top_actions')
     <a href="{{ route('pens.index') }}" class="btn">Back to Pen List</a>
-    <a href="{{ route('pigs.create') }}" class="btn">Add Pig</a>
+    <a href="{{ route('pigs.create', ['pen_id' => $pen->id]) }}" class="btn primary">Add Pig to This Pen</a>
     <button type="button" class="btn" onclick="openPenEditPrompt('{{ route('pens.edit', $pen) }}')">Edit Pen</button>
 @endsection
 
@@ -143,6 +143,8 @@
                 <h3>Active Pigs Inside This Pen</h3>
                 <p>Only active pigs count toward live pen occupancy.</p>
             </div>
+
+            <a href="{{ route('pigs.create', ['pen_id' => $pen->id]) }}" class="btn primary">Add Pig to This Pen</a>
         </div>
 
         @if ($activePigs->isEmpty())

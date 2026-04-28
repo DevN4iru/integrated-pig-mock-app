@@ -2,10 +2,14 @@
 
 @section('title', 'Add Pig')
 @section('page_title', 'Add Pig')
-@section('page_subtitle', 'Add a new pig record.')
+@section('page_subtitle', isset($selectedPen) && $selectedPen ? 'Add a new pig directly into ' . $selectedPen->name . '.' : 'Add a new pig record.')
 
 @section('top_actions')
-    <a href="{{ route('pigs.index') }}" class="btn">Back to Pig List</a>
+    @if(isset($selectedPen) && $selectedPen)
+        <a href="{{ route('pens.show', $selectedPen) }}" class="btn">Back to {{ $selectedPen->name }}</a>
+    @else
+        <a href="{{ route('pigs.index') }}" class="btn">Back to Pig List</a>
+    @endif
 @endsection
 
 
@@ -165,15 +169,31 @@
         <div class="panel-card">
             <div class="pig-create-head">
                 <div>
-                    <h3>Add Pig Record</h3>
-                    <p>Fill in the details below to add a pig into the system.</p>
+                    <h3>{{ isset($selectedPen) && $selectedPen ? 'Add Pig to ' . $selectedPen->name : 'Add Pig Record' }}</h3>
+                    <p>
+                        @if(isset($selectedPen) && $selectedPen)
+                            This pig will be assigned directly to {{ $selectedPen->name }}.
+                        @else
+                            Fill in the details below to add a pig into the system.
+                        @endif
+                    </p>
                 </div>
 
-                <span class="pig-create-pill">New Record</span>
+                <span class="pig-create-pill">
+                    @if(isset($selectedPen) && $selectedPen)
+                        {{ $selectedPen->name }} • {{ $selectedPen->display_type }}
+                    @else
+                        New Record
+                    @endif
+                </span>
             </div>
 
         <form method="POST" action="{{ route('pigs.store') }}">
             @csrf
+
+            @if(isset($selectedPen) && $selectedPen)
+                <input type="hidden" name="return_to_pen" value="1">
+            @endif
 
             <div class="form-grid">
                 <div class="form-group">
@@ -197,18 +217,25 @@
 
                 <div class="form-group">
                     <label for="pen_id">Assigned Pen</label>
-                    <select id="pen_id" name="pen_id" required>
-                        <option value="">Select pen</option>
-                        @foreach ($pens as $pen)
-                            @php
-                                $remaining = max((int) $pen->capacity - (int) $pen->pigs_count, 0);
-                                $isFull = $remaining <= 0;
-                            @endphp
-                            <option value="{{ $pen->id }}" {{ old('pen_id') == $pen->id ? 'selected' : '' }} {{ $isFull ? 'disabled' : '' }}>
-                                {{ $pen->name }} — {{ $pen->type }} ({{ $pen->pigs_count }}/{{ $pen->capacity }}){{ $isFull ? ' - FULL' : '' }}
-                            </option>
-                        @endforeach
-                    </select>
+
+                    @if(isset($selectedPen) && $selectedPen)
+                        <input type="hidden" id="pen_id" name="pen_id" value="{{ old('pen_id', $selectedPen->id) }}">
+                        <input type="text" value="{{ $selectedPen->name }} — {{ $selectedPen->display_type }} ({{ $selectedPen->pigs_count }}/{{ $selectedPen->capacity }})" readonly>
+                        <small class="metric-note">Auto-selected from the pen page. This pig will be assigned to this pen.</small>
+                    @else
+                        <select id="pen_id" name="pen_id" required>
+                            <option value="">Select pen</option>
+                            @foreach ($pens as $pen)
+                                @php
+                                    $remaining = max((int) $pen->capacity - (int) $pen->pigs_count, 0);
+                                    $isFull = $remaining <= 0;
+                                @endphp
+                                <option value="{{ $pen->id }}" {{ old('pen_id') == $pen->id ? 'selected' : '' }} {{ $isFull ? 'disabled' : '' }}>
+                                    {{ $pen->name }} — {{ $pen->type }} ({{ $pen->pigs_count }}/{{ $pen->capacity }}){{ $isFull ? ' - FULL' : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                    @endif
                 </div>
 
                 <div class="form-group">
@@ -257,8 +284,15 @@
             </div>
 
             <div class="form-actions pig-create-actions">
-                <button type="submit" class="btn primary">Add Pig</button>
-                <a href="{{ route('pigs.index') }}" class="btn">Cancel</a>
+                <button type="submit" class="btn primary">
+                    {{ isset($selectedPen) && $selectedPen ? 'Add Pig to This Pen' : 'Add Pig' }}
+                </button>
+
+                @if(isset($selectedPen) && $selectedPen)
+                    <a href="{{ route('pens.show', $selectedPen) }}" class="btn">Cancel</a>
+                @else
+                    <a href="{{ route('pigs.index') }}" class="btn">Cancel</a>
+                @endif
             </div>
         </form>
         </div>
