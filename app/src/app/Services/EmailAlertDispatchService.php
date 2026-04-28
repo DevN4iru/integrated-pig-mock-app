@@ -30,6 +30,37 @@ class EmailAlertDispatchService
         $this->dispatchOperationalReminders($recipient, $now, $settings);
     }
 
+    public function dispatchTestEmail(?string $recipientOverride = null): EmailAlertDelivery
+    {
+        $settings = FarmSetting::current();
+        $recipient = trim((string) ($recipientOverride ?: $settings->alert_recipient_email ?? ''));
+
+        if ($recipient === '') {
+            throw new \InvalidArgumentException('No alert recipient email is configured.');
+        }
+
+        $now = now();
+
+        return $this->sendEmail(
+            fingerprint: 'email:test:pigstep_alert:' . $now->format('YmdHis') . ':' . substr(bin2hex(random_bytes(4)), 0, 8),
+            alertType: 'test.email',
+            recipient: $recipient,
+            subject: '[Pigstep Test] Real alert email test',
+            headline: 'Pigstep alert email test',
+            lines: [
+                'This is a real Pigstep alert email test.',
+                'It uses the Pigstep alert mail template, EmailAlertDelivery logging, and recipient-aware fingerprinting.',
+                'If you received this, the production alert email path is working.',
+            ],
+            actionText: 'Open Dashboard',
+            actionUrl: $this->safeRoute('dashboard'),
+            payload: [
+                'test_sent_at' => $now->toDateTimeString(),
+                'source' => 'alerts:test-email',
+            ],
+        );
+    }
+
     protected function dispatchFarrowingAlerts(string $recipient, Carbon $now): void
     {
         foreach ([
@@ -89,32 +120,7 @@ class EmailAlertDispatchService
 
     protected function preFarrowMedicationSchedule(): array
     {
-        return [
-            [
-                'code' => 'pre_farrow_vaccine_review_35',
-                'days_before_farrow' => 35,
-                'title' => 'Pre-farrow vaccine/program review',
-                'message' => 'Review sow pre-farrow vaccine plan with the farm protocol or veterinarian. This is a prevention reminder before farrowing, not an automatic drug order.',
-            ],
-            [
-                'code' => 'parasite_check_21',
-                'days_before_farrow' => 21,
-                'title' => 'Pre-farrow parasite/deworming check',
-                'message' => 'Check internal/external parasite control plan before farrowing. Follow vet direction and product label timing.',
-            ],
-            [
-                'code' => 'booster_check_14',
-                'days_before_farrow' => 14,
-                'title' => 'Pre-farrow booster/vaccine check',
-                'message' => 'Check if a booster or pre-farrow vaccine action is due. Product choice and dose must follow vet/farm protocol.',
-            ],
-            [
-                'code' => 'final_prefarrow_check_7',
-                'days_before_farrow' => 7,
-                'title' => 'Final pre-farrow medication and hygiene check',
-                'message' => 'Final check for pre-farrow parasite control, udder/belly hygiene, farrowing area readiness, and any vet-directed medication.',
-            ],
-        ];
+        return PreFarrowReminderSchedule::items();
     }
 
     protected function dispatchPreFarrowMedicationAlerts(string $recipient, Carbon $now): void
@@ -393,13 +399,21 @@ class EmailAlertDispatchService
         ?string $actionText = null,
         ?string $actionUrl = null,
         array $payload = [],
-    ): void {
+    ): EmailAlertDelivery {
+        $recipientKey = strtolower(trim($recipient));
+        $deliveryFingerprint = $fingerprint . ':r:' . substr(hash('sha256', $recipientKey), 0, 12);
+
+        $payload = array_merge([
+            'base_fingerprint' => $fingerprint,
+            'recipient_fingerprint_key' => substr(hash('sha256', $recipientKey), 0, 12),
+        ], $payload);
+
         $delivery = EmailAlertDelivery::query()->firstOrNew([
-            'fingerprint' => $fingerprint,
+            'fingerprint' => $deliveryFingerprint,
         ]);
 
         if ($delivery->exists && $delivery->status === EmailAlertDelivery::STATUS_SENT) {
-            return;
+            return $delivery;
         }
 
         $delivery->fill([
@@ -423,6 +437,8 @@ class EmailAlertDispatchService
         } catch (Throwable $throwable) {
             $delivery->markAsFailed($throwable->getMessage());
         }
+
+        return $delivery;
     }
 
     protected function pigLabel(?Pig $pig, ?int $fallbackPigId = null): string

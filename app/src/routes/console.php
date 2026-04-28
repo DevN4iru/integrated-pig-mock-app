@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\EmailAlertDelivery;
 use App\Models\User;
 use App\Services\EmailAlertDispatchService;
 use Illuminate\Foundation\Inspiring;
@@ -46,6 +47,22 @@ Artisan::command('auth:create-owner {email} {--name=Owner} {--password=}', funct
 
     $this->info('Owner account ready: '.$user->email);
 })->purpose('Create or update the Pigstep owner login account');
+
+Artisan::command('alerts:test-email {--to=}', function () {
+    $recipient = trim((string) $this->option('to'));
+
+    $delivery = app(EmailAlertDispatchService::class)->dispatchTestEmail(
+        $recipient !== '' ? $recipient : null
+    );
+
+    if ($delivery->status === EmailAlertDelivery::STATUS_SENT) {
+        $this->info('Pigstep real alert test email sent to ' . $delivery->recipient . '.');
+        return 0;
+    }
+
+    $this->error('Pigstep real alert test email failed: ' . ($delivery->error_message ?: 'Unknown error.'));
+    return 1;
+})->purpose('Send one real Pigstep alert email through the production alert mail path');
 
 Artisan::command('alerts:dispatch-email', function () {
     app(EmailAlertDispatchService::class)->dispatchScheduledAlerts();
