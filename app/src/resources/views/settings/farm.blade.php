@@ -2,7 +2,7 @@
 
 @section('title', 'Farm Settings')
 @section('page_title', 'Farm Settings')
-@section('page_subtitle', 'Configure reminders, reports, and account session controls for Pigstep.')
+@section('page_subtitle', 'Set email alerts, feeding reminder, reports, and account options.')
 
 @section('top_actions')
     <a href="{{ route('dashboard') }}" class="btn">Back to Dashboard</a>
@@ -213,7 +213,7 @@
             <div class="settings-card-head">
                 <div>
                     <h3>Reminder Settings</h3>
-                    <p>Main farm configuration used for reminder emails and daily handling messages.</p>
+                    <p>Choose where Pigstep sends alerts and when feed reminders run.</p>
                 </div>
 
                 <span class="settings-pill">Editable</span>
@@ -249,10 +249,11 @@
                         <div class="settings-soft-box">
                             <strong>Reminder behavior</strong>
                             <ul>
-                                <li>Server ready email is sent daily at 5:00 AM.</li>
-                                <li>Feed reminder uses the configured daily feed time.</li>
-                                <li>Farrowing emails are sent at T-3 and on the due day.</li>
-                                <li>Protocol emails are sent at T-3, on the due day/window, and once when an unresolved item becomes overdue.</li>
+                                <li>Startup email: sent daily at 5:00 AM.</li>
+                                <li>Feed reminder: sent at the time set above.</li>
+                                <li>Farrowing: sent 3 days before and on the due date.</li>
+                                <li>Pre-farrow checklist: sent when medication/check reminders are due or overdue.</li>
+                                <li>Protocols: sent before due, on due date/window, and once overdue.</li>
                             </ul>
                         </div>
                     </div>
@@ -269,7 +270,7 @@
                 <div class="settings-card-head">
                     <div>
                         <h3>Manual Reports</h3>
-                        <p>Download or manually email the current farm summary. This does not schedule weekly or month-end reports.</p>
+                        <p>Download or send the current farm summary anytime.</p>
                     </div>
 
                     <span class="settings-pill">Manual</span>
@@ -286,7 +287,7 @@
                 </div>
 
                 <p class="settings-muted-note">
-                    Email sends the current PDF and CSV report to the alert recipient saved above.
+                    Reports are sent to the alert recipient email saved above.
                 </p>
             </div>
 
@@ -294,7 +295,7 @@
                 <div class="settings-card-head">
                     <div>
                         <h3>Account / Session</h3>
-                        <p>Current owner account. Logout is kept here so daily pages stay clean.</p>
+                        <p>Current owner account and logout.</p>
                     </div>
 
                     <span class="settings-pill">Owner</span>

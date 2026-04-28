@@ -2,7 +2,7 @@
 
 @section('title', 'Notifications')
 @section('page_title', 'Notifications')
-@section('page_subtitle', 'Persistent operational alerts derived from pig and breeding truth.')
+@section('page_subtitle', 'Things that need attention in the farm.')
 
 @section('top_actions')
     @if (($counts['unread'] ?? 0) > 0)
@@ -132,7 +132,7 @@
                     <span class="badge red">{{ $counts['unread'] }}</span>
                 </div>
                 <div class="stat-value">{{ number_format((int) $counts['unread']) }}</div>
-                <div class="stat-sub">Unread in-app operational alerts that still need attention.</div>
+                <div class="stat-sub">Unread items that still need attention.</div>
             </div>
 
             <div class="stat-card">
@@ -141,7 +141,7 @@
                     <span class="badge orange">{{ $counts['active'] }}</span>
                 </div>
                 <div class="stat-value">{{ number_format((int) $counts['active']) }}</div>
-                <div class="stat-sub">Active notifications that are not dismissed or resolved yet.</div>
+                <div class="stat-sub">Items still active in Pigstep.</div>
             </div>
 
             <div class="stat-card">
@@ -150,7 +150,7 @@
                     <span class="badge blue">{{ $counts['history'] }}</span>
                 </div>
                 <div class="stat-value">{{ number_format((int) $counts['history']) }}</div>
-                <div class="stat-sub">Dismissed or resolved notification history for reference.</div>
+                <div class="stat-sub">Old items kept for reference.</div>
             </div>
         </div>
 
@@ -158,14 +158,17 @@
             <div class="section-title">
                 <div>
                     <h3>Active Notifications</h3>
-                    <p>Unread and read notifications that still remain active in the system.</p>
+                    <p>These still need checking or action.</p>
                 </div>
                 <span class="badge orange">{{ $counts['active'] }}</span>
             </div>
 
             @if ($activeNotifications->isEmpty())
-                <div class="empty-state">No active notifications right now.</div>
+                <div class="empty-state">No active notifications right now. You are caught up.</div>
             @else
+                <div class="flash" style="margin-bottom: 16px;">
+                    Active notifications come from real farm records. If you only delete history, the same alert can come back until the source problem is fixed or dismissed.
+                </div>
                 <div class="grid">
                     @foreach ($activeNotifications as $notification)
                         @php
@@ -186,14 +189,6 @@
                                             <div><strong>Due Date:</strong> {{ $notification->due_date->format('Y-m-d') }}</div>
                                         @endif
 
-                                        @if ($notification->pig_id)
-                                            <div><strong>Pig ID:</strong> {{ $notification->pig_id }}</div>
-                                        @endif
-
-                                        @if ($notification->reproduction_cycle_id)
-                                            <div><strong>Breeding Case ID:</strong> {{ $notification->reproduction_cycle_id }}</div>
-                                        @endif
-
                                         <div><strong>Created:</strong> {{ optional($notification->created_at)->format('Y-m-d H:i') ?: '—' }}</div>
                                     </div>
                                 </div>
@@ -211,7 +206,7 @@
 
                             <div class="notification-actions">
                                 @if ($routeUrl)
-                                    <a href="{{ $routeUrl }}" class="btn primary">Open Related Record</a>
+                                    <a href="{{ $routeUrl }}" class="btn primary">Open Record</a>
                                 @endif
 
                                 @if ($notification->isUnread() && $canRead)
@@ -261,7 +256,7 @@
                     <span class="badge blue">{{ $counts['history'] }}</span>
 
                     @if ($canClearHistory && ($counts['history'] ?? 0) > 0)
-                        <form method="POST" action="{{ route('notifications.history.clear') }}" onsubmit="return confirm('Delete notification history? Active notifications will stay.');">
+                        <form method="POST" action="{{ route('notifications.history.clear') }}" onsubmit="return confirm('Delete old dismissed/resolved history only? Active problems may come back until the source issue is fixed.');">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-danger">Delete History</button>
@@ -291,14 +286,6 @@
                                             <div><strong>Due Date:</strong> {{ $notification->due_date->format('Y-m-d') }}</div>
                                         @endif
 
-                                        @if ($notification->pig_id)
-                                            <div><strong>Pig ID:</strong> {{ $notification->pig_id }}</div>
-                                        @endif
-
-                                        @if ($notification->reproduction_cycle_id)
-                                            <div><strong>Breeding Case ID:</strong> {{ $notification->reproduction_cycle_id }}</div>
-                                        @endif
-
                                         <div><strong>Status:</strong> {{ $notification->status_label }}</div>
                                         <div><strong>Updated:</strong> {{ optional($notification->updated_at)->format('Y-m-d H:i') ?: '—' }}</div>
                                     </div>
@@ -319,7 +306,7 @@
 
                             <div class="notification-actions">
                                 @if ($routeUrl)
-                                    <a href="{{ $routeUrl }}" class="btn">Open Related Record</a>
+                                    <a href="{{ $routeUrl }}" class="btn">Open Record</a>
                                 @endif
                             </div>
                         </div>

@@ -2,7 +2,7 @@
 
 @section('title', 'Breeding Case')
 @section('page_title', 'Breeding Case')
-@section('page_subtitle', 'Breeding case summary, progress updates, attempts, and piglet registration.')
+@section('page_subtitle', 'Breeding case, next step, and timeline.')
 
 @section('top_actions')
     <a href="{{ route('reproduction-cycles.index') }}" class="btn">Back to Breeding</a>
@@ -293,28 +293,7 @@
         $preFarrowRows = collect();
 
         if ($cycle->expected_farrow_date && !$cycle->actual_farrow_date && $cycle->pregnancy_result === \App\Models\ReproductionCycle::PREGNANCY_RESULT_PREGNANT) {
-            $preFarrowRows = collect([
-                [
-                    'label' => 'Pre-farrow vaccine/program review',
-                    'days_before' => 35,
-                    'note' => 'Review farm/vet vaccine plan. Not an automatic drug order.',
-                ],
-                [
-                    'label' => 'Parasite/deworming check',
-                    'days_before' => 21,
-                    'note' => 'Check internal/external parasite control timing with vet/product label.',
-                ],
-                [
-                    'label' => 'Booster/vaccine check',
-                    'days_before' => 14,
-                    'note' => 'Check if booster or pre-farrow vaccine action is due.',
-                ],
-                [
-                    'label' => 'Final medication and hygiene check',
-                    'days_before' => 7,
-                    'note' => 'Final pre-farrow medication, udder/belly hygiene, and pen readiness check.',
-                ],
-            ])->map(function ($row) use ($cycle) {
+            $preFarrowRows = collect(\\App\\Services\\PreFarrowReminderSchedule::items())->map(function ($row) use ($cycle) {
                 $dueDate = $cycle->expected_farrow_date->copy()->subDays((int) $row['days_before'])->startOfDay();
                 $today = now()->startOfDay();
 
@@ -332,7 +311,7 @@
             <div class="section-title">
                 <div>
                     <h3>Current Case Snapshot</h3>
-                    <p>This parent record stores the latest state of the breeding case and the current active attempt metadata.</p>
+                    <p>Latest status, important dates, and the next action for this sow.</p>
                 </div>
 
                 <div class="case-status-badges">
@@ -344,16 +323,16 @@
 
             @if($displayStatus === \App\Models\ReproductionCycle::STATUS_SERVICED && !$pregnancyCheckIsDue)
                 <div class="flash" style="margin-bottom: 16px;">
-                    Pregnancy / heat check is usually done starting
+                    Pregnancy / heat check is usually due on
                     <strong>{{ $pregnancyCheckDueDate?->format('Y-m-d') ?? '—' }}</strong>
-                    which is <strong>Day {{ \App\Models\ReproductionCycle::pregnancyCheckStartDays() }}</strong> after service.
-                    You may still record early if needed, but the system will show it as an early entry.
+                    — Day {{ \App\Models\ReproductionCycle::pregnancyCheckStartDays() }} after service.
+                    Early entry is allowed if you are encoding farm history.
                 </div>
             @endif
 
             @if($displayStatus === \App\Models\ReproductionCycle::STATUS_SERVICED && $pregnancyCheckIsDue)
                 <div class="flash success" style="margin-bottom: 16px;">
-                    Pregnancy / heat check is now due. Watch for return-to-heat signs from
+                    Pregnancy / heat check is due now. Watch for heat signs from
                     <strong>{{ $pregnancyCheckDueDate?->format('Y-m-d') ?? '—' }}</strong>
                     to <strong>{{ $returnToHeatWindowEndDate?->format('Y-m-d') ?? '—' }}</strong>.
                 </div>
@@ -366,7 +345,7 @@
                 \App\Models\ReproductionCycle::STATUS_CLOSED,
             ], true))
                 <div class="flash success" style="margin-bottom: 16px;">
-                    Expected farrow date is automatically tracked from <strong>service date + {{ \App\Models\ReproductionCycle::gestationDays() }} days</strong>. Current expected farrow date:
+                    Expected farrow date:
                     <strong>{{ $cycle->expected_farrow_date?->format('Y-m-d') ?? '—' }}</strong>.
                 </div>
             @endif
@@ -385,9 +364,9 @@
 
             @if($preFarrowRows->isNotEmpty())
                 <div class="flash" style="margin-bottom: 16px;">
-                    <strong>Pre-farrow medication reminder active.</strong>
-                    These reminders help avoid missed pre-farrow prevention steps before the expected farrowing date.
-                    Product choice and dose should still follow farm protocol, product label, or veterinarian direction.
+                    <strong>Pre-farrow checklist is active.</strong>
+                    Follow the farm/vet medication plan before farrowing.
+                    Do not auto-medicate without farm/vet/product-label guidance.
                 </div>
             @endif
 
@@ -505,8 +484,8 @@
                     <div class="panel-card" style="height: fit-content;">
                         <div class="section-title">
                             <div>
-                                <h3>Pre-Farrow Medication Reminders</h3>
-                                <p>Warning schedule counted backward from expected farrowing date.</p>
+                                <h3>Pre-Farrow Checklist</h3>
+                                <p>Dates are counted backward from expected farrowing.</p>
                             </div>
                         </div>
 
@@ -532,8 +511,8 @@
                 <div class="panel-card" style="height: fit-content;">
                     <div class="section-title">
                         <div>
-                            <h3>Breeding Case Guide</h3>
-                            <p>How this case should be used.</p>
+                            <h3>Quick Guide</h3>
+                            <p>Short help for this breeding record.</p>
                         </div>
                     </div>
 
@@ -581,7 +560,7 @@
                 <div class="section-title">
                     <div>
                         <h3>Add Progress Update</h3>
-                        <p>Append a new event to the breeding case timeline. Each event has its own allowed fields.</p>
+                        <p>Add the next real event for this breeding case.</p>
                     </div>
                 </div>
 
@@ -619,7 +598,7 @@
                 <div class="section-title">
                     <div>
                         <h3>Timeline Summary</h3>
-                        <p>Quick case totals based on the append-only breeding history.</p>
+                        <p>Quick totals for this breeding case.</p>
                     </div>
                 </div>
 
@@ -665,7 +644,7 @@
             <div class="section-title">
                 <div>
                     <h3>Timeline History</h3>
-                    <p>Append-only breeding case events in reverse chronological order.</p>
+                    <p>Newest breeding events first.</p>
                 </div>
             </div>
 
