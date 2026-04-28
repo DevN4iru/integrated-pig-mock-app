@@ -122,6 +122,8 @@
         ];
 
         $canClearHistory = \Illuminate\Support\Facades\Route::has('notifications.history.clear');
+        $dateLabel = fn ($date) => $date ? $date->format('F j, Y') : '—';
+        $dateTimeLabel = fn ($date) => $date ? $date->format('F j, Y g:i A') : '—';
     @endphp
 
     <div class="notification-stack">
@@ -186,10 +188,10 @@
                                         <div><strong>Message:</strong> {{ $notification->message }}</div>
 
                                         @if ($notification->due_date)
-                                            <div><strong>Due Date:</strong> {{ $notification->due_date->format('Y-m-d') }}</div>
+                                            <div><strong>Due Date:</strong> {{ $dateLabel($notification->due_date) }}</div>
                                         @endif
 
-                                        <div><strong>Created:</strong> {{ optional($notification->created_at)->format('Y-m-d H:i') ?: '—' }}</div>
+                                        <div><strong>Created:</strong> {{ $dateTimeLabel($notification->created_at) }}</div>
                                     </div>
                                 </div>
 
@@ -283,11 +285,11 @@
                                         <div><strong>Message:</strong> {{ $notification->message }}</div>
 
                                         @if ($notification->due_date)
-                                            <div><strong>Due Date:</strong> {{ $notification->due_date->format('Y-m-d') }}</div>
+                                            <div><strong>Due Date:</strong> {{ $dateLabel($notification->due_date) }}</div>
                                         @endif
 
                                         <div><strong>Status:</strong> {{ $notification->status_label }}</div>
-                                        <div><strong>Updated:</strong> {{ optional($notification->updated_at)->format('Y-m-d H:i') ?: '—' }}</div>
+                                        <div><strong>Updated:</strong> {{ $dateTimeLabel($notification->updated_at) }}</div>
                                     </div>
                                 </div>
 

@@ -288,6 +288,8 @@
         $nextAttemptNumber = $cycle->current_attempt_number + 1;
         $pregnancyCheckDueDate = $cycle->pregnancy_check_due_date;
         $returnToHeatWindowEndDate = $cycle->return_to_heat_window_end_date;
+        $dateLabel = fn ($date) => $date ? $date->format('F j, Y') : '—';
+
         $pregnancyCheckIsDue = $pregnancyCheckDueDate && $pregnancyCheckDueDate->copy()->startOfDay()->lessThanOrEqualTo(now()->startOfDay());
         $expectedFarrowHasPassed = $cycle->expected_farrow_date
             && !$cycle->actual_farrow_date
@@ -332,7 +334,7 @@
             @if($displayStatus === \App\Models\ReproductionCycle::STATUS_SERVICED && !$pregnancyCheckIsDue)
                 <div class="flash" style="margin-bottom: 16px;">
                     Pregnancy / heat check is usually due on
-                    <strong>{{ $pregnancyCheckDueDate?->format('Y-m-d') ?? '—' }}</strong>
+                    <strong>{{ $dateLabel($pregnancyCheckDueDate) }}</strong>
                     — Day {{ \App\Models\ReproductionCycle::pregnancyCheckStartDays() }} after service.
                     Early entry is allowed if you are encoding farm history.
                 </div>
@@ -341,8 +343,8 @@
             @if($displayStatus === \App\Models\ReproductionCycle::STATUS_SERVICED && $pregnancyCheckIsDue)
                 <div class="flash success" style="margin-bottom: 16px;">
                     Pregnancy / heat check is due now. Watch for heat signs from
-                    <strong>{{ $pregnancyCheckDueDate?->format('Y-m-d') ?? '—' }}</strong>
-                    to <strong>{{ $returnToHeatWindowEndDate?->format('Y-m-d') ?? '—' }}</strong>.
+                    <strong>{{ $dateLabel($pregnancyCheckDueDate) }}</strong>
+                    to <strong>{{ $dateLabel($returnToHeatWindowEndDate) }}</strong>.
                 </div>
             @endif
 
@@ -354,7 +356,7 @@
             ], true))
                 <div class="flash success" style="margin-bottom: 16px;">
                     Expected farrow date:
-                    <strong>{{ $cycle->expected_farrow_date?->format('Y-m-d') ?? '—' }}</strong>.
+                    <strong>{{ $dateLabel($cycle->expected_farrow_date) }}</strong>.
                 </div>
             @endif
 
@@ -419,32 +421,32 @@
 
                     <div class="form-group">
                         <label>Service Date</label>
-                        <input type="text" value="{{ $cycle->service_date?->format('Y-m-d') ?? '—' }}" readonly>
+                        <input type="text" value="{{ $dateLabel($cycle->service_date) }}" readonly>
                     </div>
 
                     <div class="form-group">
                         <label>Pregnancy / Heat Check Due</label>
-                        <input type="text" value="{{ $pregnancyCheckDueDate?->format('Y-m-d') ?? '—' }} — Day {{ \App\Models\ReproductionCycle::pregnancyCheckStartDays() }}" readonly>
+                        <input type="text" value="{{ $dateLabel($pregnancyCheckDueDate) }} — Day {{ \App\Models\ReproductionCycle::pregnancyCheckStartDays() }}" readonly>
                     </div>
 
                     <div class="form-group">
                         <label>Return-to-Heat Watch Window</label>
-                        <input type="text" value="{{ $pregnancyCheckDueDate?->format('Y-m-d') ?? '—' }} to {{ $returnToHeatWindowEndDate?->format('Y-m-d') ?? '—' }}" readonly>
+                        <input type="text" value="{{ $dateLabel($pregnancyCheckDueDate) }} to {{ $dateLabel($returnToHeatWindowEndDate) }}" readonly>
                     </div>
 
                     <div class="form-group">
                         <label>Pregnancy Check Recorded</label>
-                        <input type="text" value="{{ $cycle->pregnancy_check_date?->format('Y-m-d') ?? '—' }}" readonly>
+                        <input type="text" value="{{ $dateLabel($cycle->pregnancy_check_date) }}" readonly>
                     </div>
 
                     <div class="form-group">
                         <label>Expected Farrow Date</label>
-                        <input type="text" value="{{ $showExpectedFarrow ? ($cycle->expected_farrow_date?->format('Y-m-d') ?? '—') : 'Hidden until pregnant' }}" readonly>
+                        <input type="text" value="{{ $showExpectedFarrow ? $dateLabel($cycle->expected_farrow_date) : 'Hidden until pregnant' }}" readonly>
                     </div>
 
                     <div class="form-group">
                         <label>Actual Farrow Date</label>
-                        <input type="text" value="{{ $cycle->actual_farrow_date?->format('Y-m-d') ?? '—' }}" readonly>
+                        <input type="text" value="{{ $dateLabel($cycle->actual_farrow_date) }}" readonly>
                     </div>
 
                     <div class="form-group">
@@ -508,7 +510,7 @@
                                     <div class="timeline-item-top">
                                         <div class="timeline-item-title">
                                             <strong>{{ $row['label'] }}</strong>
-                                            <span class="timeline-meta">{{ $row['due_date']->format('Y-m-d') }} • {{ $row['days_before'] }} day(s) before farrow</span>
+                                            <span class="timeline-meta">{{ $row['due_date']->format('F j, Y') }} • {{ $row['days_before'] }} day(s) before farrow</span>
                                         </div>
 
                                         <span class="badge {{ $row['badge'] }}">{{ $row['status'] }}</span>
@@ -712,7 +714,7 @@
                             <div class="timeline-item-top">
                                 <div class="timeline-item-title">
                                     <strong>{{ $update->event_type_label }}</strong>
-                                    <span class="timeline-meta">{{ $update->event_date?->format('Y-m-d') ?? '—' }}</span>
+                                    <span class="timeline-meta">{{ $dateLabel($update->event_date) }}</span>
                                 </div>
 
                                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -746,7 +748,7 @@
 
                                 <div class="timeline-field">
                                     <label>Actual Farrow Date</label>
-                                    <div>{{ $update->actual_farrow_date?->format('Y-m-d') ?? '—' }}</div>
+                                    <div>{{ $dateLabel($update->actual_farrow_date) }}</div>
                                 </div>
 
                                 <div class="timeline-field">
