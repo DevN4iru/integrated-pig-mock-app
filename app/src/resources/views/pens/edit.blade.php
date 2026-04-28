@@ -33,7 +33,7 @@
                         <option value="">Select type</option>
                         @foreach ($penTypes as $type)
                             <option value="{{ $type }}" {{ old('type', $pen->type) === $type ? 'selected' : '' }}>
-                                {{ $type }}
+                                {{ \App\Models\Pen::displayTypeLabel($type) }}
                             </option>
                         @endforeach
                     </select>

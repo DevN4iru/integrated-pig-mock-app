@@ -2,7 +2,7 @@
 
 @section('title', 'Pen Details')
 @section('page_title', 'Pen Details')
-@section('page_subtitle', 'Operational detail page for this housing pen.')
+@section('page_subtitle', 'Simple detail page for this housing pen.')
 
 @section('top_actions')
     <a href="{{ route('pens.index') }}" class="btn">Back to Pen List</a>
@@ -29,21 +29,8 @@
     padding: 18px;
 }
 
-.pen-usage-bar {
-    height: 10px;
-    border-radius: 999px;
-    background: #e5e7eb;
-    overflow: hidden;
-}
 
-.pen-usage-fill {
-    height: 100%;
-    border-radius: 999px;
-}
 
-.pen-usage-fill.open { background: #22c55e; }
-.pen-usage-fill.limited { background: #f59e0b; }
-.pen-usage-fill.full { background: #ef4444; }
 
 .inline-actions {
     display: flex;
@@ -71,7 +58,7 @@
         <div class="section-title">
             <div>
                 <h3>{{ $pen->name }}</h3>
-                <p>{{ $pen->type }} pen operational summary.</p>
+                <p>{{ $pen->display_type }} pen summary.</p>
             </div>
             <span class="badge {{ $pen->occupancyBadgeClass() }}">
                 {{ ucfirst($summary['status']) }}
@@ -86,7 +73,7 @@
 
             <div class="form-group">
                 <label>Pen Type</label>
-                <input type="text" value="{{ $pen->type }}" readonly>
+                <input type="text" value="{{ $pen->display_type }}" readonly>
             </div>
 
             <div class="form-group">
@@ -104,21 +91,9 @@
                 <input type="text" value="{{ $summary['available'] }}" readonly>
             </div>
 
-            <div class="form-group">
-                <label>Usage</label>
-                <input type="text" value="{{ number_format($summary['occupancy_percent'], 0) }}%" readonly>
-            </div>
-
             <div class="form-group full">
                 <label>Notes</label>
                 <textarea readonly>{{ $pen->notes ?: '—' }}</textarea>
-            </div>
-
-            <div class="form-group full">
-                <label>Occupancy Heat</label>
-                <div class="pen-usage-bar">
-                    <div class="pen-usage-fill {{ $summary['status'] }}" style="width: {{ $summary['occupancy_percent'] }}%"></div>
-                </div>
             </div>
         </div>
     </div>

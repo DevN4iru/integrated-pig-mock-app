@@ -47,6 +47,16 @@ class Pen extends Model
         ];
     }
 
+    public static function displayTypeLabel(?string $type): string
+    {
+        return $type === self::TYPE_REPLACEMENT_GILT ? 'Gilt' : (string) $type;
+    }
+
+    public function getDisplayTypeAttribute(): string
+    {
+        return self::displayTypeLabel($this->type);
+    }
+
     public function pigs(): HasMany
     {
         return $this->hasMany(Pig::class);
@@ -123,14 +133,6 @@ class Pen extends Model
         };
     }
 
-    public function heatClass(): string
-    {
-        return match ($this->occupancyStatus()) {
-            'full' => 'heat-full',
-            'limited' => 'heat-limited',
-            default => 'heat-open',
-        };
-    }
 
     public function sortKey(): string
     {

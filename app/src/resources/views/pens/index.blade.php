@@ -7,7 +7,7 @@
 @section('top_actions')
     <div class="pen-view-actions">
         <button id="penSimpleViewButton" type="button" class="btn pen-view-toggle" onclick="setView('simple')">Simple View</button>
-        <button id="penGridViewButton" type="button" class="btn pen-view-toggle" onclick="setView('grid')">Grid View</button>
+        <button id="penGridViewButton" type="button" class="btn pen-view-toggle" onclick="setView('grid')">Card View</button>
         <a href="{{ route('pens.create') }}" class="btn primary">Add Pen</a>
     </div>
 @endsection
@@ -193,13 +193,13 @@
     gap: 16px;
 }
 
-.pen-heat-grid {
+.pen-card-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 14px;
 }
 
-.pen-heat-card {
+.pen-simple-card {
     border-radius: 16px;
     border: 1px solid var(--line);
     padding: 14px;
@@ -208,35 +208,21 @@
     gap: 10px;
 }
 
-.pen-heat-card.heat-open {
-    background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
-    border-color: #bbf7d0;
-}
 
-.pen-heat-card.heat-limited {
-    background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%);
-    border-color: #fed7aa;
-}
-
-.pen-heat-card.heat-full {
-    background: linear-gradient(180deg, #fef2f2 0%, #ffffff 100%);
-    border-color: #fecaca;
-}
-
-.pen-heat-top {
+.pen-simple-card-top {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     gap: 10px;
 }
 
-.pen-heat-name {
+.pen-simple-card-name {
     font-weight: 800;
     font-size: 15px;
     line-height: 1.2;
 }
 
-.pen-heat-type {
+.pen-simple-card-type {
     color: var(--muted);
     font-size: 12px;
 }
@@ -267,59 +253,14 @@
     color: var(--green);
 }
 
-.pen-progress {
-    height: 8px;
-    border-radius: 999px;
-    background: #e5e7eb;
-    overflow: hidden;
-    margin-top: 8px;
-}
 
-.pen-progress-bar {
-    height: 100%;
-    border-radius: 999px;
-}
 
-.pen-progress.open .pen-progress-bar,
-.pen-progress-bar.open {
-    background: #22c55e;
-}
 
-.pen-progress.limited .pen-progress-bar,
-.pen-progress-bar.limited {
-    background: #f59e0b;
-}
 
-.pen-progress.full .pen-progress-bar,
-.pen-progress-bar.full {
-    background: #ef4444;
-}
 
-.pen-legend {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: center;
-}
 
-.pen-legend-item {
-    display: inline-flex;
-    gap: 8px;
-    align-items: center;
-    font-size: 12px;
-    color: var(--muted);
-    font-weight: 700;
-}
 
-.pen-legend-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 999px;
-}
 
-.pen-legend-dot.open { background: #22c55e; }
-.pen-legend-dot.limited { background: #f59e0b; }
-.pen-legend-dot.full { background: #ef4444; }
 
 .hidden {
     display: none;
@@ -327,7 +268,7 @@
 
 @media (max-width: 1200px) {
     .pen-grid,
-    .pen-heat-grid,
+    .pen-card-grid,
     .pen-summary-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -346,7 +287,7 @@
     }
 
     .pen-grid,
-    .pen-heat-grid,
+    .pen-card-grid,
     .pen-summary-grid {
         grid-template-columns: 1fr;
     }
@@ -366,11 +307,11 @@
         white-space: nowrap;
     }
 
-    .pen-heat-card {
+    .pen-simple-card {
         min-height: auto;
     }
 
-    .pen-heat-top,
+    .pen-simple-card-top,
     .pen-card-top {
         display: grid;
         grid-template-columns: 1fr;
@@ -390,10 +331,10 @@
         padding: 14px;
     }
 
-    .pen-heat-card .btn,
-    .pen-heat-card form,
-    .pen-heat-card input,
-    .pen-heat-card button,
+    .pen-simple-card .btn,
+    .pen-simple-card form,
+    .pen-simple-card input,
+    .pen-simple-card button,
     .data-table .btn {
         width: 100%;
     }
@@ -414,8 +355,8 @@
     <div class="panel-card">
         <div class="section-title">
             <div>
-                <h3>Pen Occupancy Overview</h3>
-                <p>Live occupancy snapshot across all pens based on current assigned pigs.</p>
+                <h3>Pen Overview</h3>
+                <p>Quick view of pens, capacity, and current pigs.</p>
             </div>
         </div>
 
@@ -463,6 +404,7 @@
             @endphp
 
             @php
+                $displayType = \App\Models\Pen::displayTypeLabel($type);
                 $categoryPenCount = $typePens->count();
                 $categoryActivePens = $typePens->filter(fn ($pen) => $pen->occupiedCount() > 0)->count();
                 $categoryPigCount = $typePens->sum(fn ($pen) => $pen->occupiedCount());
@@ -472,8 +414,8 @@
             <details class="panel-card pen-group" {{ $typePens->isNotEmpty() ? 'open' : '' }}>
                 <summary>
                     <div class="pen-category-title">
-                        <h3>{{ $type }}</h3>
-                        <p>{{ $categoryActivePens }} active pen(s) • {{ $categoryPigCount }} total pig(s) in {{ strtolower($type) }} • {{ $categoryCapacity }} total slot(s)</p>
+                        <h3>{{ $displayType }}</h3>
+                        <p>{{ $categoryActivePens }} active pen(s) • {{ $categoryPigCount }} total pig(s) in {{ strtolower($displayType) }} • {{ $categoryCapacity }} total slot(s)</p>
                     </div>
 
                     <div class="pen-category-preview">
@@ -486,7 +428,7 @@
 
                 <div class="pen-group-body">
                     @if ($typePens->isEmpty())
-                        <div class="empty-state">No {{ strtolower($type) }} pens yet.</div>
+                        <div class="empty-state">No {{ strtolower($displayType) }} pens yet.</div>
                     @else
                         <div class="table-wrap">
                         <table class="data-table">
@@ -497,7 +439,6 @@
                                     <th>Occupied</th>
                                     <th>Available</th>
                                     <th>Status</th>
-                                    <th>Heat</th>
                                     <th>Notes</th>
                                     <th>Actions</th>
                                 </tr>
@@ -514,7 +455,6 @@
                                         <td>
                                             <div style="display:grid; gap:4px;">
                                                 <strong>{{ $pen->name }}</strong>
-                                                <span class="text-muted">{{ number_format($occupancyPercent, 0) }}% occupied</span>
                                             </div>
                                         </td>
                                         <td>{{ $pen->capacity }}</td>
@@ -522,11 +462,6 @@
                                         <td>{{ $available }}</td>
                                         <td>
                                             <span class="pen-status-pill {{ $status }}">{{ ucfirst($status) }}</span>
-                                        </td>
-                                        <td style="min-width:150px;">
-                                            <div class="pen-progress {{ $status }}">
-                                                <div class="pen-progress-bar {{ $status }}" style="width: {{ $occupancyPercent }}%"></div>
-                                            </div>
                                         </td>
                                         <td>{{ $pen->notes ?: '—' }}</td>
                                         <td>
@@ -574,20 +509,6 @@
     </div>
 
     <div id="gridView" class="hidden">
-        <div class="panel-card" style="margin-bottom: 22px;">
-            <div class="section-title">
-                <div>
-                    <h3>Heatmap Legend</h3>
-                    <p>Green = open, orange = near full, red = full.</p>
-                </div>
-            </div>
-
-            <div class="pen-legend">
-                <span class="pen-legend-item"><span class="pen-legend-dot open"></span> Open</span>
-                <span class="pen-legend-item"><span class="pen-legend-dot limited"></span> Limited</span>
-                <span class="pen-legend-item"><span class="pen-legend-dot full"></span> Full</span>
-            </div>
-        </div>
 
         @foreach ($penTypes as $type)
             @php
@@ -595,6 +516,7 @@
             @endphp
 
             @php
+                $displayType = \App\Models\Pen::displayTypeLabel($type);
                 $categoryPenCount = $typePens->count();
                 $categoryActivePens = $typePens->filter(fn ($pen) => $pen->occupiedCount() > 0)->count();
                 $categoryPigCount = $typePens->sum(fn ($pen) => $pen->occupiedCount());
@@ -604,8 +526,8 @@
             <details class="panel-card pen-group" {{ $typePens->isNotEmpty() ? 'open' : '' }}>
                 <summary>
                     <div class="pen-category-title">
-                        <h3>{{ $type }}</h3>
-                        <p>{{ $categoryActivePens }} active pen(s) • {{ $categoryPigCount }} total pig(s) in {{ strtolower($type) }} • {{ $categoryCapacity }} total slot(s)</p>
+                        <h3>{{ $displayType }}</h3>
+                        <p>{{ $categoryActivePens }} active pen(s) • {{ $categoryPigCount }} total pig(s) in {{ strtolower($displayType) }} • {{ $categoryCapacity }} total slot(s)</p>
                     </div>
 
                     <div class="pen-category-preview">
@@ -618,9 +540,9 @@
 
                 <div class="pen-group-body">
                     @if ($typePens->isEmpty())
-                        <div class="empty-state">No {{ strtolower($type) }} pens yet.</div>
+                        <div class="empty-state">No {{ strtolower($displayType) }} pens yet.</div>
                     @else
-                        <div class="pen-heat-grid">
+                        <div class="pen-card-grid">
                         @foreach ($typePens as $pen)
                             @php
                                 $occupied = $pen->occupiedCount();
@@ -629,11 +551,11 @@
                                 $status = $pen->occupancyStatus();
                             @endphp
 
-                            <div class="pen-heat-card {{ $pen->heatClass() }}">
-                                <div class="pen-heat-top">
+                            <div class="pen-simple-card">
+                                <div class="pen-simple-card-top">
                                     <div style="display:grid; gap:4px;">
-                                        <div class="pen-heat-name">{{ $pen->name }}</div>
-                                        <div class="pen-heat-type">{{ $pen->type }}</div>
+                                        <div class="pen-simple-card-name">{{ $pen->name }}</div>
+                                        <div class="pen-simple-card-type">{{ $pen->display_type }}</div>
                                     </div>
 
                                     <span class="pen-status-pill {{ $status }}">
@@ -645,11 +567,6 @@
                                     <div><span class="text-muted">Capacity:</span> {{ $pen->capacity }}</div>
                                     <div><span class="text-muted">Occupied:</span> {{ $occupied }}</div>
                                     <div><span class="text-muted">Available:</span> {{ $available }}</div>
-                                    <div><span class="text-muted">Usage:</span> {{ number_format($percent, 0) }}%</div>
-                                </div>
-
-                                <div class="pen-progress {{ $status }}">
-                                    <div class="pen-progress-bar {{ $status }}" style="width: {{ $percent }}%"></div>
                                 </div>
 
                                 <div style="margin-top: 4px; display:flex; gap:8px; flex-wrap:wrap;">
