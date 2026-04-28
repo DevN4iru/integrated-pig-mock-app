@@ -35,9 +35,7 @@ class PigValueService
 
     public function recalculatedSeedValue(Pig $pig): float
     {
-        return Pig::preservedAssetValueSeedFromWeight(
-            (float) ($pig->computed_weight ?? $pig->latest_weight ?? 0)
-        );
+        return (float) ($pig->asset_value ?? 0);
     }
 
     public function valueStatusLabel(Pig $pig): string

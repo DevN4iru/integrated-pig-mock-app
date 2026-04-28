@@ -17,7 +17,6 @@ class FarmSettingController extends Controller
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'price_per_kg' => ['required', 'numeric', 'min:0'],
             'alert_recipient_email' => ['nullable', 'email:rfc'],
             'server_close_reminder_time' => ['nullable', 'date_format:H:i'],
             'feed_reminder_time' => ['nullable', 'date_format:H:i'],
@@ -28,6 +27,6 @@ class FarmSettingController extends Controller
 
         return redirect()
             ->route('settings.farm.edit')
-            ->with('success', 'Farm settings updated. Pricing and email reminder settings are now saved.');
+            ->with('success', 'Farm settings updated. Email reminder settings are now saved.');
     }
 }

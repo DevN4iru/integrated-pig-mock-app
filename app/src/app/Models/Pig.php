@@ -324,7 +324,7 @@ class Pig extends Model
 
     public static function preservedAssetValueSeedFromWeight(float $weight): float
     {
-        return max(0, $weight) * FarmSetting::currentPricePerKg();
+        return 0.0;
     }
 
     public function preserveCurrentDisplayValueForArchive(): void
@@ -972,13 +972,7 @@ class Pig extends Model
             return 0;
         }
 
-        $weight = $this->computed_weight;
-
-        if ($weight === null || $weight === '') {
-            return 0;
-        }
-
-        return (float) $weight * FarmSetting::currentPricePerKg();
+        return (float) ($this->asset_value ?? 0);
     }
 
     public function getActiveLiveValueAttribute(): float

@@ -60,12 +60,7 @@
                 <label>Source</label>
                 <input type="text" value="Birthed" readonly>
             </div>
-
-            <div class="form-group">
-                <label>Current Price per kg</label>
-                <input type="text" value="₱ {{ number_format((float) $pricePerKg, 2) }}" readonly>
-            </div>
-        </div>
+</div>
 
         @if($recommendedPens->isNotEmpty())
             <div class="flash" style="margin-top: 16px;">
@@ -100,7 +95,7 @@
                             <th>Sex</th>
                             <th>Assigned Pen</th>
                             <th>Birth Weight (kg)</th>
-                            <th>Asset Value</th>
+                            <th>Farm Value</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -155,8 +150,6 @@
                                 </td>
                                 <td>
                                     <input
-                                        class="piglet-weight-input"
-                                        data-preview="piglet_asset_preview_{{ $i }}"
                                         type="number"
                                         step="0.01"
                                         min="0"
@@ -170,11 +163,16 @@
                                 </td>
                                 <td>
                                     <input
-                                        id="piglet_asset_preview_{{ $i }}"
-                                        type="text"
-                                        value="0.00"
-                                        readonly
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        name="piglets[{{ $i }}][asset_value]"
+                                        value="{{ old("piglets.$i.asset_value", 0) }}"
+                                        required
                                     >
+                                    @error("piglets.$i.asset_value")
+                                        <div class="error-text">{{ $message }}</div>
+                                    @enderror
                                 </td>
                             </tr>
                         @endfor
@@ -194,25 +192,3 @@
     </div>
 @endsection
 
-@section('scripts')
-const BIRTH_PRICE_PER_KG = {{ json_encode((float) $pricePerKg) }};
-
-function updatePigletAssetPreview(input) {
-    const previewId = input.getAttribute('data-preview');
-    const preview = document.getElementById(previewId);
-    if (!preview) return;
-
-    const weight = parseFloat(input.value || '0');
-    const asset = Number.isNaN(weight) ? 0 : (weight * BIRTH_PRICE_PER_KG);
-
-    preview.value = asset.toFixed(2);
-}
-
-document.querySelectorAll('.piglet-weight-input').forEach((input) => {
-    input.addEventListener('input', function () {
-        updatePigletAssetPreview(this);
-    });
-
-    updatePigletAssetPreview(input);
-});
-@endsection

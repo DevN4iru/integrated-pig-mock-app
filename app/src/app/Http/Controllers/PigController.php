@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FarmSetting;
 use App\Models\Pen;
 use App\Models\Pig;
 use App\Models\PigTransfer;
@@ -129,9 +128,7 @@ class PigController extends Controller
             ->sortBy(fn ($pen) => $pen->sortKey())
             ->values();
 
-        $pricePerKg = FarmSetting::currentPricePerKg();
-
-        return view('pigs.create', compact('pens', 'pricePerKg'));
+        return view('pigs.create', compact('pens'));
     }
 
     public function store(Request $request)
@@ -146,6 +143,7 @@ class PigController extends Controller
             'age_unit' => ['required', Rule::in(['days', 'weeks', 'months'])],
             'date_added' => ['required', 'date', 'before_or_equal:today'],
             'latest_weight' => ['required', 'numeric', 'min:0'],
+            'asset_value' => ['required', 'numeric', 'min:0'],
         ]);
 
         $pen = Pen::withCount(['activePigs as pigs_count'])->findOrFail($validated['pen_id']);
@@ -162,7 +160,6 @@ class PigController extends Controller
         unset($validated['age_value'], $validated['age_unit']);
 
         $validated['pen_location'] = $pen->name;
-        $validated['asset_value'] = Pig::preservedAssetValueSeedFromWeight((float) $validated['latest_weight']);
 
         Pig::create($validated);
 
@@ -188,14 +185,12 @@ class PigController extends Controller
             ], true))
             ->values();
 
-        $pricePerKg = FarmSetting::currentPricePerKg();
         $pigletCount = (int) $reproductionCycle->born_alive;
 
         return view('pigs.create-born-batch', [
             'cycle' => $reproductionCycle,
             'pens' => $pens,
             'recommendedPens' => $recommendedPens,
-            'pricePerKg' => $pricePerKg,
             'pigletCount' => $pigletCount,
         ]);
     }
@@ -215,6 +210,7 @@ class PigController extends Controller
             'piglets.*.sex' => ['required', Rule::in(['male', 'female', 'undetermined'])],
             'piglets.*.pen_id' => ['required', 'integer', 'exists:pens,id'],
             'piglets.*.latest_weight' => ['required', 'numeric', 'min:0'],
+            'piglets.*.asset_value' => ['required', 'numeric', 'min:0'],
         ]);
 
         $requestedPenIds = collect($validated['piglets'])
@@ -273,7 +269,7 @@ class PigController extends Controller
                     'reproduction_cycle_id' => $reproductionCycle->id,
                     'date_added' => $birthDate,
                     'latest_weight' => $weight,
-                    'asset_value' => Pig::preservedAssetValueSeedFromWeight($weight),
+                    'asset_value' => (float) $piglet['asset_value'],
                 ]);
             }
         });
@@ -323,9 +319,7 @@ class PigController extends Controller
                 ->with('error', 'Access denied. Type the correct edit code first.');
         }
 
-        $pricePerKg = FarmSetting::currentPricePerKg();
-
-        return view('pigs.edit', compact('pig', 'pricePerKg'));
+        return view('pigs.edit', compact('pig'));
     }
 
     public function update(Request $request, Pig $pig)
@@ -345,6 +339,7 @@ class PigController extends Controller
             'age_unit' => ['required', Rule::in(['days', 'weeks', 'months'])],
             'date_added' => ['required', 'date', 'before_or_equal:today'],
             'latest_weight' => ['required', 'numeric', 'min:0'],
+            'asset_value' => ['required', 'numeric', 'min:0'],
         ]);
 
         $validated['age'] = $this->convertAgeToDays(

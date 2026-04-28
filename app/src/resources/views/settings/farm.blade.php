@@ -2,7 +2,7 @@
 
 @section('title', 'Farm Settings')
 @section('page_title', 'Farm Settings')
-@section('page_subtitle', 'Configure pricing, reminders, reports, and account session controls for Pigstep.')
+@section('page_subtitle', 'Configure reminders, reports, and account session controls for Pigstep.')
 
 @section('top_actions')
     <a href="{{ route('dashboard') }}" class="btn">Back to Dashboard</a>
@@ -212,8 +212,8 @@
         <div class="panel-card">
             <div class="settings-card-head">
                 <div>
-                    <h3>Pricing & Reminder Settings</h3>
-                    <p>Main farm configuration used for pig value computation, reminder emails, and daily handling messages.</p>
+                    <h3>Reminder Settings</h3>
+                    <p>Main farm configuration used for reminder emails and daily handling messages.</p>
                 </div>
 
                 <span class="settings-pill">Editable</span>
@@ -224,20 +224,7 @@
                 @method('PUT')
 
                 <div class="form-grid">
-                    <div class="form-group">
-                        <label for="price_per_kg">Price per kg</label>
-                        <input
-                            id="price_per_kg"
-                            name="price_per_kg"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value="{{ old('price_per_kg', $setting->price_per_kg) }}"
-                            required
-                        >
-                    </div>
-
-                    <div class="form-group">
+<div class="form-group">
                         <label for="alert_recipient_email">Alert recipient email</label>
                         <input
                             id="alert_recipient_email"

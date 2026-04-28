@@ -167,7 +167,6 @@
                 <div>
                     <h3>Add Pig Record</h3>
                     <p>Fill in the details below to add a pig into the system.</p>
-                    <p>Current global price per kg: <strong>₱ {{ number_format((float) $pricePerKg, 2) }}</strong></p>
                 </div>
 
                 <span class="pig-create-pill">New Record</span>
@@ -251,9 +250,9 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="asset_value_preview">Asset Value (Auto)</label>
-                    <input id="asset_value_preview" type="number" step="0.01" value="{{ old('asset_value') }}" readonly>
-                    <input id="asset_value" name="asset_value" type="hidden" value="{{ old('asset_value', 0) }}">
+                    <label for="asset_value">Farm Value</label>
+                    <input id="asset_value" name="asset_value" type="number" step="0.01" min="0" value="{{ old('asset_value', 0) }}" required>
+                    <small class="metric-note">Enter the value manually. Weight does not auto-compute the farm value.</small>
                 </div>
             </div>
 
@@ -288,7 +287,7 @@
 
                 <div class="pig-guide-item">
                     <strong>Asset Value</strong>
-                    <span>Automatically calculated from entry weight × current price per kg.</span>
+                    <span>Enter this manually based on the farm's actual valuation.</span>
                 </div>
 
                 <div class="pig-guide-item">
@@ -301,22 +300,6 @@
 @endsection
 
 @section('scripts')
-const PRICE_PER_KG = {{ json_encode((float) $pricePerKg) }};
-
-function updateAssetValue() {
-    const weightInput = document.getElementById('latest_weight');
-    const hiddenAssetInput = document.getElementById('asset_value');
-    const previewInput = document.getElementById('asset_value_preview');
-
-    if (!weightInput || !hiddenAssetInput || !previewInput) return;
-
-    const weight = parseFloat(weightInput.value || '0');
-    const asset = isNaN(weight) ? 0 : (weight * PRICE_PER_KG);
-
-    hiddenAssetInput.value = asset.toFixed(2);
-    previewInput.value = asset.toFixed(2);
-}
-
 function convertAgeToDays(value, unit) {
     const numeric = parseFloat(value || '0');
     if (isNaN(numeric) || numeric < 0) return 0;
@@ -340,10 +323,8 @@ function updateAgePreview() {
     previewInput.value = `${days} day${days === 1 ? '' : 's'}`;
 }
 
-document.getElementById('latest_weight')?.addEventListener('input', updateAssetValue);
 document.getElementById('age_value')?.addEventListener('input', updateAgePreview);
 document.getElementById('age_unit')?.addEventListener('change', updateAgePreview);
 
-updateAssetValue();
 updateAgePreview();
 @endsection
