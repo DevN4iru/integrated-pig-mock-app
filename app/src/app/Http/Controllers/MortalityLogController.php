@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FarmSetting;
 use App\Models\MortalityLog;
 use App\Models\Pig;
 use Illuminate\Http\Request;
@@ -54,8 +53,7 @@ class MortalityLogController extends Controller
         ]);
 
         $weightAtDeath = (float) ($pig->computed_weight ?? 0);
-        $pricePerKgAtDeath = FarmSetting::currentPricePerKg();
-        $lossValue = $weightAtDeath * $pricePerKgAtDeath;
+        $lossValue = (float) ($pig->asset_value ?? 0);
 
         MortalityLog::create([
             'pig_id' => $pig->id,
@@ -65,7 +63,7 @@ class MortalityLogController extends Controller
                 ? trim((string) $validated['notes'])
                 : null,
             'weight_at_death' => $weightAtDeath,
-            'price_per_kg_at_death' => $pricePerKgAtDeath,
+            'price_per_kg_at_death' => 0,
             'loss_value' => $lossValue,
         ]);
 

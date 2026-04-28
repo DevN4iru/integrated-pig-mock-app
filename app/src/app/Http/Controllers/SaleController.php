@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FarmSetting;
 use App\Models\Pig;
 use App\Models\Sale;
 use Illuminate\Http\Request;
@@ -40,10 +39,9 @@ class SaleController extends Controller
         }
 
         $currentWeight = (float) ($pig->computed_weight ?? 0);
-        $pricePerKg = FarmSetting::currentPricePerKg();
-        $recommendedPrice = $currentWeight * $pricePerKg;
+        $recommendedPrice = (float) ($pig->asset_value ?? 0);
 
-        return view('sales.create', compact('pig', 'currentWeight', 'pricePerKg', 'recommendedPrice'));
+        return view('sales.create', compact('pig', 'currentWeight', 'recommendedPrice'));
     }
 
     public function store(Request $request, Pig $pig)
@@ -60,8 +58,7 @@ class SaleController extends Controller
         ]);
 
         $currentWeight = (float) ($pig->computed_weight ?? 0);
-        $pricePerKg = FarmSetting::currentPricePerKg();
-        $recommendedPrice = $currentWeight * $pricePerKg;
+        $recommendedPrice = (float) ($pig->asset_value ?? 0);
 
         Sale::create([
             'pig_id' => $pig->id,
@@ -74,7 +71,7 @@ class SaleController extends Controller
                 ? trim((string) $validated['notes'])
                 : null,
             'weight_at_sale' => $currentWeight,
-            'price_per_kg_at_sale' => $pricePerKg,
+            'price_per_kg_at_sale' => 0,
             'recommended_price' => $recommendedPrice,
         ]);
 
@@ -134,7 +131,6 @@ class SaleController extends Controller
                 ->withInput();
         }
 
-        $pricePerKg = FarmSetting::currentPricePerKg();
         $buyer = isset($validated['buyer']) && trim((string) $validated['buyer']) !== ''
             ? trim((string) $validated['buyer'])
             : null;
@@ -145,10 +141,10 @@ class SaleController extends Controller
             ? (float) $validated['custom_price']
             : null;
 
-        DB::transaction(function () use ($pigs, $validated, $pricePerKg, $buyer, $notes, $customPrice): void {
+        DB::transaction(function () use ($pigs, $validated, $buyer, $notes, $customPrice): void {
             foreach ($pigs as $pig) {
                 $currentWeight = (float) ($pig->computed_weight ?? 0);
-                $recommendedPrice = $currentWeight * $pricePerKg;
+                $recommendedPrice = (float) ($pig->asset_value ?? 0);
 
                 $finalPrice = $validated['pricing_mode'] === 'recommended'
                     ? $recommendedPrice
@@ -161,7 +157,7 @@ class SaleController extends Controller
                     'buyer' => $buyer,
                     'notes' => $notes,
                     'weight_at_sale' => $currentWeight,
-                    'price_per_kg_at_sale' => $pricePerKg,
+                    'price_per_kg_at_sale' => 0,
                     'recommended_price' => $recommendedPrice,
                 ]);
             }

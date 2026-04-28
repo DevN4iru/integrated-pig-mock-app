@@ -17,20 +17,14 @@
             <label>Current Weight</label>
             <input type="text" value="{{ number_format((float) $currentWeight, 2) }} kg" readonly>
         </div>
-
-        <div class="form-group">
-            <label>Current Global Price per kg</label>
-            <input type="text" value="₱ {{ number_format((float) $pricePerKg, 2) }}" readonly>
-        </div>
-
-        <div class="form-group">
-            <label>Recommended Price</label>
+<div class="form-group">
+            <label>Current Farm Value</label>
             <input type="text" value="₱ {{ number_format((float) $recommendedPrice, 2) }}" readonly>
         </div>
 
         <div class="form-group full">
-            <label>Pricing Logic</label>
-            <input type="text" value="Recommended Price = Current Weight × Current Global Price per kg" readonly>
+            <label>Pricing Note</label>
+            <input type="text" value="Suggested price uses the pig's manually entered farm value." readonly>
         </div>
     </div>
 
@@ -46,13 +40,13 @@
             <div class="form-group">
                 <label>Price</label>
                 <input id="sale_price_input" type="number" step="0.01" min="0" name="price" value="{{ old('price', number_format((float) $recommendedPrice, 2, '.', '')) }}" required>
-                <div class="inline-note">Use the recommended price or override it if buyer negotiation changes the final deal.</div>
+                <div class="inline-note">Use the farm value or override it if buyer negotiation changes the final deal.</div>
             </div>
 
             <div class="form-group">
                 <label>&nbsp;</label>
                 <button type="button" class="btn" onclick="useRecommendedSalePrice('{{ number_format((float) $recommendedPrice, 2, '.', '') }}')">
-                    Use Recommended Price
+                    Use Farm Value
                 </button>
             </div>
 
