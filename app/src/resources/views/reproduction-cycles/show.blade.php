@@ -289,6 +289,42 @@
         $pregnancyCheckDueDate = $cycle->pregnancy_check_due_date;
         $returnToHeatWindowEndDate = $cycle->return_to_heat_window_end_date;
         $pregnancyCheckIsDue = $pregnancyCheckDueDate && $pregnancyCheckDueDate->copy()->startOfDay()->lessThanOrEqualTo(now()->startOfDay());
+
+        $preFarrowRows = collect();
+
+        if ($cycle->expected_farrow_date && !$cycle->actual_farrow_date && $cycle->pregnancy_result === \App\Models\ReproductionCycle::PREGNANCY_RESULT_PREGNANT) {
+            $preFarrowRows = collect([
+                [
+                    'label' => 'Pre-farrow vaccine/program review',
+                    'days_before' => 35,
+                    'note' => 'Review farm/vet vaccine plan. Not an automatic drug order.',
+                ],
+                [
+                    'label' => 'Parasite/deworming check',
+                    'days_before' => 21,
+                    'note' => 'Check internal/external parasite control timing with vet/product label.',
+                ],
+                [
+                    'label' => 'Booster/vaccine check',
+                    'days_before' => 14,
+                    'note' => 'Check if booster or pre-farrow vaccine action is due.',
+                ],
+                [
+                    'label' => 'Final medication and hygiene check',
+                    'days_before' => 7,
+                    'note' => 'Final pre-farrow medication, udder/belly hygiene, and pen readiness check.',
+                ],
+            ])->map(function ($row) use ($cycle) {
+                $dueDate = $cycle->expected_farrow_date->copy()->subDays((int) $row['days_before'])->startOfDay();
+                $today = now()->startOfDay();
+
+                $row['due_date'] = $dueDate;
+                $row['status'] = $dueDate->lt($today) ? 'Overdue' : ($dueDate->isSameDay($today) ? 'Due Today' : 'Upcoming');
+                $row['badge'] = $dueDate->lt($today) ? 'red' : ($dueDate->isSameDay($today) ? 'orange' : 'blue');
+
+                return $row;
+            })->values();
+        }
     @endphp
 
     <div class="case-grid">
@@ -344,6 +380,14 @@
             @if($canStartNextAttempt)
                 <div class="flash success" style="margin-bottom: 16px;">
                     The sow has been marked <strong>returned to heat</strong>. You can now either <strong>close this case</strong> or <strong>start Attempt {{ $nextAttemptNumber }}</strong> using the copied setup as a default.
+                </div>
+            @endif
+
+            @if($preFarrowRows->isNotEmpty())
+                <div class="flash" style="margin-bottom: 16px;">
+                    <strong>Pre-farrow medication reminder active.</strong>
+                    These reminders help avoid missed pre-farrow prevention steps before the expected farrowing date.
+                    Product choice and dose should still follow farm protocol, product label, or veterinarian direction.
                 </div>
             @endif
 
@@ -456,6 +500,34 @@
                         <textarea rows="4" readonly>{{ $cycle->notes ?: '—' }}</textarea>
                     </div>
                 </div>
+
+                @if($preFarrowRows->isNotEmpty())
+                    <div class="panel-card" style="height: fit-content;">
+                        <div class="section-title">
+                            <div>
+                                <h3>Pre-Farrow Medication Reminders</h3>
+                                <p>Warning schedule counted backward from expected farrowing date.</p>
+                            </div>
+                        </div>
+
+                        <div class="timeline-stack">
+                            @foreach($preFarrowRows as $row)
+                                <div class="timeline-item">
+                                    <div class="timeline-item-top">
+                                        <div class="timeline-item-title">
+                                            <strong>{{ $row['label'] }}</strong>
+                                            <span class="timeline-meta">{{ $row['due_date']->format('Y-m-d') }} • {{ $row['days_before'] }} day(s) before farrow</span>
+                                        </div>
+
+                                        <span class="badge {{ $row['badge'] }}">{{ $row['status'] }}</span>
+                                    </div>
+
+                                    <div class="summary-note">{{ $row['note'] }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
 
                 <div class="panel-card" style="height: fit-content;">
                     <div class="section-title">

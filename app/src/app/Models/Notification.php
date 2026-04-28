@@ -13,6 +13,8 @@ class Notification extends Model
     public const TYPE_PROTOCOL_DUE_TODAY = 'protocol.due_today';
     public const TYPE_PIG_STALE_WEIGHT = 'pig.stale_weight';
     public const TYPE_BREEDING_DUE_SOON = 'breeding.due_soon';
+    public const TYPE_BREEDING_PRE_FARROW_MEDICATION_DUE = 'breeding.pre_farrow_medication_due';
+    public const TYPE_BREEDING_PRE_FARROW_MEDICATION_OVERDUE = 'breeding.pre_farrow_medication_overdue';
     public const TYPE_BREEDING_PIGLETS_UNREGISTERED = 'breeding.piglets_unregistered';
 
     public const SEVERITY_CRITICAL = 'critical';
@@ -62,6 +64,8 @@ class Notification extends Model
             self::TYPE_PROTOCOL_DUE_TODAY,
             self::TYPE_PIG_STALE_WEIGHT,
             self::TYPE_BREEDING_DUE_SOON,
+            self::TYPE_BREEDING_PRE_FARROW_MEDICATION_DUE,
+            self::TYPE_BREEDING_PRE_FARROW_MEDICATION_OVERDUE,
             self::TYPE_BREEDING_PIGLETS_UNREGISTERED,
         ];
     }
@@ -148,6 +152,8 @@ class Notification extends Model
             self::TYPE_PROTOCOL_DUE_TODAY => 'Protocol Due Today',
             self::TYPE_PIG_STALE_WEIGHT => 'Stale Weight',
             self::TYPE_BREEDING_DUE_SOON => 'Breeding Due Soon',
+            self::TYPE_BREEDING_PRE_FARROW_MEDICATION_DUE => 'Pre-Farrow Medication Due',
+            self::TYPE_BREEDING_PRE_FARROW_MEDICATION_OVERDUE => 'Pre-Farrow Medication Overdue',
             self::TYPE_BREEDING_PIGLETS_UNREGISTERED => 'Piglet Registration Pending',
             default => ucfirst(str_replace(['.', '_'], ' ', (string) $this->type_code)),
         };
