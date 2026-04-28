@@ -289,6 +289,12 @@
         $pregnancyCheckDueDate = $cycle->pregnancy_check_due_date;
         $returnToHeatWindowEndDate = $cycle->return_to_heat_window_end_date;
         $pregnancyCheckIsDue = $pregnancyCheckDueDate && $pregnancyCheckDueDate->copy()->startOfDay()->lessThanOrEqualTo(now()->startOfDay());
+        $expectedFarrowHasPassed = $cycle->expected_farrow_date
+            && !$cycle->actual_farrow_date
+            && $cycle->expected_farrow_date->copy()->startOfDay()->lt(now()->startOfDay());
+
+        $showPregnancyResultBadge = $cycle->pregnancy_result
+            && $cycle->pregnancy_result_label !== $cycle->status_label;
 
         $preFarrowRows = collect();
 
@@ -298,7 +304,7 @@
                 $today = now()->startOfDay();
 
                 $row['due_date'] = $dueDate;
-                $row['status'] = $dueDate->lt($today) ? 'Overdue' : ($dueDate->isSameDay($today) ? 'Due Today' : 'Upcoming');
+                $row['status'] = $dueDate->lt($today) ? 'Missed / Past Due' : ($dueDate->isSameDay($today) ? 'Due Today' : 'Upcoming');
                 $row['badge'] = $dueDate->lt($today) ? 'red' : ($dueDate->isSameDay($today) ? 'orange' : 'blue');
 
                 return $row;
@@ -316,7 +322,9 @@
 
                 <div class="case-status-badges">
                     <span class="badge {{ $statusBadgeClass }}">{{ $cycle->status_label }}</span>
-                    <span class="badge {{ $pregnancyBadgeClass }}">{{ $cycle->pregnancy_result_label }}</span>
+                    @if($showPregnancyResultBadge)
+                        <span class="badge {{ $pregnancyBadgeClass }}">{{ $cycle->pregnancy_result_label }}</span>
+                    @endif
                     <span class="badge blue">Attempt {{ $cycle->current_attempt_number }}</span>
                 </div>
             </div>
@@ -364,9 +372,14 @@
 
             @if($preFarrowRows->isNotEmpty())
                 <div class="flash" style="margin-bottom: 16px;">
-                    <strong>Pre-farrow checklist is active.</strong>
-                    Follow the farm/vet medication plan before farrowing.
-                    Do not auto-medicate without farm/vet/product-label guidance.
+                    @if($expectedFarrowHasPassed)
+                        <strong>Expected farrow date has passed.</strong>
+                        Record the farrowing result, update the case, or close it if this record is no longer active.
+                    @else
+                        <strong>Pre-farrow checklist is active.</strong>
+                        Follow the farm/vet medication plan before farrowing.
+                        Do not auto-medicate without farm/vet/product-label guidance.
+                    @endif
                 </div>
             @endif
 
@@ -709,7 +722,7 @@
                                         <span class="badge {{ $updateStatusBadgeClass }}">{{ $update->status_after_event_label }}</span>
                                     @endif
 
-                                    @if($update->pregnancy_result)
+                                    @if($update->pregnancy_result && $update->pregnancy_result_label !== $update->status_after_event_label)
                                         <span class="badge {{ $updatePregnancyBadgeClass }}">{{ $update->pregnancy_result_label }}</span>
                                     @endif
                                 </div>
