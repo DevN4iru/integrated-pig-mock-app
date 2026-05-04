@@ -319,7 +319,7 @@
         .btn,
         button.btn,
         a.btn {
-            border: 1px solid var(--line);
+            border: 1px solid var(--line-strong);
             background: #fff;
             color: var(--text);
             padding: 10px 14px;
@@ -390,7 +390,7 @@
         .page-card,
         .content-card {
             background: var(--panel);
-            border: 1px solid var(--line);
+            border: 1px solid var(--line-strong);
             border-radius: var(--radius);
             box-shadow: var(--shadow-sm);
             padding: 20px;
@@ -405,8 +405,8 @@
             content: "";
             position: absolute;
             inset: 0 0 auto 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.18), transparent);
+            height: 2px;
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.4), rgba(37, 99, 235, 0.18));
             pointer-events: none;
         }
 
@@ -501,7 +501,7 @@
 
         .table-wrap {
             overflow-x: auto;
-            border: 1px solid var(--line);
+            border: 1px solid var(--line-strong);
             border-radius: 16px;
             background: #fff;
         }
@@ -522,14 +522,14 @@
             letter-spacing: 0.05em;
             text-transform: uppercase;
             padding: 14px 16px;
-            border-bottom: 1px solid var(--line);
+            border-bottom: 1px solid var(--line-strong);
             white-space: nowrap;
         }
 
         table tbody td,
         .data-table tbody td {
             padding: 14px 16px;
-            border-bottom: 1px solid var(--line);
+            border-bottom: 1px solid var(--line-strong);
             font-size: 14px;
             vertical-align: top;
         }
@@ -554,6 +554,10 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            border-radius: 12px;
+            padding: 10px;
+            background: #fff;
         }
 
         .form-group.full,
@@ -575,7 +579,7 @@
         select,
         textarea {
             width: 100%;
-            border: 1px solid var(--line);
+            border: 1px solid var(--line-strong);
             background: #fff;
             color: var(--text);
             padding: 11px 13px;
@@ -587,6 +591,7 @@
         input[readonly],
         textarea[readonly] {
             background: var(--panel-2);
+            border-color: #b8c2d4;
         }
 
         input:focus,
@@ -612,7 +617,7 @@
             margin-bottom: 16px;
             padding: 14px 16px;
             border-radius: 14px;
-            border: 1px solid var(--line);
+            border: 1px solid var(--line-strong);
             background: #fff;
             box-shadow: var(--shadow-sm);
             font-size: 14px;
