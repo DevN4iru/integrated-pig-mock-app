@@ -97,7 +97,11 @@ class ReproductionCycleController extends Controller
     public function create(Pig $pig)
     {
         $this->assertSowEligible($pig);
-        $this->assertNoOtherActiveCycle($pig);
+        if ($activeCycle = $this->activeCycleForSow($pig)) {
+            return redirect()
+                ->route('reproduction-cycles.show', $activeCycle)
+                ->with('success', 'This sow already has an active breeding record. Opened the active record instead.');
+        }
 
         $boars = $this->availableBoars($pig);
 
@@ -520,9 +524,18 @@ class ReproductionCycleController extends Controller
 
     protected function assertNoOtherActiveCycle(Pig $pig): void
     {
-        if ($pig->reproductionCyclesAsSow()->whereIn('status', ReproductionCycle::activeStatuses())->exists()) {
+        if ($this->activeCycleForSow($pig)) {
             abort(422, 'This sow already has an active reproduction cycle.');
         }
+    }
+
+    protected function activeCycleForSow(Pig $pig): ?ReproductionCycle
+    {
+        return $pig->reproductionCyclesAsSow()
+            ->whereIn('status', ReproductionCycle::activeStatuses())
+            ->orderByDesc('service_date')
+            ->orderByDesc('id')
+            ->first();
     }
 
     protected function assertRetryCanStart(ReproductionCycle $cycle): void

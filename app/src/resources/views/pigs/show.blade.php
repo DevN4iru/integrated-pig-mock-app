@@ -11,6 +11,9 @@
         $isSoldTop = $pig->is_sold_lifecycle;
         $isOperationalLockedTop = $pig->isOperationallyLocked();
         $isFemaleTop = strtolower((string) $pig->sex) === 'female';
+        $activeCycleTop = $isFemaleTop
+            ? $pig->reproductionCyclesAsSow()->whereIn('status', \App\Models\ReproductionCycle::activeStatuses())->orderByDesc('service_date')->orderByDesc('id')->first()
+            : null;
     @endphp
 
     <a href="{{ route('pigs.index') }}" class="btn">Back to Pig List</a>
@@ -29,7 +32,11 @@
             <a href="{{ route('health-logs.create', $pig) }}" class="btn primary">Add Health Log</a>
             <a href="{{ route('pig-transfers.create', $pig) }}" class="btn">Transfer Pig</a>
             @if ($isFemaleTop)
-                <a href="{{ route('reproduction-cycles.create', $pig) }}" class="btn">Add Breeding Record</a>
+                @if($activeCycleTop)
+                    <a href="{{ route('reproduction-cycles.show', $activeCycleTop) }}" class="btn">Open Active Breeding Record</a>
+                @else
+                    <a href="{{ route('reproduction-cycles.create', $pig) }}" class="btn">Add Breeding Record</a>
+                @endif
             @endif
         @endif
     @else
@@ -834,6 +841,8 @@
                 (int) $cycle->id
             ))
             ->values();
+        $activeReproductionCycle = $reproductionCycles
+            ->first(fn ($cycle) => in_array($cycle->display_status, ReproductionCycle::activeStatuses(), true));
 
         $gain = $pig->weight_gain;
         $daily = $pig->daily_gain;
@@ -1287,7 +1296,11 @@
 
                     @if (!$isOperationalLocked)
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            <a href="{{ route('reproduction-cycles.create', $pig) }}" class="btn primary">Add Breeding Record</a>
+                            @if($activeReproductionCycle)
+                                <a href="{{ route('reproduction-cycles.show', $activeReproductionCycle) }}" class="btn primary">Open Active Breeding Record</a>
+                            @else
+                                <a href="{{ route('reproduction-cycles.create', $pig) }}" class="btn primary">Add Breeding Record</a>
+                            @endif
                             <a href="{{ route('reproduction-cycles.index', $pig) }}" class="btn">All Breeding Records</a>
                         </div>
                     @endif
