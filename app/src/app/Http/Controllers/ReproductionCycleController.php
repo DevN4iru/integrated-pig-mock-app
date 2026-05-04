@@ -31,6 +31,33 @@ class ReproductionCycleController extends Controller
         return view('reproduction-cycles.index', compact('cycles', 'activeCycles', 'closedCycles'));
     }
 
+    public function selectSow()
+    {
+        $sows = Pig::query()
+            ->activeLifecycle()
+            ->whereRaw('LOWER(sex) = ?', ['female'])
+            ->with([
+                'pen:id,name',
+                'birthCycle:id,actual_farrow_date',
+                'reproductionCyclesAsSow' => function ($query) {
+                    $query->select([
+                        'id',
+                        'sow_id',
+                        'service_date',
+                        'pregnancy_result',
+                        'expected_farrow_date',
+                        'actual_farrow_date',
+                        'status',
+                    ]);
+                },
+            ])
+            ->withCount(['reproductionCyclesAsSow', 'birthedPiglets'])
+            ->orderBy('ear_tag')
+            ->get();
+
+        return view('reproduction-cycles.select-sow', compact('sows'));
+    }
+
     public function show(ReproductionCycle $reproductionCycle)
     {
         $relations = ['sow.pen', 'boar', 'updates'];
