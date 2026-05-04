@@ -49,7 +49,7 @@ class ReproductionCycleController extends Controller
                         'expected_farrow_date',
                         'actual_farrow_date',
                         'status',
-                    ]);
+                    ])->orderByDesc('service_date')->orderByDesc('id');
                 },
             ])
             ->withCount(['reproductionCyclesAsSow', 'birthedPiglets'])

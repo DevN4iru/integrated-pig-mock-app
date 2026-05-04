@@ -65,7 +65,11 @@
                     </thead>
                     <tbody>
                     @foreach($readySows as $sow)
-                        @php $latestCycle = $sow->latestBreedingRecordForStatus(); @endphp
+                        @php
+                            $latestCycle = $sow->latestBreedingRecordForStatus();
+                            $activeCycle = $sow->reproductionCyclesAsSow
+                                ->first(fn ($cycle) => in_array($cycle->status, \App\Models\ReproductionCycle::activeStatuses(), true));
+                        @endphp
                         <tr>
                             <td><strong>{{ $sow->ear_tag ?: 'Unnamed Pig' }}</strong><br><small>{{ $sow->breed ?: 'Breed not set' }}</small></td>
                             <td>{{ $sow->pen?->name ?? 'No pen assigned' }}</td>
@@ -82,7 +86,12 @@
                             <td><div>{{ number_format((int) $sow->birthed_piglets_count) }} registered piglet(s)</div><small>Family tree available from pig profile.</small></td>
                             <td>
                                 <div class="breeding-table-actions">
-                                    <a href="{{ route('reproduction-cycles.create', $sow) }}" class="btn primary">Start Breeding Record</a>
+                                    @if($activeCycle)
+                                        <span class="badge orange">Active breeding record</span>
+                                        <a href="{{ route('reproduction-cycles.show', $activeCycle) }}" class="btn primary">Open Active Record</a>
+                                    @else
+                                        <a href="{{ route('reproduction-cycles.create', $sow) }}" class="btn primary">Start Breeding Record</a>
+                                    @endif
                                     <a href="{{ route('pigs.show', $sow) }}" class="btn">View Pig Profile</a>
                                 </div>
                             </td>
