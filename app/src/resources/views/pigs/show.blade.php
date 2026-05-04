@@ -801,7 +801,7 @@
         $damLabel = $lineagePigLabel($pig->motherSow, 'Not recorded yet');
         $sireLabel = $lineagePigLabel($pig->sireBoar, 'Not recorded yet');
         $birthCycleLabel = $pig->birthCycle
-            ? 'Case #' . $pig->birthCycle->id . ' — ' . ($pig->birthCycle->status_label ?? 'Recorded')
+            ? 'Linked birth record — ' . ($pig->birthCycle->status_label ?? 'Recorded')
             : 'Not recorded yet';
 
         $maternalGrandmotherLabel = $pig->motherSow
@@ -1143,7 +1143,7 @@
             <div class="section-title">
                 <div>
                     <h3>Lineage</h3>
-                    <p>Stored dam, sire, birth cycle, and immediate ancestry context for this pig.</p>
+                    <p>Stored dam, sire, birth record, and immediate ancestry context for this pig.</p>
                 </div>
             </div>
 
@@ -1159,7 +1159,7 @@
                 </div>
 
                 <div class="form-group full">
-                    <label>Birth Cycle</label>
+                    <label>Birth Record</label>
                     <input type="text" value="{{ $birthCycleLabel }}" readonly>
                 </div>
             </div>
