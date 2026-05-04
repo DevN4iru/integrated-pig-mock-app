@@ -454,11 +454,7 @@ class NotificationGenerationService
             return (string) $pig->ear_tag;
         }
 
-        if ($pig !== null && $pig->id !== null) {
-            return 'Pig #' . $pig->id;
-        }
-
-        return 'Pig #' . ($fallbackPigId ?? '?');
+        return 'Unnamed pig';
     }
 
     protected function normalizeDateString(mixed $value): ?string

@@ -1097,7 +1097,7 @@
                 @endif
 
                 <div class="flash" style="margin-top: 16px;">
-                    System age is stored in days for schedule-based protocol tracking. Current stored age:
+                    Age shown in the app updates daily from the best available birth/entry anchor. Stored starting age:
                     <strong>{{ (int) ($pig->age ?? 0) }} day(s)</strong>.
                 </div>
             </div>

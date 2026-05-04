@@ -51,6 +51,7 @@ class Pig extends Model
         'is_dead_lifecycle',
         'is_sold_lifecycle',
         'is_active_lifecycle',
+        'current_age_days',
         'age_display',
         'weight_gain',
         'daily_gain',
@@ -1200,9 +1201,21 @@ class Pig extends Model
         return $this->active_live_value;
     }
 
+    public function getCurrentAgeDaysAttribute(): int
+    {
+        $anchorDate = $this->linkedBirthActualFarrowDate()
+            ?? $this->approximateBirthAnchorDate();
+
+        if ($anchorDate) {
+            return max(0, $anchorDate->copy()->startOfDay()->diffInDays(Carbon::today(), false));
+        }
+
+        return max(0, (int) ($this->age ?? 0));
+    }
+
     public function getAgeDisplayAttribute(): string
     {
-        $days = (int) ($this->age ?? 0);
+        $days = $this->current_age_days;
 
         if ($days <= 0) {
             return '0 days';
