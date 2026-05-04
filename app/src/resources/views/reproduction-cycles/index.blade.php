@@ -5,6 +5,7 @@
 @section('page_subtitle', 'Parent breeding records with current snapshot and append-only timeline flow.')
 
 @section('top_actions')
+    <a href="{{ route('reproduction-cycles.select-sow') }}" class="btn primary">Add Breeding Record</a>
     <a href="{{ route('dashboard') }}" class="btn">Back to Dashboard</a>
     <a href="{{ route('pigs.index') }}" class="btn">Open Pig List</a>
 @endsection

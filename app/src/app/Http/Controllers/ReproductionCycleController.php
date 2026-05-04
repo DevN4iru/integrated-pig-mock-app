@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pig;
+use App\Models\Pen;
 use App\Models\ReproductionCycle;
 use App\Models\ReproductionCycleUpdate;
 use Carbon\Carbon;
@@ -29,6 +30,50 @@ class ReproductionCycleController extends Controller
             ->values();
 
         return view('reproduction-cycles.index', compact('cycles', 'activeCycles', 'closedCycles'));
+    }
+
+    public function selectSow()
+    {
+        $femalePigs = Pig::query()
+            ->activeLifecycle()
+            ->whereRaw('LOWER(sex) = ?', ['female'])
+            ->with([
+                'pen:id,name,type',
+                'birthCycle:id,actual_farrow_date',
+                'reproductionCyclesAsSow' => function ($query) {
+                    $query->select([
+                        'id',
+                        'sow_id',
+                        'service_date',
+                        'pregnancy_result',
+                        'expected_farrow_date',
+                        'actual_farrow_date',
+                        'status',
+                    ]);
+                },
+            ])
+            ->withCount(['reproductionCyclesAsSow', 'birthedPiglets'])
+            ->orderBy('ear_tag')
+            ->get();
+
+        $readyPenTypes = [
+            Pen::TYPE_REPLACEMENT_GILT,
+            Pen::TYPE_SOW,
+            Pen::TYPE_GESTATION,
+            Pen::TYPE_FARROWING,
+            Pen::TYPE_BREEDING_SERVICE,
+            Pen::TYPE_SOW_QUARANTINE,
+        ];
+
+        $readySows = $femalePigs
+            ->filter(fn (Pig $pig) => in_array($pig->pen?->type, $readyPenTypes, true))
+            ->values();
+
+        $notReadySows = $femalePigs
+            ->reject(fn (Pig $pig) => in_array($pig->pen?->type, $readyPenTypes, true))
+            ->values();
+
+        return view('reproduction-cycles.select-sow', compact('readySows', 'notReadySows', 'readyPenTypes'));
     }
 
     public function show(ReproductionCycle $reproductionCycle)

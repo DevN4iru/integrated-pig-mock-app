@@ -1,7 +1,7 @@
 <div class="panel-card">
     <div class="section-title">
         <div>
-            <h3>Protocol Schedule</h3>
+            <h3>{{ $protocolProgramTitle ?? 'Medication Program' }}</h3>
             <p>Live schedule, visible guide cards, and execution entry for this pig’s assigned shared program.</p>
         </div>
         @if ($protocolTemplateCode)

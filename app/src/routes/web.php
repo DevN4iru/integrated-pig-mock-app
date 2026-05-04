@@ -121,6 +121,7 @@ Route::middleware('auth')->group(function (): void {
     */
 
     Route::get('/breeding', [ReproductionCycleController::class, 'index'])->name('reproduction-cycles.index');
+    Route::get('/breeding/select-sow', [ReproductionCycleController::class, 'selectSow'])->name('reproduction-cycles.select-sow');
     Route::get('/pigs/{pig}/reproduction-cycles/create', [ReproductionCycleController::class, 'create'])->name('reproduction-cycles.create');
     Route::post('/pigs/{pig}/reproduction-cycles', [ReproductionCycleController::class, 'store'])->name('reproduction-cycles.store');
 
