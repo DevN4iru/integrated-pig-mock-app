@@ -124,6 +124,10 @@
         $canClearHistory = \Illuminate\Support\Facades\Route::has('notifications.history.clear');
         $dateLabel = fn ($date) => $date ? $date->format('F j, Y') : '—';
         $dateTimeLabel = fn ($date) => $date ? $date->format('F j, Y g:i A') : '—';
+        $activeTypeCounts = $activeNotifications
+            ->groupBy(fn ($notification) => $notification->type_label ?: 'Other')
+            ->map(fn ($group) => $group->count())
+            ->sortDesc();
     @endphp
 
     <div class="notification-stack">
@@ -171,6 +175,12 @@
                 <div class="flash" style="margin-bottom: 16px;">
                     Active notifications come from real farm records. If you only delete history, the same alert can come back until the source problem is fixed or dismissed.
                 </div>
+                @if($activeTypeCounts->isNotEmpty())
+                    <div class="flash success" style="margin-bottom: 16px;">
+                        <strong>Quick count by alert type:</strong>
+                        {{ $activeTypeCounts->map(fn ($count, $label) => $label . ' (' . $count . ')')->implode(' • ') }}
+                    </div>
+                @endif
                 <div class="grid">
                     @foreach ($activeNotifications as $notification)
                         @php

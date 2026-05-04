@@ -579,9 +579,16 @@
                     </div>
                 </div>
 
-                @if($canRegisterBornPiglets || $canStartNextAttempt)
+                @if($expectedFarrowHasPassed || $canRegisterBornPiglets || $canStartNextAttempt)
                     <div class="case-next-step">
-                        @if($canRegisterBornPiglets)
+                        @if($expectedFarrowHasPassed)
+                            <strong>Available Next Step: Overdue Farrowing Action</strong>
+                            <p>The expected farrow date has passed, but no actual farrowing result is saved yet. Record the farrowing result now, or close this case if it is no longer active.</p>
+                            <div class="case-action-row">
+                                <a href="{{ route('reproduction-cycles.show', ['reproductionCycle' => $cycle, 'event_type' => \App\Models\ReproductionCycleUpdate::EVENT_FARROWING_RECORDED]) }}#progress-update-card" class="btn primary">Record Farrowing Result</a>
+                                <a href="{{ route('reproduction-cycles.show', ['reproductionCycle' => $cycle, 'event_type' => \App\Models\ReproductionCycleUpdate::EVENT_CYCLE_CLOSED]) }}#progress-update-card" class="btn">Close Case</a>
+                            </div>
+                        @elseif($canRegisterBornPiglets)
                             <strong>Available Next Step: Register Born Piglets</strong>
                             <p>This farrowing has {{ (int) $cycle->born_alive }} born-alive piglet(s). Register them here so lineage, birth case, and medication program tracking are connected correctly.</p>
                             <div class="case-action-row">
