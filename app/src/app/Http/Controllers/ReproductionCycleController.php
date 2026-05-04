@@ -97,7 +97,12 @@ class ReproductionCycleController extends Controller
     public function create(Pig $pig)
     {
         $this->assertSowEligible($pig);
-        $this->assertNoOtherActiveCycle($pig);
+
+        if ($activeCycle = $this->activeCycleForSow($pig)) {
+            return redirect()
+                ->route('reproduction-cycles.show', $activeCycle)
+                ->with('info', 'This sow already has an active breeding record. Continue from the active record below.');
+        }
 
         $boars = $this->availableBoars($pig);
 
@@ -516,6 +521,15 @@ class ReproductionCycleController extends Controller
             'breeding_cost' => $breedingCost,
             'notes' => $cycle->notes,
         ];
+    }
+
+    protected function activeCycleForSow(Pig $pig): ?ReproductionCycle
+    {
+        return $pig->reproductionCyclesAsSow()
+            ->active()
+            ->orderByDesc('service_date')
+            ->orderByDesc('id')
+            ->first();
     }
 
     protected function assertNoOtherActiveCycle(Pig $pig): void
