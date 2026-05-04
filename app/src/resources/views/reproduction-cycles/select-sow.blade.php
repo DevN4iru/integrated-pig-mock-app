@@ -68,7 +68,7 @@
                         @php
                             $latestCycle = $sow->latestBreedingRecordForStatus();
                             $activeCycle = $sow->reproductionCyclesAsSow
-                                ->first(fn ($cycle) => in_array($cycle->status, \App\Models\ReproductionCycle::activeStatuses(), true));
+                                ->first(fn ($cycle) => $cycle->is_active_cycle);
                         @endphp
                         <tr>
                             <td><strong>{{ $sow->ear_tag ?: 'Unnamed Pig' }}</strong><br><small>{{ $sow->breed ?: 'Breed not set' }}</small></td>
