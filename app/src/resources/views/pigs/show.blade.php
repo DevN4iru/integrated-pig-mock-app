@@ -941,6 +941,12 @@
 
         $protocol = $pig->protocol_summary;
         $protocolTemplateCode = $protocol['template_code'] ?? null;
+        $protocolTargetType = $protocol['target_type'] ?? null;
+        $protocolProgramTitle = match ($protocolTargetType) {
+            \App\Models\ProtocolTemplate::TARGET_PIGLET => 'Piglet / Young Stock Medication Program',
+            \App\Models\ProtocolTemplate::TARGET_LACTATING_SOW => 'Lactating Sow Medication Program',
+            default => 'Medication Program',
+        };
         $protocolAnchorDate = $protocol['anchor_date'] ?? null;
         $protocolDueToday = collect($protocol['due_today'] ?? []);
         $protocolUpcoming = collect($protocol['upcoming'] ?? []);
@@ -1184,6 +1190,7 @@
             'pig' => $pig,
             'protocol' => $protocol,
             'protocolTemplateCode' => $protocolTemplateCode,
+            'protocolProgramTitle' => $protocolProgramTitle,
             'protocolAnchorDate' => $protocolAnchorDate,
             'protocolDueToday' => $protocolDueToday,
             'protocolUpcoming' => $protocolUpcoming,
