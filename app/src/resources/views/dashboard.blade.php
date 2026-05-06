@@ -417,6 +417,7 @@
                 <div class="stat-sub">Official net = Sold Profit - Mortality Loss.</div>
             </div>
         </div>
+    </div>
 
     <div class="dashboard-section">
         <div>
