@@ -2,13 +2,18 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\Concerns\GuardsProductionSeeding;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class ProtocolTemplateSeeder extends Seeder
 {
+    use GuardsProductionSeeding;
+
     public function run(): void
     {
+        $this->guardAgainstProductionSeeding('ProtocolTemplateSeeder');
+
         DB::table('protocol_templates')->updateOrInsert(
             ['code' => 'piglet_core_program'],
             [
