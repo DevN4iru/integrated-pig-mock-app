@@ -778,6 +778,151 @@
             @yield('styles')
         </style>
     @endif
+
+<style id="pigstep-pig-list-ui-v2-style">
+body.pig-list-ui-v2 .content-area,
+body.pig-list-ui-v2 main {
+    scroll-behavior: smooth;
+}
+
+body.pig-list-ui-v2 .pig-list-ui-shell {
+    display: grid;
+    gap: 16px;
+}
+
+body.pig-list-ui-v2 .pig-list-core-panel {
+    border-top: 4px solid #2563eb !important;
+    border-color: #bfdbfe !important;
+    background: linear-gradient(180deg, #eff6ff 0%, #ffffff 72%) !important;
+    box-shadow: 0 18px 40px rgba(37, 99, 235, 0.10) !important;
+}
+
+body.pig-list-ui-v2 .pig-list-active-panel {
+    border-top: 4px solid #22c55e !important;
+    border-color: #86efac !important;
+    background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 74%) !important;
+    box-shadow: 0 20px 44px rgba(34, 197, 94, 0.12) !important;
+}
+
+body.pig-list-ui-v2 .pig-list-batch-panel {
+    border-top: 4px solid #3b82f6 !important;
+    border-color: #93c5fd !important;
+    background: linear-gradient(180deg, #eff6ff 0%, #ffffff 74%) !important;
+    box-shadow: 0 18px 38px rgba(59, 130, 246, 0.10) !important;
+}
+
+body.pig-list-ui-v2 .pig-list-history-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+body.pig-list-ui-v2 .pig-list-history-strip > .panel-card {
+    margin: 0 !important;
+    min-height: 96px;
+}
+
+body.pig-list-ui-v2 .pig-list-sold-panel {
+    border-top: 4px solid #22c55e !important;
+    border-color: #86efac !important;
+    background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 78%) !important;
+}
+
+body.pig-list-ui-v2 .pig-list-dead-panel {
+    border-top: 4px solid #ef4444 !important;
+    border-color: #fca5a5 !important;
+    background: linear-gradient(180deg, #fff1f2 0%, #ffffff 78%) !important;
+}
+
+body.pig-list-ui-v2 .pig-list-archived-panel {
+    border-top: 4px solid #94a3b8 !important;
+    border-color: #cbd5e1 !important;
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 78%) !important;
+}
+
+body.pig-list-ui-v2 .pig-list-history-heading {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+body.pig-list-ui-v2 .pig-list-history-heading::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    display: inline-block;
+}
+
+body.pig-list-ui-v2 .pig-list-sold-panel .pig-list-history-heading::before {
+    background: #22c55e;
+}
+
+body.pig-list-ui-v2 .pig-list-dead-panel .pig-list-history-heading::before {
+    background: #ef4444;
+}
+
+body.pig-list-ui-v2 .pig-list-archived-panel .pig-list-history-heading::before {
+    background: #94a3b8;
+}
+
+body.pig-list-ui-v2 .pig-list-batch-panel .batch-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+body.pig-list-ui-v2 .pig-list-batch-panel .batch-toolbar .btn[disabled],
+body.pig-list-ui-v2 .pig-list-batch-panel button[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: #f8fafc !important;
+    color: #94a3b8 !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: none !important;
+}
+
+body.pig-list-ui-v2 .pig-list-active-panel .table-wrap,
+body.pig-list-ui-v2 .pig-list-active-panel .responsive-table,
+body.pig-list-ui-v2 .pig-list-active-panel .data-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+body.pig-list-ui-v2 .pig-list-active-panel table {
+    min-width: 860px;
+}
+
+body.pig-list-ui-v2 .pig-list-mobile-hint {
+    display: none;
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 12px;
+}
+
+@media (max-width: 980px) {
+    body.pig-list-ui-v2 .pig-list-history-strip {
+        grid-template-columns: 1fr;
+    }
+
+    body.pig-list-ui-v2 .pig-list-batch-panel .batch-toolbar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    body.pig-list-ui-v2 .pig-list-batch-panel .batch-toolbar .btn,
+    body.pig-list-ui-v2 .pig-list-batch-panel .batch-toolbar button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    body.pig-list-ui-v2 .pig-list-mobile-hint {
+        display: block;
+    }
+}
+</style>
+
 </head>
 <body>
     @php
@@ -987,5 +1132,169 @@ document.addEventListener('submit', function (event) {
     input.value = code;
 });
 </script>
+
+<script id="pigstep-pig-list-ui-v2">
+document.addEventListener('DOMContentLoaded', function () {
+    const path = window.location.pathname.replace(/\/+$/, '');
+
+    if (path !== '/pigs') {
+        return;
+    }
+
+    document.body.classList.add('pig-list-ui-v2');
+
+    const panels = Array.from(document.querySelectorAll('.panel-card'));
+
+    function headingText(panel) {
+        const heading = panel.querySelector('h1, h2, h3, .dashboard-section-title');
+        return heading ? heading.textContent.trim() : '';
+    }
+
+    function findPanel(label) {
+        return panels.find(function (panel) {
+            return headingText(panel).includes(label);
+        });
+    }
+
+    const filters = findPanel('Search & Filters');
+    const batch = findPanel('Batch Actions');
+    const active = findPanel('Active Pigs by Pen');
+    const sold = findPanel('Sold Pigs');
+    const dead = findPanel('Dead Pigs');
+    const archived = findPanel('Archived Pigs');
+
+    if (!filters || !active) {
+        return;
+    }
+
+    const parent = filters.parentElement;
+
+    if (!parent) {
+        return;
+    }
+
+    filters.classList.add('pig-list-core-panel');
+
+    if (batch) {
+        batch.classList.add('pig-list-batch-panel');
+    }
+
+    active.classList.add('pig-list-active-panel');
+
+    [
+        [sold, 'pig-list-sold-panel'],
+        [dead, 'pig-list-dead-panel'],
+        [archived, 'pig-list-archived-panel']
+    ].forEach(function (entry) {
+        const panel = entry[0];
+        const cls = entry[1];
+
+        if (!panel) {
+            return;
+        }
+
+        panel.classList.add(cls);
+
+        const h = panel.querySelector('h3');
+
+        if (h) {
+            h.classList.add('pig-list-history-heading');
+        }
+    });
+
+    let shell = document.getElementById('pig-list-ui-shell');
+
+    if (!shell) {
+        shell = document.createElement('div');
+        shell.id = 'pig-list-ui-shell';
+        shell.className = 'pig-list-ui-shell';
+        parent.insertBefore(shell, filters);
+    }
+
+    let historyStrip = document.getElementById('pig-list-history-strip');
+
+    if (!historyStrip) {
+        historyStrip = document.createElement('div');
+        historyStrip.id = 'pig-list-history-strip';
+        historyStrip.className = 'pig-list-history-strip';
+    }
+
+    shell.appendChild(filters);
+
+    if (batch) {
+        shell.appendChild(batch);
+    }
+
+    shell.appendChild(active);
+
+    [sold, dead, archived].forEach(function (panel) {
+        if (panel) {
+            historyStrip.appendChild(panel);
+        }
+    });
+
+    if (historyStrip.children.length) {
+        shell.appendChild(historyStrip);
+    }
+
+    const activeSub = active.querySelector('p, small');
+
+    if (activeSub && !active.querySelector('.pig-list-mobile-hint')) {
+        const hint = document.createElement('span');
+        hint.className = 'pig-list-mobile-hint';
+        hint.textContent = 'Tables scroll sideways on small screens.';
+        activeSub.appendChild(hint);
+    }
+
+    const batchButtons = Array.from(document.querySelectorAll('button'))
+        .filter(function (button) {
+            const label = button.textContent.trim();
+            return label === 'Batch Transfer' || label === 'Batch Sell';
+        });
+
+    function selectedPigCount() {
+        return Array.from(document.querySelectorAll('.batch-pig-checkbox'))
+            .filter(function (checkbox) {
+                return checkbox.checked;
+            }).length;
+    }
+
+    function refreshBatchButtons() {
+        const count = selectedPigCount();
+
+        batchButtons.forEach(function (button) {
+            button.disabled = count === 0;
+            button.title = count === 0
+                ? 'Select at least one active pig first.'
+                : 'Batch action ready for ' + count + ' selected pig(s).';
+        });
+    }
+
+    document.addEventListener('change', function (event) {
+        if (
+            event.target &&
+            (
+                event.target.classList.contains('batch-pig-checkbox') ||
+                event.target.classList.contains('batch-group-toggle')
+            )
+        ) {
+            window.setTimeout(refreshBatchButtons, 0);
+        }
+    });
+
+    Array.from(document.querySelectorAll('button')).forEach(function (button) {
+        const label = button.textContent.trim();
+
+        if (label === 'Select All Visible' || label === 'Clear Selection') {
+            button.addEventListener('click', function () {
+                window.setTimeout(refreshBatchButtons, 0);
+            });
+        }
+    });
+
+    refreshBatchButtons();
+});
+</script>
+
 </body>
 </html>
