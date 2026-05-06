@@ -779,74 +779,69 @@
         </style>
     @endif
 
-<style id="pigstep-pig-list-ui-v2-style">
-body.pig-list-ui-v2 .content-area,
-body.pig-list-ui-v2 main {
-    scroll-behavior: smooth;
-}
 
-body.pig-list-ui-v2 .pig-list-ui-shell {
+
+<style id="pigstep-pig-list-ui-v3-style">
+body.pig-list-ui-v3 #pig-list-ui-shell {
     display: grid;
-    gap: 16px;
+    gap: 14px;
 }
 
-body.pig-list-ui-v2 .pig-list-core-panel {
+body.pig-list-ui-v3 .pig-list-panel {
+    background: #ffffff !important;
+    border-radius: 18px !important;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06) !important;
+}
+
+body.pig-list-ui-v3 .pig-list-filter-panel {
     border-top: 4px solid #2563eb !important;
     border-color: #bfdbfe !important;
-    background: linear-gradient(180deg, #eff6ff 0%, #ffffff 72%) !important;
-    box-shadow: 0 18px 40px rgba(37, 99, 235, 0.10) !important;
+    background: linear-gradient(180deg, #f8fbff 0%, #ffffff 88%) !important;
 }
 
-body.pig-list-ui-v2 .pig-list-active-panel {
+body.pig-list-ui-v3 .pig-list-batch-panel {
+    border-top: 4px solid #60a5fa !important;
+    border-color: #bfdbfe !important;
+    background: #ffffff !important;
+}
+
+body.pig-list-ui-v3 .pig-list-active-panel {
     border-top: 4px solid #22c55e !important;
-    border-color: #86efac !important;
-    background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 74%) !important;
-    box-shadow: 0 20px 44px rgba(34, 197, 94, 0.12) !important;
+    border-color: #bbf7d0 !important;
+    background: linear-gradient(180deg, #fbfffc 0%, #ffffff 86%) !important;
 }
 
-body.pig-list-ui-v2 .pig-list-batch-panel {
-    border-top: 4px solid #3b82f6 !important;
-    border-color: #93c5fd !important;
-    background: linear-gradient(180deg, #eff6ff 0%, #ffffff 74%) !important;
-    box-shadow: 0 18px 38px rgba(59, 130, 246, 0.10) !important;
+body.pig-list-ui-v3 .pig-list-history-panel {
+    border-color: #e2e8f0 !important;
+    background: #ffffff !important;
+    min-height: unset !important;
 }
 
-body.pig-list-ui-v2 .pig-list-history-strip {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+body.pig-list-ui-v3 .pig-list-sold-panel {
+    border-top: 3px solid #22c55e !important;
 }
 
-body.pig-list-ui-v2 .pig-list-history-strip > .panel-card {
-    margin: 0 !important;
-    min-height: 96px;
+body.pig-list-ui-v3 .pig-list-dead-panel {
+    border-top: 3px solid #ef4444 !important;
 }
 
-body.pig-list-ui-v2 .pig-list-sold-panel {
-    border-top: 4px solid #22c55e !important;
-    border-color: #86efac !important;
-    background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 78%) !important;
+body.pig-list-ui-v3 .pig-list-archived-panel {
+    border-top: 3px solid #94a3b8 !important;
 }
 
-body.pig-list-ui-v2 .pig-list-dead-panel {
-    border-top: 4px solid #ef4444 !important;
-    border-color: #fca5a5 !important;
-    background: linear-gradient(180deg, #fff1f2 0%, #ffffff 78%) !important;
+body.pig-list-ui-v3 .pig-list-history-panel > div:first-child,
+body.pig-list-ui-v3 .pig-list-history-panel .section-header,
+body.pig-list-ui-v3 .pig-list-history-panel .panel-header {
+    align-items: center !important;
 }
 
-body.pig-list-ui-v2 .pig-list-archived-panel {
-    border-top: 4px solid #94a3b8 !important;
-    border-color: #cbd5e1 !important;
-    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 78%) !important;
-}
-
-body.pig-list-ui-v2 .pig-list-history-heading {
+body.pig-list-ui-v3 .pig-list-history-heading {
     display: inline-flex;
     align-items: center;
     gap: 8px;
 }
 
-body.pig-list-ui-v2 .pig-list-history-heading::before {
+body.pig-list-ui-v3 .pig-list-history-heading::before {
     content: "";
     width: 9px;
     height: 9px;
@@ -854,27 +849,27 @@ body.pig-list-ui-v2 .pig-list-history-heading::before {
     display: inline-block;
 }
 
-body.pig-list-ui-v2 .pig-list-sold-panel .pig-list-history-heading::before {
+body.pig-list-ui-v3 .pig-list-sold-panel .pig-list-history-heading::before {
     background: #22c55e;
 }
 
-body.pig-list-ui-v2 .pig-list-dead-panel .pig-list-history-heading::before {
+body.pig-list-ui-v3 .pig-list-dead-panel .pig-list-history-heading::before {
     background: #ef4444;
 }
 
-body.pig-list-ui-v2 .pig-list-archived-panel .pig-list-history-heading::before {
+body.pig-list-ui-v3 .pig-list-archived-panel .pig-list-history-heading::before {
     background: #94a3b8;
 }
 
-body.pig-list-ui-v2 .pig-list-batch-panel .batch-toolbar {
+body.pig-list-ui-v3 .pig-list-batch-panel .batch-toolbar {
     display: flex;
-    align-items: center;
     gap: 10px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
-body.pig-list-ui-v2 .pig-list-batch-panel .batch-toolbar .btn[disabled],
-body.pig-list-ui-v2 .pig-list-batch-panel button[disabled] {
+body.pig-list-ui-v3 .pig-list-batch-panel button[disabled],
+body.pig-list-ui-v3 .pig-list-batch-panel .btn[disabled] {
     opacity: 0.45;
     cursor: not-allowed;
     background: #f8fafc !important;
@@ -883,18 +878,18 @@ body.pig-list-ui-v2 .pig-list-batch-panel button[disabled] {
     box-shadow: none !important;
 }
 
-body.pig-list-ui-v2 .pig-list-active-panel .table-wrap,
-body.pig-list-ui-v2 .pig-list-active-panel .responsive-table,
-body.pig-list-ui-v2 .pig-list-active-panel .data-table-wrap {
+body.pig-list-ui-v3 .pig-list-active-panel .table-wrap,
+body.pig-list-ui-v3 .pig-list-history-panel .table-wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
 }
 
-body.pig-list-ui-v2 .pig-list-active-panel table {
+body.pig-list-ui-v3 .pig-list-active-panel table,
+body.pig-list-ui-v3 .pig-list-history-panel table {
     min-width: 860px;
 }
 
-body.pig-list-ui-v2 .pig-list-mobile-hint {
+body.pig-list-ui-v3 .pig-list-mobile-hint {
     display: none;
     margin-top: 8px;
     color: #64748b;
@@ -902,22 +897,18 @@ body.pig-list-ui-v2 .pig-list-mobile-hint {
 }
 
 @media (max-width: 980px) {
-    body.pig-list-ui-v2 .pig-list-history-strip {
-        grid-template-columns: 1fr;
-    }
-
-    body.pig-list-ui-v2 .pig-list-batch-panel .batch-toolbar {
-        display: grid;
+    body.pig-list-ui-v3 .pig-list-batch-panel .batch-toolbar {
+        display: grid !important;
         grid-template-columns: 1fr 1fr;
     }
 
-    body.pig-list-ui-v2 .pig-list-batch-panel .batch-toolbar .btn,
-    body.pig-list-ui-v2 .pig-list-batch-panel .batch-toolbar button {
+    body.pig-list-ui-v3 .pig-list-batch-panel .batch-toolbar .btn,
+    body.pig-list-ui-v3 .pig-list-batch-panel .batch-toolbar button {
         width: 100%;
         justify-content: center;
     }
 
-    body.pig-list-ui-v2 .pig-list-mobile-hint {
+    body.pig-list-ui-v3 .pig-list-mobile-hint {
         display: block;
     }
 }
@@ -1133,7 +1124,9 @@ document.addEventListener('submit', function (event) {
 });
 </script>
 
-<script id="pigstep-pig-list-ui-v2">
+
+
+<script id="pigstep-pig-list-ui-v3">
 document.addEventListener('DOMContentLoaded', function () {
     const path = window.location.pathname.replace(/\/+$/, '');
 
@@ -1141,7 +1134,8 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    document.body.classList.add('pig-list-ui-v2');
+    document.body.classList.remove('pig-list-ui-v2');
+    document.body.classList.add('pig-list-ui-v3');
 
     const panels = Array.from(document.querySelectorAll('.panel-card'));
 
@@ -1173,7 +1167,25 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    filters.classList.add('pig-list-core-panel');
+    let shell = document.getElementById('pig-list-ui-shell');
+
+    if (!shell) {
+        shell = document.createElement('div');
+        shell.id = 'pig-list-ui-shell';
+        parent.insertBefore(shell, filters);
+    }
+
+    shell.className = '';
+
+    [filters, batch, active, sold, dead, archived].forEach(function (panel) {
+        if (!panel) {
+            return;
+        }
+
+        panel.classList.add('pig-list-panel');
+    });
+
+    filters.classList.add('pig-list-filter-panel');
 
     if (batch) {
         batch.classList.add('pig-list-batch-panel');
@@ -1193,56 +1205,28 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        panel.classList.add(cls);
+        panel.classList.add('pig-list-history-panel', cls);
 
-        const h = panel.querySelector('h3');
+        const heading = panel.querySelector('h3');
 
-        if (h) {
-            h.classList.add('pig-list-history-heading');
+        if (heading) {
+            heading.classList.add('pig-list-history-heading');
         }
     });
 
-    let shell = document.getElementById('pig-list-ui-shell');
-
-    if (!shell) {
-        shell = document.createElement('div');
-        shell.id = 'pig-list-ui-shell';
-        shell.className = 'pig-list-ui-shell';
-        parent.insertBefore(shell, filters);
-    }
-
-    let historyStrip = document.getElementById('pig-list-history-strip');
-
-    if (!historyStrip) {
-        historyStrip = document.createElement('div');
-        historyStrip.id = 'pig-list-history-strip';
-        historyStrip.className = 'pig-list-history-strip';
-    }
-
-    shell.appendChild(filters);
-
-    if (batch) {
-        shell.appendChild(batch);
-    }
-
-    shell.appendChild(active);
-
-    [sold, dead, archived].forEach(function (panel) {
+    // Clean order: filters, batch, active, then history full-width below.
+    [filters, batch, active, sold, dead, archived].forEach(function (panel) {
         if (panel) {
-            historyStrip.appendChild(panel);
+            shell.appendChild(panel);
         }
     });
-
-    if (historyStrip.children.length) {
-        shell.appendChild(historyStrip);
-    }
 
     const activeSub = active.querySelector('p, small');
 
     if (activeSub && !active.querySelector('.pig-list-mobile-hint')) {
         const hint = document.createElement('span');
         hint.className = 'pig-list-mobile-hint';
-        hint.textContent = 'Tables scroll sideways on small screens.';
+        hint.textContent = ' Tables scroll sideways on small screens.';
         activeSub.appendChild(hint);
     }
 
