@@ -50,6 +50,21 @@ class FarmSummaryReportService
         $totalCareLiability = (float) $pigs->sum(fn (Pig $pig) => (float) $pig->total_care_liability);
         $totalOperatingCost = (float) $pigs->sum(fn (Pig $pig) => (float) $pig->total_operating_cost);
 
+        $totalPurchasedPigCost = (float) $pigs
+            ->filter(fn (Pig $pig) => $pig->pig_source === 'purchased')
+            ->sum(fn (Pig $pig) => (float) ($pig->purchase_cost ?? 0));
+
+        $breedingCyclesForCost = ReproductionCycle::query()
+            ->with('updates')
+            ->get();
+
+        $totalPurchasedSemenCost = (float) $breedingCyclesForCost
+            ->sum(fn (ReproductionCycle $cycle) => (float) ($cycle->total_semen_cost ?? 0));
+        $totalBreedingServiceCost = (float) $breedingCyclesForCost
+            ->sum(fn (ReproductionCycle $cycle) => (float) ($cycle->breeding_cost ?? 0));
+        $totalReferenceCost = $totalPurchasedPigCost + $totalPurchasedSemenCost + $totalBreedingServiceCost;
+        $syncPreviewNetPosition = $totalRevenue - $mortalityLoss - $totalReferenceCost;
+
         $totalRecordedClientCost = 0.0;
         $netPosition = $totalRevenue - $mortalityLoss;
 
@@ -104,6 +119,11 @@ class FarmSummaryReportService
             'total_care_liability' => $totalCareLiability,
             'total_recorded_client_cost' => $totalRecordedClientCost,
             'total_operating_cost' => $totalRecordedClientCost,
+            'purchase_cost_reference' => $totalPurchasedPigCost,
+            'purchased_semen_cost_reference' => $totalPurchasedSemenCost,
+            'breeding_service_cost_reference' => $totalBreedingServiceCost,
+            'total_reference_cost' => $totalReferenceCost,
+            'sync_preview_net_position' => $syncPreviewNetPosition,
             'net_position' => $netPosition,
         ];
 
@@ -140,6 +160,11 @@ class FarmSummaryReportService
             ['metric' => 'sold_profit', 'value' => $this->money($metrics['total_revenue'])],
             ['metric' => 'mortality_loss', 'value' => $this->money($metrics['mortality_loss'])],
             ['metric' => 'net_position', 'value' => $this->money($metrics['net_position'])],
+            ['metric' => 'purchase_cost_reference', 'value' => $this->money($metrics['purchase_cost_reference'])],
+            ['metric' => 'purchased_semen_cost_reference', 'value' => $this->money($metrics['purchased_semen_cost_reference'])],
+            ['metric' => 'breeding_service_cost_reference', 'value' => $this->money($metrics['breeding_service_cost_reference'])],
+            ['metric' => 'total_reference_cost', 'value' => $this->money($metrics['total_reference_cost'])],
+            ['metric' => 'sync_preview_net_position', 'value' => $this->money($metrics['sync_preview_net_position'])],
         ];
     }
 

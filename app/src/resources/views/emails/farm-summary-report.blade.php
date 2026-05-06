@@ -32,6 +32,18 @@
                             <td style="padding:10px; border:1px solid #e2e8f0;">PHP {{ number_format((float) $metrics['net_position'], 2) }}</td>
                         </tr>
                         <tr>
+                            <td style="padding:10px; border:1px solid #e2e8f0; background:#f8fafc; font-weight:700;">Purchase cost reference</td>
+                            <td style="padding:10px; border:1px solid #e2e8f0;">PHP {{ number_format((float) ($metrics['purchase_cost_reference'] ?? 0), 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:10px; border:1px solid #e2e8f0; background:#f8fafc; font-weight:700;">Purchased semen reference</td>
+                            <td style="padding:10px; border:1px solid #e2e8f0;">PHP {{ number_format((float) ($metrics['purchased_semen_cost_reference'] ?? 0), 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:10px; border:1px solid #e2e8f0; background:#f8fafc; font-weight:700;">Breeding service reference</td>
+                            <td style="padding:10px; border:1px solid #e2e8f0;">PHP {{ number_format((float) ($metrics['breeding_service_cost_reference'] ?? 0), 2) }}</td>
+                        </tr>
+                        <tr>
                             <td style="padding:10px; border:1px solid #e2e8f0; background:#f8fafc; font-weight:700;">Protocol overdue</td>
                             <td style="padding:10px; border:1px solid #e2e8f0;">{{ number_format((int) $metrics['protocol_overdue']) }}</td>
                         </tr>

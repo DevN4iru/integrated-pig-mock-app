@@ -42,6 +42,18 @@ class DashboardController extends Controller
         $totalCareLiability = (float) $pigs->sum(fn ($pig) => (float) $pig->total_care_liability);
         $totalOperatingCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_operating_cost);
 
+        $totalPurchasedPigCost = (float) $pigs
+            ->filter(fn ($pig) => $pig->pig_source === 'purchased')
+            ->sum(fn ($pig) => (float) ($pig->purchase_cost ?? 0));
+
+        $breedingCyclesForCost = ReproductionCycle::with('updates')->get();
+        $totalPurchasedSemenCost = (float) $breedingCyclesForCost
+            ->sum(fn ($cycle) => (float) ($cycle->total_semen_cost ?? 0));
+        $totalBreedingServiceCost = (float) $breedingCyclesForCost
+            ->sum(fn ($cycle) => (float) ($cycle->breeding_cost ?? 0));
+
+        $totalReferenceCost = $totalPurchasedPigCost + $totalPurchasedSemenCost + $totalBreedingServiceCost;
+
         $netPosition = $totalRevenue - $totalLossValue;
 
         $positiveGainPigs = $pigs->filter(function ($pig) {
@@ -144,6 +156,10 @@ class DashboardController extends Controller
             'totalBreedingCost',
             'totalCareLiability',
             'totalOperatingCost',
+            'totalReferenceCost',
+            'totalBreedingServiceCost',
+            'totalPurchasedSemenCost',
+            'totalPurchasedPigCost',
             'farmFeedEfficiency',
             'recentSales',
             'recentMortality',

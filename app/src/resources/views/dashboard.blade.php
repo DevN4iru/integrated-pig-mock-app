@@ -390,34 +390,33 @@
                 <div class="stat-sub">Pigs currently in the farm.</div>
             </div>
 
+            <div class="stat-card metric-card-highlight">
+                <div class="stat-top">
+                    <span class="label">Sold Profit</span>
+                    <span class="badge green">Sold</span>
+                </div>
+                <div class="stat-value">₱ {{ number_format($totalRevenue, 2) }}</div>
+                <div class="stat-sub">Total money received from sold pigs.</div>
+            </div>
+
             <div class="stat-card">
                 <div class="stat-top">
-                    <span class="label">Mortality</span>
+                    <span class="label">Mortality Loss</span>
                     <span class="badge red">Loss</span>
                 </div>
-                <div class="stat-value">{{ $deadPigs->count() }}</div>
-                <div class="stat-sub">Pigs with mortality records.</div>
+                <div class="stat-value">₱ {{ number_format($totalLossValue, 2) }}</div>
+                <div class="stat-sub">Total money lost from mortality records.</div>
             </div>
 
             <div class="stat-card metric-card-highlight">
                 <div class="stat-top">
                     <span class="label">Net Position</span>
-                    <span class="badge blue">Position</span>
+                    <span class="badge blue">Net</span>
                 </div>
                 <div class="stat-value">₱ {{ number_format($netPosition, 2) }}</div>
-                <div class="stat-sub">Active value + sold profit - mortality loss - recorded costs.</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-top">
-                    <span class="label">Live Asset Value</span>
-                    <span class="badge green">Value</span>
-                </div>
-                <div class="stat-value">₱ {{ number_format($totalAssetValue, 2) }}</div>
-                <div class="stat-sub">Active pigs counted in farm value.</div>
+                <div class="stat-sub">Official net = Sold Profit - Mortality Loss.</div>
             </div>
         </div>
-    </div>
 
     <div class="dashboard-section">
         <div>
@@ -436,11 +435,12 @@
     </div>
 
 
+    
     <details class="dashboard-toggle">
         <summary>
             <span>
                 View Basic Counts
-                <small>Show total records, sold pigs, and breeding cost.</small>
+                <small>Show total active, sold, and mortality counts.</small>
             </span>
         </summary>
 
@@ -452,27 +452,32 @@
             </div>
 
             <div class="dashboard-detail-row">
+                <div class="dashboard-detail-label">Active Pigs</div>
+                <div class="dashboard-detail-value">{{ $livePigs->count() }}</div>
+                <div class="dashboard-detail-note">Pigs currently in live farm operations.</div>
+            </div>
+
+            <div class="dashboard-detail-row">
                 <div class="dashboard-detail-label">Sold Pigs</div>
                 <div class="dashboard-detail-value">{{ $soldPigs->count() }}</div>
                 <div class="dashboard-detail-note">Pigs with completed sale records.</div>
             </div>
-<div class="dashboard-detail-note">Recorded breeding-related cost.</div>
-            </div>
 
-            {{--
-                Future advanced accounting row.
-                Kept for future client update if detailed operating-cost visibility is requested again.
-<div class="dashboard-detail-note">Recorded farm operating cost.</div>
-                </div>
-            --}}
+            <div class="dashboard-detail-row">
+                <div class="dashboard-detail-label">Mortality Records</div>
+                <div class="dashboard-detail-value">{{ $deadPigs->count() }}</div>
+                <div class="dashboard-detail-note">Pigs with mortality records.</div>
+            </div>
         </div>
     </details>
 
+
+    
     <details class="dashboard-toggle">
         <summary>
             <span>
                 View Financial Details
-                <small>Show sold profit, mortality loss, and net farm position.</small>
+                <small>Show official sold profit, mortality loss, and net position.</small>
             </span>
         </summary>
 
@@ -489,32 +494,56 @@
                 <div class="dashboard-detail-note">Frozen value lost from dead pigs.</div>
             </div>
 
-            {{--
-                Future advanced accounting row.
-                Kept for future client update if total recorded-cost visibility is requested again.
-                Hidden for now because current client-facing recorded costs are effectively represented by Breeding Cost.
-<div class="dashboard-detail-note">Currently includes recorded breeding costs.</div>
-                </div>
-            --}}
-
             <div class="dashboard-detail-row">
                 <div class="dashboard-detail-label">Net Position</div>
                 <div class="dashboard-detail-value">₱ {{ number_format($netPosition, 2) }}</div>
-                <div class="dashboard-detail-note">Active value + sold profit - mortality loss - recorded costs.</div>
+                <div class="dashboard-detail-note">Official net = Sold Profit - Mortality Loss. Reference costs are shown separately below and are not deducted here.</div>
             </div>
-
-            {{--
-                Future advanced accounting row.
-                Kept for future client update if care/input liability visibility is requested again.
-
-                <div class="dashboard-detail-row">
-                    <div class="dashboard-detail-label">Care Liability</div>
-                    <div class="dashboard-detail-value">₱ {{ number_format($totalCareLiability, 2) }}</div>
-                    <div class="dashboard-detail-note">Recorded care/input cost attached to pigs.</div>
-                </div>
-            --}}
         </div>
     </details>
+
+
+    <details class="dashboard-toggle">
+        <summary>
+            <span>
+                View Reference Cost / Sync Preview
+                <small>Show purchased pig, purchased semen, and breeding costs. Not included in official net.</small>
+            </span>
+        </summary>
+
+        <div class="dashboard-detail-list">
+            <div class="dashboard-detail-row">
+                <div class="dashboard-detail-label">Purchased Pig Cost</div>
+                <div class="dashboard-detail-value">₱ {{ number_format($totalPurchasedPigCost, 2) }}</div>
+                <div class="dashboard-detail-note">Reference only. This is not deducted from official Net Position.</div>
+            </div>
+
+            <div class="dashboard-detail-row">
+                <div class="dashboard-detail-label">Purchased Semen Cost</div>
+                <div class="dashboard-detail-value">₱ {{ number_format($totalPurchasedSemenCost, 2) }}</div>
+                <div class="dashboard-detail-note">Reference only. Comes from breeding records and retry attempts.</div>
+            </div>
+
+            <div class="dashboard-detail-row">
+                <div class="dashboard-detail-label">Breeding Service Cost</div>
+                <div class="dashboard-detail-value">₱ {{ number_format($totalBreedingServiceCost, 2) }}</div>
+                <div class="dashboard-detail-note">Reference only. Covers recorded breeding/service handling cost.</div>
+            </div>
+
+            <div class="dashboard-detail-row">
+                <div class="dashboard-detail-label">Total Reference Cost</div>
+                <div class="dashboard-detail-value">₱ {{ number_format($totalReferenceCost, 2) }}</div>
+                <div class="dashboard-detail-note">Purchased pigs + purchased semen + breeding service cost only.</div>
+            </div>
+
+            <div class="dashboard-detail-row">
+                <div class="dashboard-detail-label">Projected Sync Preview</div>
+                <div class="dashboard-detail-value">₱ {{ number_format($netPosition - $totalReferenceCost, 2) }}</div>
+                <div class="dashboard-detail-note">Preview only = Official Net - Total Reference Cost. This does not include medication, vaccination, feed, or health costs.</div>
+            </div>
+        </div>
+    </details>
+
 
     <details class="dashboard-toggle">
         <summary>
