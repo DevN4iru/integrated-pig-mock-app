@@ -5,13 +5,93 @@
 @section('page_subtitle', 'Parent breeding records with current snapshot and append-only timeline flow.')
 
 @section('top_actions')
-    <a href="{{ route('reproduction-cycles.select-sow') }}" class="btn primary">Add Breeding Record</a>
-    <a href="{{ route('dashboard') }}" class="btn">Back to Dashboard</a>
+<a href="{{ route('dashboard') }}" class="btn">Back to Dashboard</a>
     <a href="{{ route('pigs.index') }}" class="btn">Open Pig List</a>
 @endsection
 
 
 @section('styles')
+/* Breeding overview polish */
+.breeding-card-total {
+    border-color: #93c5fd !important;
+    background: linear-gradient(180deg, #eff6ff 0%, #ffffff 72%) !important;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.14), 0 18px 36px rgba(59, 130, 246, 0.10) !important;
+}
+
+.breeding-card-active {
+    border-color: #86efac !important;
+    background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 72%) !important;
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.16), 0 18px 36px rgba(34, 197, 94, 0.10) !important;
+}
+
+.breeding-card-inactive {
+    border-color: #fdba74 !important;
+    background: linear-gradient(180deg, #fff7ed 0%, #ffffff 72%) !important;
+    box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.16), 0 18px 36px rgba(249, 115, 22, 0.10) !important;
+}
+
+.breeding-card-guide {
+    border-color: #a5b4fc !important;
+    background: linear-gradient(180deg, #eef2ff 0%, #ffffff 72%) !important;
+    box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.16), 0 20px 42px rgba(79, 70, 229, 0.14) !important;
+}
+
+.breeding-primary-action-card {
+    border: 1px solid #93c5fd;
+    border-top: 4px solid #2563eb;
+    background: linear-gradient(135deg, #eff6ff 0%, #ffffff 70%);
+    border-radius: 18px;
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    box-shadow: 0 18px 42px rgba(37, 99, 235, 0.12);
+    margin-bottom: 18px;
+}
+
+.breeding-primary-action-card h3 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    font-weight: 900;
+    color: #0f172a;
+}
+
+.breeding-primary-action-card p {
+    margin: 0;
+    color: #64748b;
+    line-height: 1.45;
+}
+
+.breeding-primary-action-card .btn {
+    white-space: nowrap;
+    min-height: 46px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.breeding-records-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 760px) {
+    .breeding-primary-action-card {
+        display: grid;
+        gap: 14px;
+    }
+
+    .breeding-primary-action-card .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .breeding-records-table-wrap table {
+        min-width: 880px;
+    }
+}
+
 .breeding-stack {
     display: grid;
     gap: 20px;
@@ -200,7 +280,7 @@
 @section('content')
     <div class="breeding-stack">
         <div class="breeding-grid">
-            <div class="stat-card">
+            <div class="stat-card breeding-card-total">
                 <div class="stat-top">
                     <span class="label">Total Records</span>
                     <span class="badge blue">All</span>
@@ -209,7 +289,7 @@
                 <div class="stat-sub">All breeding records currently recorded in the farm.</div>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card breeding-card-active">
                 <div class="stat-top">
                     <span class="label">Active Records</span>
                     <span class="badge green">Live</span>
@@ -218,7 +298,7 @@
                 <div class="stat-sub">Serviced, pregnant, or derived due-soon breeding records.</div>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card breeding-card-inactive">
                 <div class="stat-top">
                     <span class="label">Inactive Records</span>
                     <span class="badge orange">History</span>
@@ -227,7 +307,7 @@
                 <div class="stat-sub">Not pregnant, returned-to-heat, farrowed, or closed breeding records.</div>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card breeding-card-guide">
                 <div class="stat-top">
                     <span class="label">Breeding Guide</span>
                     <span class="badge blue">Guide</span>
@@ -236,7 +316,15 @@
             </div>
         </div>
 
-        <details class="breeding-guide-toggle">
+        <div class="breeding-primary-action-card">
+    <div>
+        <h3>Add New Breeding Record</h3>
+        <p>Start here when a sow is serviced, inseminated, or begins a new breeding case.</p>
+    </div>
+    <a href="{{ route('reproduction-cycles.select-sow') }}" class="btn primary">+ Add Breeding Record</a>
+</div>
+
+<details class="breeding-guide-toggle">
             <summary>
                 <span>
                     View Full Breeding Guide
@@ -298,7 +386,8 @@
                 <div class="empty-state">No breeding records recorded yet.</div>
             @else
                 <div class="table-wrap">
-                    <table class="data-table">
+                    <div class="breeding-records-table-wrap">
+<table class="data-table">
                         <thead>
                             <tr>
                                 <th>Sow</th>
@@ -366,6 +455,7 @@
                             @endforeach
                         </tbody>
                     </table>
+</div>
                 </div>
             @endif
         </div>

@@ -12,6 +12,44 @@
 @endsection
 
 @section('styles')
+/* PIGSTEP DASHBOARD CARD COLOR RESTORE START */
+.stat-card-live {
+    border-color: #93c5fd !important;
+    background: linear-gradient(180deg, #eff6ff 0%, #ffffff 72%) !important;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.14), 0 18px 36px rgba(59, 130, 246, 0.10) !important;
+}
+
+.stat-card-profit {
+    border-color: #86efac !important;
+    background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 72%) !important;
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.14), 0 18px 36px rgba(34, 197, 94, 0.10) !important;
+}
+
+.stat-card-loss {
+    border-color: #fca5a5 !important;
+    background: linear-gradient(180deg, #fff1f2 0%, #ffffff 72%) !important;
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.14), 0 18px 36px rgba(239, 68, 68, 0.10) !important;
+}
+
+.stat-card-net {
+    border-color: #a5b4fc !important;
+    background: linear-gradient(180deg, #eef2ff 0%, #ffffff 72%) !important;
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.14), 0 18px 36px rgba(99, 102, 241, 0.10) !important;
+}
+
+.stat-card-value {
+    border-color: #cbd5e1 !important;
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 72%) !important;
+    box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.12), 0 18px 36px rgba(148, 163, 184, 0.08) !important;
+}
+
+.stat-card-live .stat-value { color: #1e3a8a; }
+.stat-card-profit .stat-value { color: #14532d; }
+.stat-card-loss .stat-value { color: #991b1b; }
+.stat-card-net .stat-value { color: #312e81; }
+.stat-card-value .stat-value { color: #334155; }
+/* PIGSTEP DASHBOARD CARD COLOR RESTORE END */
+
 .dashboard-stack {
     display: grid;
     gap: 20px;
@@ -574,4 +612,35 @@
         Dashboard is intentionally simplified for client use. Detailed records remain available inside Pig Profile, Breeding Records, Farm Settings, and Reports.
     </div>
 </div>
+
+<script id="pigstep-dashboard-card-color-restore">
+document.addEventListener('DOMContentLoaded', function () {
+    const cards = Array.from(document.querySelectorAll('.stat-card'));
+
+    cards.forEach(function (card) {
+        const text = (card.textContent || '').toUpperCase();
+
+        card.classList.remove(
+            'stat-card-live',
+            'stat-card-profit',
+            'stat-card-loss',
+            'stat-card-net',
+            'stat-card-value'
+        );
+
+        if (text.includes('ACTIVE PIGS')) {
+            card.classList.add('stat-card-live');
+        } else if (text.includes('SOLD PROFIT') || text.includes('SALE REVENUE') || text.includes('SALE INCOME')) {
+            card.classList.add('stat-card-profit');
+        } else if (text.includes('MORTALITY') || text.includes('LOSS')) {
+            card.classList.add('stat-card-loss');
+        } else if (text.includes('NET POSITION')) {
+            card.classList.add('stat-card-net');
+        } else if (text.includes('LIVE ASSET VALUE') || text.includes('PURCHASED COST') || text.includes('VALUE')) {
+            card.classList.add('stat-card-value');
+        }
+    });
+});
+</script>
+
 @endsection

@@ -66,6 +66,13 @@
                         <option value="purchased" {{ old('pig_source', $pig->pig_source) === 'purchased' ? 'selected' : '' }}>Purchased</option>
                     </select>
                 </div>
+                <div class="form-group purchase-cost-card" id="purchase_cost_group" style="display: none; border-color: #86efac; background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 100%); box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.18), 0 12px 26px rgba(34, 197, 94, 0.10);">
+                    <label for="purchase_cost">Purchase Cost</label>
+                    <input id="purchase_cost" name="purchase_cost" type="number" step="0.01" min="0" value="{{ old('purchase_cost', $pig->purchase_cost ?? '') }}">
+                    <small class="metric-note">Required only when Pig Source is Purchased. This is a reference cost only and is not deducted from Net Position.</small>
+                </div>
+            
+
 
                 <div class="form-group">
                     <label for="age_value">Age Input</label>
@@ -95,13 +102,7 @@
                     <label for="latest_weight">Weight Upon Entry</label>
                     <input id="latest_weight" name="latest_weight" type="number" step="0.01" min="0" value="{{ old('latest_weight', $pig->latest_weight) }}" required>
                 </div>
-
-                <div class="form-group">
-                    <label for="asset_value">Farm Value</label>
-                    <input id="asset_value" name="asset_value" type="number" step="0.01" min="0" value="{{ old('asset_value', $pig->asset_value) }}" required>
-                    <small class="metric-note">Enter the value manually. Weight does not auto-compute the farm value.</small>
-                </div>
-            </div>
+</div>
 
             <div class="form-actions">
                 <button type="submit" class="btn primary">Save Changes</button>
@@ -140,3 +141,30 @@ document.getElementById('age_unit')?.addEventListener('change', updateAgePreview
 
 updateAgePreview();
 @endsection
+
+<script>
+(function () {
+    function togglePurchaseCostField() {
+        const source = document.getElementById('pig_source');
+        const group = document.getElementById('purchase_cost_group');
+        const input = document.getElementById('purchase_cost');
+
+        if (!source || !group || !input) return;
+
+        const purchased = source.value === 'purchased';
+        group.style.display = purchased ? 'block' : 'none';
+        input.required = purchased;
+
+        if (!purchased) {
+            input.value = '';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', togglePurchaseCostField);
+    document.addEventListener('change', function (event) {
+        if (event.target && event.target.id === 'pig_source') {
+            togglePurchaseCostField();
+        }
+    });
+})();
+</script>

@@ -159,8 +159,23 @@ class PigController extends Controller
             'age_unit' => ['required', Rule::in(['days', 'weeks', 'months'])],
             'date_added' => ['required', 'date', 'before_or_equal:today'],
             'latest_weight' => ['required', 'numeric', 'min:0'],
-            'asset_value' => ['required', 'numeric', 'min:0'],
+            'purchase_cost' => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        if ($validated['pig_source'] === 'purchased') {
+            if (!isset($validated['purchase_cost']) || (float) $validated['purchase_cost'] <= 0) {
+                return back()
+                    ->withErrors(['purchase_cost' => 'Purchase cost is required for purchased pigs.'])
+                    ->withInput();
+            }
+
+            $validated['purchase_cost'] = (float) $validated['purchase_cost'];
+        } else {
+            $validated['purchase_cost'] = 0.0;
+        }
+
+        // Legacy asset_value stays zero. Active pigs are not treated as money until sold.
+        $validated['asset_value'] = 0.0;
 
         $pen = Pen::withCount(['activePigs as pigs_count'])->findOrFail($validated['pen_id']);
 
@@ -232,7 +247,6 @@ class PigController extends Controller
             'piglets.*.sex' => ['required', Rule::in(['male', 'female', 'undetermined'])],
             'piglets.*.pen_id' => ['required', 'integer', 'exists:pens,id'],
             'piglets.*.latest_weight' => ['required', 'numeric', 'min:0'],
-            'piglets.*.asset_value' => ['required', 'numeric', 'min:0'],
         ]);
 
         $requestedPenIds = collect($validated['piglets'])
@@ -291,7 +305,7 @@ class PigController extends Controller
                     'reproduction_cycle_id' => $reproductionCycle->id,
                     'date_added' => $birthDate,
                     'latest_weight' => $weight,
-                    'asset_value' => (float) $piglet['asset_value'],
+                    'asset_value' => 0.0,
                 ]);
             }
         });
@@ -361,8 +375,23 @@ class PigController extends Controller
             'age_unit' => ['required', Rule::in(['days', 'weeks', 'months'])],
             'date_added' => ['required', 'date', 'before_or_equal:today'],
             'latest_weight' => ['required', 'numeric', 'min:0'],
-            'asset_value' => ['required', 'numeric', 'min:0'],
+            'purchase_cost' => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        if ($validated['pig_source'] === 'purchased') {
+            if (!isset($validated['purchase_cost']) || (float) $validated['purchase_cost'] <= 0) {
+                return back()
+                    ->withErrors(['purchase_cost' => 'Purchase cost is required for purchased pigs.'])
+                    ->withInput();
+            }
+
+            $validated['purchase_cost'] = (float) $validated['purchase_cost'];
+        } else {
+            $validated['purchase_cost'] = 0.0;
+        }
+
+        // Legacy asset_value stays zero. Active pigs are not treated as money until sold.
+        $validated['asset_value'] = 0.0;
 
         $validated['age'] = $this->convertAgeToDays(
             (float) $validated['age_value'],
@@ -395,6 +424,15 @@ class PigController extends Controller
     {
         $pig = Pig::withTrashed()->findOrFail($pig);
 
+
+        $protectedReasons = $this->protectedPigPermanentDeleteReasons($pig);
+
+        if (!empty($protectedReasons)) {
+            return redirect()
+                ->back()
+                ->with('error', 'Permanent delete blocked because this pig already has linked records: ' . implode(', ', $protectedReasons) . '. Use archive for normal hiding, or supervised maintenance for record removal.');
+        }
+
         if (!$pig->trashed()) {
             return redirect()->route('pigs.index')->with('error', 'Pig is already active.');
         }
@@ -404,23 +442,72 @@ class PigController extends Controller
         return redirect()->route('pigs.index')->with('success', 'Pig restored successfully.');
     }
 
+    private function protectedPigPermanentDeleteReasons(Pig $pig): array
+    {
+        $reasons = [];
+
+        $linkedTableChecks = [
+            ['sales', 'pig_id', 'sale record'],
+            ['mortality_logs', 'pig_id', 'mortality record'],
+            ['health_logs', 'pig_id', 'health or weight record'],
+            ['feed_logs', 'pig_id', 'feed record'],
+            ['medications', 'pig_id', 'medication record'],
+            ['vaccinations', 'pig_id', 'vaccination record'],
+            ['pig_transfers', 'pig_id', 'transfer record'],
+            ['protocol_executions', 'pig_id', 'protocol record'],
+            ['reproduction_cycle_updates', 'boar_id', 'breeding retry/update record'],
+            ['reproduction_cycles', 'sow_id', 'sow breeding record'],
+            ['reproduction_cycles', 'boar_id', 'boar breeding record'],
+            ['pigs', 'mother_sow_id', 'registered offspring lineage'],
+            ['pigs', 'sire_boar_id', 'registered sire lineage'],
+        ];
+
+        foreach ($linkedTableChecks as [$table, $column, $label]) {
+            if (
+                \Illuminate\Support\Facades\Schema::hasTable($table)
+                && \Illuminate\Support\Facades\Schema::hasColumn($table, $column)
+                && \Illuminate\Support\Facades\DB::table($table)->where($column, $pig->id)->exists()
+            ) {
+                $reasons[] = $label;
+            }
+        }
+
+        if (!empty($pig->reproduction_cycle_id)) {
+            $reasons[] = 'birth case lineage';
+        }
+
+        return array_values(array_unique($reasons));
+    }
+
     public function forceDelete(Request $request, $pig)
     {
         $pig = Pig::withTrashed()->findOrFail($pig);
 
-        if ($request->input('code') !== '12345') {
+        $protectedReasons = $this->protectedPigPermanentDeleteReasons($pig);
+
+        if (!empty($protectedReasons)) {
             return redirect()
-                ->route('pigs.index')
-                ->with('error', 'Permanent delete failed. Wrong challenge code.');
+                ->back()
+                ->with('error', 'Permanent delete blocked because this pig already has linked records: ' . implode(', ', $protectedReasons) . '. Use archive for normal hiding, or supervised maintenance for record removal.');
         }
+
+        $earTag = $pig->ear_tag ?: 'Unnamed pig';
 
         $pig->forceDelete();
 
-        return redirect()->route('pigs.index')->with('success', 'Pig permanently deleted successfully.');
+        return redirect()
+            ->route('pigs.index')
+            ->with('success', 'Pig ' . $earTag . ' permanently deleted from records.');
     }
+
+
 
     public function removeFromRecords(Request $request, $pig)
     {
+        if ($blocked = $this->blockDestructiveAction(request(), 'remove pig from records')) {
+            return $blocked;
+        }
+
         $pig = Pig::withTrashed()
             ->with([
                 'healthLogs',

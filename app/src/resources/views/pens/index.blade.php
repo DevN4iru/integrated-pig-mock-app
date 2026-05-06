@@ -367,6 +367,45 @@
 @endsection
 
 @section('content')
+<style id="pen-overview-meaning-colors">
+/* Pen overview meaning colors */
+.pen-card-total {
+    border-color: #93c5fd !important;
+    background: linear-gradient(180deg, #eff6ff 0%, #ffffff 72%) !important;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.14), 0 18px 36px rgba(59, 130, 246, 0.10) !important;
+}
+
+.pen-card-open {
+    border-color: #86efac !important;
+    background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 72%) !important;
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.16), 0 18px 36px rgba(34, 197, 94, 0.10) !important;
+}
+
+.pen-card-limited {
+    border-color: #fcd34d !important;
+    background: linear-gradient(180deg, #fffbeb 0%, #ffffff 72%) !important;
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.16), 0 18px 36px rgba(245, 158, 11, 0.10) !important;
+}
+
+.pen-card-full {
+    border-color: #fca5a5 !important;
+    background: linear-gradient(180deg, #fff1f2 0%, #ffffff 72%) !important;
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.16), 0 18px 36px rgba(239, 68, 68, 0.10) !important;
+}
+
+.pen-card-occupancy {
+    border-color: #a5b4fc !important;
+    background: linear-gradient(180deg, #eef2ff 0%, #ffffff 72%) !important;
+    box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.16), 0 20px 42px rgba(79, 70, 229, 0.14) !important;
+}
+
+.pen-card-total .pen-summary-value { color: #1e3a8a; }
+.pen-card-open .pen-summary-value { color: #14532d; }
+.pen-card-limited .pen-summary-value { color: #92400e; }
+.pen-card-full .pen-summary-value { color: #991b1b; }
+.pen-card-occupancy .pen-summary-value { color: #312e81; font-weight: 900; }
+</style>
+
 <div class="pen-dashboard">
 
     <div class="panel-card">
@@ -378,31 +417,31 @@
         </div>
 
         <div class="pen-summary-grid">
-            <div class="pen-summary-card">
+            <div class="pen-summary-card pen-card-total">
                 <div class="pen-summary-label">Total Pens</div>
                 <div class="pen-summary-value">{{ $summary['total_pens'] }}</div>
                 <div class="pen-summary-sub">All pen records in the system.</div>
             </div>
 
-            <div class="pen-summary-card">
+            <div class="pen-summary-card pen-card-open">
                 <div class="pen-summary-label">Open Pens</div>
                 <div class="pen-summary-value">{{ $summary['open'] }}</div>
                 <div class="pen-summary-sub">Pens with comfortable available slots.</div>
             </div>
 
-            <div class="pen-summary-card">
+            <div class="pen-summary-card pen-card-limited">
                 <div class="pen-summary-label">Limited Pens</div>
                 <div class="pen-summary-value">{{ $summary['limited'] }}</div>
                 <div class="pen-summary-sub">Pens nearing capacity.</div>
             </div>
 
-            <div class="pen-summary-card">
+            <div class="pen-summary-card pen-card-full">
                 <div class="pen-summary-label">Full Pens</div>
                 <div class="pen-summary-value">{{ $summary['full'] }}</div>
                 <div class="pen-summary-sub">Pens with no remaining slots.</div>
             </div>
 
-            <div class="pen-summary-card">
+            <div class="pen-summary-card pen-card-occupancy">
                 <div class="pen-summary-label">Farm Occupancy</div>
                 <div class="pen-summary-value">
                     {{ $summary['total_capacity'] > 0 ? number_format(($summary['occupied_slots'] / $summary['total_capacity']) * 100, 0) : 0 }}%

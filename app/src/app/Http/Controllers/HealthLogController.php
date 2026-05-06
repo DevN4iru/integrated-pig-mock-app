@@ -40,7 +40,7 @@ class HealthLogController extends Controller
             : 0.0;
 
         $pig->latest_weight = $currentWeight;
-        $pig->asset_value = $currentWeight * FarmSetting::currentPricePerKg();
+        // Weight updates are health/growth records only. They do not change money value.
         $pig->save();
     }
 

@@ -49,6 +49,10 @@ class NotificationController extends Controller
 
     public function clearHistory(): RedirectResponse
     {
+        if ($blocked = $this->blockDestructiveAction(request(), 'clear history')) {
+            return $blocked;
+        }
+
         $deletedCount = Notification::query()
             ->history()
             ->delete();

@@ -950,5 +950,42 @@
             }
         });
     </script>
+<script id="pigstep-destructive-action-guard">
+document.addEventListener('submit', function (event) {
+    const form = event.target;
+
+    if (!form || form.tagName !== 'FORM') {
+        return;
+    }
+
+    const action = String(form.getAttribute('action') || '');
+
+    const isDestructiveMaintenance =
+        action.includes('/remove-records') ||
+        action.includes('/notifications/history');
+
+    if (!isDestructiveMaintenance) {
+        return;
+    }
+
+    const code = window.prompt('Server maintenance confirmation required. Enter destructive action code:');
+
+    if (!code) {
+        event.preventDefault();
+        return false;
+    }
+
+    let input = form.querySelector('input[name="destructive_confirm_code"]');
+
+    if (!input) {
+        input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'destructive_confirm_code';
+        form.appendChild(input);
+    }
+
+    input.value = code;
+});
+</script>
 </body>
 </html>

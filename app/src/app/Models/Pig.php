@@ -17,6 +17,7 @@ class Pig extends Model
         'pen_id',
         'pen_location',
         'pig_source',
+        'purchase_cost',
         'age',
         'mother_sow_id',
         'sire_boar_id',
@@ -30,6 +31,7 @@ class Pig extends Model
     protected $casts = [
         'age' => 'integer',
         'date_added' => 'date',
+        'purchase_cost' => 'decimal:2',
         'latest_weight' => 'decimal:2',
         'asset_value' => 'decimal:2',
         'exclude_from_value_computation' => 'boolean',
