@@ -405,7 +405,7 @@
                     <span class="badge blue">Position</span>
                 </div>
                 <div class="stat-value">₱ {{ number_format($netPosition, 2) }}</div>
-                <div class="stat-sub">Active value + sale income - mortality loss - recorded costs.</div>
+                <div class="stat-sub">Active value + sold profit - mortality loss - recorded costs.</div>
             </div>
 
             <div class="stat-card">
@@ -456,21 +456,13 @@
                 <div class="dashboard-detail-value">{{ $soldPigs->count() }}</div>
                 <div class="dashboard-detail-note">Pigs with completed sale records.</div>
             </div>
-
-            <div class="dashboard-detail-row">
-                <div class="dashboard-detail-label">Breeding Cost</div>
-                <div class="dashboard-detail-value">₱ {{ number_format($totalBreedingCost, 2) }}</div>
-                <div class="dashboard-detail-note">Recorded breeding-related cost.</div>
+<div class="dashboard-detail-note">Recorded breeding-related cost.</div>
             </div>
 
             {{--
                 Future advanced accounting row.
                 Kept for future client update if detailed operating-cost visibility is requested again.
-
-                <div class="dashboard-detail-row">
-                    <div class="dashboard-detail-label">Operating Cost</div>
-                    <div class="dashboard-detail-value">₱ {{ number_format($totalOperatingCost, 2) }}</div>
-                    <div class="dashboard-detail-note">Recorded farm operating cost.</div>
+<div class="dashboard-detail-note">Recorded farm operating cost.</div>
                 </div>
             --}}
         </div>
@@ -480,15 +472,15 @@
         <summary>
             <span>
                 View Financial Details
-                <small>Show sale income, mortality loss, and net farm position.</small>
+                <small>Show sold profit, mortality loss, and net farm position.</small>
             </span>
         </summary>
 
         <div class="dashboard-detail-list">
             <div class="dashboard-detail-row">
-                <div class="dashboard-detail-label">Sale Revenue</div>
+                <div class="dashboard-detail-label">Sold Profit</div>
                 <div class="dashboard-detail-value">₱ {{ number_format($totalRevenue, 2) }}</div>
-                <div class="dashboard-detail-note">Total recorded income from sold pigs.</div>
+                <div class="dashboard-detail-note">Total money received from sold pigs.</div>
             </div>
 
             <div class="dashboard-detail-row">
@@ -501,18 +493,14 @@
                 Future advanced accounting row.
                 Kept for future client update if total recorded-cost visibility is requested again.
                 Hidden for now because current client-facing recorded costs are effectively represented by Breeding Cost.
-
-                <div class="dashboard-detail-row">
-                    <div class="dashboard-detail-label">Recorded Costs</div>
-                    <div class="dashboard-detail-value">₱ {{ number_format($totalOperatingCost, 2) }}</div>
-                    <div class="dashboard-detail-note">Currently includes recorded breeding costs.</div>
+<div class="dashboard-detail-note">Currently includes recorded breeding costs.</div>
                 </div>
             --}}
 
             <div class="dashboard-detail-row">
                 <div class="dashboard-detail-label">Net Position</div>
                 <div class="dashboard-detail-value">₱ {{ number_format($netPosition, 2) }}</div>
-                <div class="dashboard-detail-note">Active value + sale income - mortality loss - recorded costs.</div>
+                <div class="dashboard-detail-note">Active value + sold profit - mortality loss - recorded costs.</div>
             </div>
 
             {{--

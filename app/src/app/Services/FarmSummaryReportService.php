@@ -50,8 +50,8 @@ class FarmSummaryReportService
         $totalCareLiability = (float) $pigs->sum(fn (Pig $pig) => (float) $pig->total_care_liability);
         $totalOperatingCost = (float) $pigs->sum(fn (Pig $pig) => (float) $pig->total_operating_cost);
 
-        $totalRecordedClientCost = $totalBreedingCost;
-        $netPosition = $totalAssetValue + $totalRevenue - $mortalityLoss - $totalRecordedClientCost;
+        $totalRecordedClientCost = 0.0;
+        $netPosition = $totalRevenue - $mortalityLoss;
 
         $protocolDueTodayRows = [];
         $protocolOverdueRows = [];
@@ -137,10 +137,8 @@ class FarmSummaryReportService
             ['metric' => 'stale_weight_pigs', 'value' => $metrics['stale_weight_pigs']],
             ['metric' => 'protocol_due_today', 'value' => $metrics['protocol_due_today']],
             ['metric' => 'protocol_overdue', 'value' => $metrics['protocol_overdue']],
-            ['metric' => 'live_asset_value', 'value' => $this->money($metrics['total_asset_value'])],
-            ['metric' => 'sale_revenue', 'value' => $this->money($metrics['total_revenue'])],
+            ['metric' => 'sold_profit', 'value' => $this->money($metrics['total_revenue'])],
             ['metric' => 'mortality_loss', 'value' => $this->money($metrics['mortality_loss'])],
-            ['metric' => 'breeding_cost', 'value' => $this->money($metrics['total_breeding_cost'])],
             ['metric' => 'net_position', 'value' => $this->money($metrics['net_position'])],
         ];
     }

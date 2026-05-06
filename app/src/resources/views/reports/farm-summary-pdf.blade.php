@@ -220,13 +220,13 @@
                 <span class="metric-value">{{ $money('net_position') }}</span>
             </td>
             <td>
-                <span class="metric-label">Live Asset Value</span>
+                <span class="metric-label">Reference Amount</span>
                 <span class="metric-value">{{ $money('total_asset_value') }}</span>
             </td>
         </tr>
         <tr>
             <td>
-                <span class="metric-label">Sale Revenue</span>
+                <span class="metric-label">Sold Profit</span>
                 <span class="metric-value">{{ $money('total_revenue') }}</span>
             </td>
             <td>
@@ -365,7 +365,7 @@
     <h2>Financial Summary</h2>
     <div class="formula">
         <strong>Formula:</strong>
-        Net Position = Live Asset Value + Sale Revenue - Mortality Loss - Breeding Cost
+        Net Position = Reference Amount + Sold Profit - Mortality Loss - Breeding Cost
     </div>
 
     <table class="data">
@@ -376,11 +376,9 @@
             </tr>
         </thead>
         <tbody>
-            <tr><td>Live Asset Value</td><td>{{ $money('total_asset_value') }}</td></tr>
-            <tr><td>Sale Revenue</td><td>{{ $money('total_revenue') }}</td></tr>
+<tr><td>Sold Profit</td><td>{{ $money('total_revenue') }}</td></tr>
             <tr><td>Mortality Loss</td><td>{{ $money('mortality_loss') }}</td></tr>
-            <tr><td>Breeding Cost</td><td>{{ $money('total_breeding_cost') }}</td></tr>
-            <tr><td><strong>Net Position</strong></td><td><strong>{{ $money('net_position') }}</strong></td></tr>
+<tr><td><strong>Net Position</strong></td><td><strong>{{ $money('net_position') }}</strong></td></tr>
         </tbody>
     </table>
 

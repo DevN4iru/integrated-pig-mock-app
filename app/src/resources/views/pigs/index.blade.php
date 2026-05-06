@@ -499,7 +499,7 @@
 
             <div class="pig-lifecycle-preview">
                 <span class="pig-preview-pill strong">{{ $soldPigCount }} sold pig(s)</span>
-                <span class="pig-preview-pill">₱ {{ number_format((float) $soldRevenuePreview, 2) }} sale value</span>
+                <span class="pig-preview-pill">₱ {{ number_format((float) $soldRevenuePreview, 2) }} sold total</span>
                 <span class="pig-lifecycle-toggle"></span>
             </div>
         </summary>
@@ -641,7 +641,7 @@
                                 <th>Age</th>
                                 <th>Pen</th>
                                 <th>Source</th>
-                                <th>Value</th>
+                                <th>Reference</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -778,7 +778,7 @@
                         <div class="form-group">
                             <label for="batch_sale_pricing_mode">Pricing Mode</label>
                             <select id="batch_sale_pricing_mode" name="pricing_mode" required onchange="toggleBatchSalePricingMode()">
-                                <option value="recommended" {{ old('pricing_mode', 'recommended') === 'recommended' ? 'selected' : '' }}>Use current farm value per pig</option>
+                                <option value="recommended" {{ old('pricing_mode', 'recommended') === 'recommended' ? 'selected' : '' }}>Use current reference amount per pig</option>
                                 <option value="custom" {{ old('pricing_mode') === 'custom' ? 'selected' : '' }}>Use one custom price for every selected pig</option>
                             </select>
                         </div>
@@ -867,7 +867,7 @@
                                         <th>Source</th>
                                         <th>Weight</th>
                                         <th>Trend</th>
-                                        <th>Value</th>
+                                        <th>Reference</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -958,7 +958,7 @@ function updateSelectedCount() {
         countText.textContent = `${selected.length} pig(s) selected`;
     }
 
-    updateBatchSaleRecommendedTotal();
+    
 }
 
 function toggleAllPigSelection(checked) {
@@ -1029,8 +1029,8 @@ function showBatchTransfer() {
 function showBatchSale() {
     document.getElementById('batchSalePanel').style.display = 'block';
     document.getElementById('batchTransferPanel').style.display = 'none';
-    toggleBatchSalePricingMode();
-    updateBatchSaleRecommendedTotal();
+    
+    
 }
 
 function hideBatchPanels() {
@@ -1047,29 +1047,9 @@ function toggleBatchTransferOther() {
     notes.required = reason.value === 'other';
 }
 
-function toggleBatchSalePricingMode() {
-    const mode = document.getElementById('batch_sale_pricing_mode');
-    const customGroup = document.getElementById('batchSaleCustomPriceGroup');
-    const customInput = document.getElementById('batch_sale_custom_price');
 
-    if (!mode || !customGroup || !customInput) return;
 
-    const showCustom = mode.value === 'custom';
-    customGroup.style.display = showCustom ? '' : 'none';
-    customInput.required = showCustom;
-}
 
-function updateBatchSaleRecommendedTotal() {
-    const selected = getSelectedPigCheckboxes();
-    const total = selected.reduce((carry, checkbox) => {
-        return carry + parseFloat(checkbox.dataset.recommended || '0');
-    }, 0);
-
-    const totalInput = document.getElementById('batchSaleRecommendedTotal');
-    if (totalInput) {
-        totalInput.value = `₱ ${total.toFixed(2)}`;
-    }
-}
 
 function openPigEditPrompt(url) {
     const code = prompt('Type the edit access code to continue:');
@@ -1150,7 +1130,7 @@ function confirmPigRemoveFromRecords(url) {
 }
 
 toggleBatchTransferOther();
-toggleBatchSalePricingMode();
+
 updateSelectedCount();
 
 

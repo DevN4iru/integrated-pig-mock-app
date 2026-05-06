@@ -39,7 +39,7 @@ class SaleController extends Controller
         }
 
         $currentWeight = (float) ($pig->computed_weight ?? 0);
-        $recommendedPrice = (float) ($pig->asset_value ?? 0);
+        $recommendedPrice = null;
 
         return view('sales.create', compact('pig', 'currentWeight', 'recommendedPrice'));
     }
@@ -58,7 +58,7 @@ class SaleController extends Controller
         ]);
 
         $currentWeight = (float) ($pig->computed_weight ?? 0);
-        $recommendedPrice = (float) ($pig->asset_value ?? 0);
+        $recommendedPrice = null;
 
         Sale::create([
             'pig_id' => $pig->id,
@@ -72,7 +72,7 @@ class SaleController extends Controller
                 : null,
             'weight_at_sale' => $currentWeight,
             'price_per_kg_at_sale' => 0,
-            'recommended_price' => $recommendedPrice,
+            'recommended_price' => null,
         ]);
 
         return redirect()
@@ -85,8 +85,7 @@ class SaleController extends Controller
         $validated = $request->validate([
             'pig_ids' => ['required', 'string'],
             'sold_date' => ['required', 'date'],
-            'pricing_mode' => ['required', 'in:recommended,custom'],
-            'custom_price' => ['nullable', 'numeric', 'min:0'],
+            'total_price' => ['required', 'numeric', 'min:0'],
             'buyer' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
         ]);
@@ -141,24 +140,24 @@ class SaleController extends Controller
             ? (float) $validated['custom_price']
             : null;
 
-        DB::transaction(function () use ($pigs, $validated, $buyer, $notes, $customPrice): void {
+        $totalBatchPrice = (float) $validated['total_price'];
+        $pricePerPig = $pigs->count() > 0
+            ? round($totalBatchPrice / $pigs->count(), 2)
+            : 0.0;
+
+        DB::transaction(function () use ($pigs, $validated, $buyer, $notes, $pricePerPig): void {
             foreach ($pigs as $pig) {
                 $currentWeight = (float) ($pig->computed_weight ?? 0);
-                $recommendedPrice = (float) ($pig->asset_value ?? 0);
-
-                $finalPrice = $validated['pricing_mode'] === 'recommended'
-                    ? $recommendedPrice
-                    : (float) $customPrice;
 
                 Sale::create([
                     'pig_id' => $pig->id,
                     'sold_date' => $validated['sold_date'],
-                    'price' => $finalPrice,
+                    'price' => $pricePerPig,
                     'buyer' => $buyer,
                     'notes' => $notes,
                     'weight_at_sale' => $currentWeight,
                     'price_per_kg_at_sale' => 0,
-                    'recommended_price' => $recommendedPrice,
+                    'recommended_price' => null,
                 ]);
             }
         });

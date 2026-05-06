@@ -38,9 +38,8 @@
             </div>
 
             <div class="form-group">
-                <label>Price</label>
-                <input id="sale_price_input" type="number" step="0.01" min="0" name="price" value="{{ old('price', number_format((float) $recommendedPrice, 2, '.', '')) }}" required>
-                <div class="inline-note">Use the farm value or override it if buyer negotiation changes the final deal.</div>
+                <label>Manual Sale Amount</label>
+                <input id="sale_price_input" type="number" step="0.01" min="0" name="price" value="{{ old('price') }}" required><div class="inline-note">Enter the actual money received from the buyer. This becomes sold profit.</div>
             </div>
 
             <div class="form-group">
@@ -64,13 +63,4 @@
         <button class="btn primary">Save Sale Record</button>
     </form>
 </div>
-@endsection
-
-@section('scripts')
-function useRecommendedSalePrice(value) {
-    const input = document.getElementById('sale_price_input');
-    if (input) {
-        input.value = value;
-    }
-}
 @endsection

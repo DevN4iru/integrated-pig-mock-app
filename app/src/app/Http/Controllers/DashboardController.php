@@ -42,7 +42,7 @@ class DashboardController extends Controller
         $totalCareLiability = (float) $pigs->sum(fn ($pig) => (float) $pig->total_care_liability);
         $totalOperatingCost = (float) $pigs->sum(fn ($pig) => (float) $pig->total_operating_cost);
 
-        $netPosition = $totalAssetValue + $totalRevenue - $totalLossValue - $totalOperatingCost;
+        $netPosition = $totalRevenue - $totalLossValue;
 
         $positiveGainPigs = $pigs->filter(function ($pig) {
             return $pig->total_feed_kg > 0 && $pig->positive_gain_from_start !== null;
