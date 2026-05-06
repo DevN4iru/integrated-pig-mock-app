@@ -790,43 +790,68 @@ body.pig-list-ui-v3 #pig-list-ui-shell {
 body.pig-list-ui-v3 .pig-list-panel {
     background: #ffffff !important;
     border-radius: 18px !important;
-    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06) !important;
+    border: 1px solid #dbe7f6 !important;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.055) !important;
+    overflow: hidden;
 }
 
-body.pig-list-ui-v3 .pig-list-filter-panel {
-    border-top: 4px solid #2563eb !important;
-    border-color: #bfdbfe !important;
-    background: linear-gradient(180deg, #f8fbff 0%, #ffffff 88%) !important;
-}
-
+body.pig-list-ui-v3 .pig-list-filter-panel,
 body.pig-list-ui-v3 .pig-list-batch-panel {
-    border-top: 4px solid #60a5fa !important;
-    border-color: #bfdbfe !important;
-    background: #ffffff !important;
+    border-color: #bcd7ff !important;
+    background: linear-gradient(180deg, #f8fbff 0%, #ffffff 90%) !important;
+    box-shadow: 0 12px 30px rgba(37, 99, 235, 0.06) !important;
 }
 
 body.pig-list-ui-v3 .pig-list-active-panel {
-    border-top: 4px solid #22c55e !important;
-    border-color: #bbf7d0 !important;
-    background: linear-gradient(180deg, #fbfffc 0%, #ffffff 86%) !important;
+    border-color: #9ee8bb !important;
+    background: linear-gradient(180deg, #fbfffc 0%, #ffffff 88%) !important;
+    box-shadow: 0 14px 34px rgba(34, 197, 94, 0.075) !important;
 }
 
 body.pig-list-ui-v3 .pig-list-history-panel {
-    border-color: #e2e8f0 !important;
     background: #ffffff !important;
     min-height: unset !important;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.045) !important;
 }
 
 body.pig-list-ui-v3 .pig-list-sold-panel {
-    border-top: 3px solid #22c55e !important;
+    border-color: #b7efcb !important;
 }
 
 body.pig-list-ui-v3 .pig-list-dead-panel {
-    border-top: 3px solid #ef4444 !important;
+    border-color: #ffc4c4 !important;
 }
 
 body.pig-list-ui-v3 .pig-list-archived-panel {
-    border-top: 3px solid #94a3b8 !important;
+    border-color: #cbd5e1 !important;
+}
+
+body.pig-list-ui-v3 .pig-list-panel::before {
+    content: "";
+    display: block;
+    height: 3px;
+    background: #93c5fd;
+}
+
+body.pig-list-ui-v3 .pig-list-active-panel::before {
+    background: linear-gradient(90deg, #22c55e, #86efac);
+}
+
+body.pig-list-ui-v3 .pig-list-filter-panel::before,
+body.pig-list-ui-v3 .pig-list-batch-panel::before {
+    background: linear-gradient(90deg, #2563eb, #93c5fd);
+}
+
+body.pig-list-ui-v3 .pig-list-sold-panel::before {
+    background: linear-gradient(90deg, #22c55e, #bbf7d0);
+}
+
+body.pig-list-ui-v3 .pig-list-dead-panel::before {
+    background: linear-gradient(90deg, #ef4444, #fecaca);
+}
+
+body.pig-list-ui-v3 .pig-list-archived-panel::before {
+    background: linear-gradient(90deg, #94a3b8, #e2e8f0);
 }
 
 body.pig-list-ui-v3 .pig-list-history-panel > div:first-child,
@@ -843,8 +868,8 @@ body.pig-list-ui-v3 .pig-list-history-heading {
 
 body.pig-list-ui-v3 .pig-list-history-heading::before {
     content: "";
-    width: 9px;
-    height: 9px;
+    width: 8px;
+    height: 8px;
     border-radius: 999px;
     display: inline-block;
 }
