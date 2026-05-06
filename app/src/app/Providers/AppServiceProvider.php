@@ -26,6 +26,40 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+
+        /*
+         * Pigstep server clock safety:
+         * If the machine boots with a bad CMOS/system date, block automated alert/reminder mail.
+         * This protects breeding windows, protocol due dates, age-based reminders, and daily alerts.
+         */
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Mail\Events\MessageSending::class, function (\Illuminate\Mail\Events\MessageSending $event) {
+            $subject = method_exists($event->message, 'getSubject')
+                ? strtolower((string) $event->message->getSubject())
+                : '';
+
+            $blockAllMail = filter_var(env('PIGSTEP_CLOCK_BLOCK_ALL_MAIL', false), FILTER_VALIDATE_BOOLEAN);
+            $looksLikePigstepAlert = str_contains($subject, 'pigstep')
+                || str_contains($subject, 'alert')
+                || str_contains($subject, 'reminder')
+                || str_contains($subject, 'protocol')
+                || str_contains($subject, 'farrow')
+                || str_contains($subject, 'due');
+
+            if (!$blockAllMail && !$looksLikePigstepAlert) {
+                return null;
+            }
+
+            $clock = app(\App\Services\ClockSafetyService::class);
+
+            if ($clock->shouldBlockAlertMail()) {
+                \Illuminate\Support\Facades\Log::warning('Pigstep alert mail blocked because server clock is unsafe.', $clock->status());
+
+                return false;
+            }
+
+            return null;
+        });
+
         Pig::saving(function (Pig $pig): void {
             $pen = null;
 

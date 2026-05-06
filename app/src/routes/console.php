@@ -71,3 +71,31 @@ Artisan::command('alerts:dispatch-email', function () {
 })->purpose('Dispatch scheduled Pigstep email alerts');
 
 Schedule::command('alerts:dispatch-email')->everyMinute();
+
+Artisan::command('pigstep:clock-check {--json : Output JSON only} {--write-anchor : Save current time as last known safe time when safe}', function () {
+    $clock = app(\App\Services\ClockSafetyService::class);
+    $status = $clock->status();
+
+    if ($this->option('write-anchor') && $status['safe']) {
+        $clock->recordSafeAnchor();
+        $status = $clock->status();
+    }
+
+    if ($this->option('json')) {
+        $this->line(json_encode($status, JSON_PRETTY_PRINT));
+    } else {
+        $this->line('Pigstep Clock Safety Check');
+        $this->line('Now: ' . $status['now']);
+        $this->line('Timezone: ' . $status['timezone']);
+        $this->line('Minimum safe date: ' . $status['min_date']);
+        $this->line('Anchor: ' . ($status['anchor_exists'] ? 'present' : 'missing'));
+        $this->line('Status: ' . ($status['safe'] ? 'SAFE' : 'UNSAFE'));
+
+        foreach ($status['reasons'] as $reason) {
+            $this->warn('- ' . $reason);
+        }
+    }
+
+    return $status['safe'] ? self::SUCCESS : 2;
+})->purpose('Check whether the server clock is safe for Pigstep date-based alerts.');
+
