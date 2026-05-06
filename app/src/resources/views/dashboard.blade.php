@@ -206,6 +206,69 @@
     background: rgba(37, 99, 235, 0.28);
 }
 
+
+/* PIGSTEP SYNC PREVIEW COLOR CARD START */
+.dashboard-detail-row.sync-preview-card {
+    margin: 10px 14px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 78%);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.075);
+    overflow: hidden;
+}
+
+.dashboard-detail-row.sync-preview-card::before {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 5px;
+    border-radius: 0;
+    background: #64748b;
+}
+
+.dashboard-detail-row.sync-preview-card.is-positive {
+    border-color: #86efac;
+    background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 78%);
+    box-shadow: 0 14px 30px rgba(34, 197, 94, 0.12);
+}
+
+.dashboard-detail-row.sync-preview-card.is-positive::before {
+    background: #22c55e;
+}
+
+.dashboard-detail-row.sync-preview-card.is-positive .dashboard-detail-value {
+    color: #14532d;
+}
+
+.dashboard-detail-row.sync-preview-card.is-negative {
+    border-color: #fca5a5;
+    background: linear-gradient(180deg, #fff1f2 0%, #ffffff 78%);
+    box-shadow: 0 14px 30px rgba(239, 68, 68, 0.12);
+}
+
+.dashboard-detail-row.sync-preview-card.is-negative::before {
+    background: #ef4444;
+}
+
+.dashboard-detail-row.sync-preview-card.is-negative .dashboard-detail-value {
+    color: #991b1b;
+}
+
+.dashboard-detail-row.sync-preview-card.is-neutral {
+    border-color: #bfdbfe;
+    background: linear-gradient(180deg, #eff6ff 0%, #ffffff 78%);
+    box-shadow: 0 14px 30px rgba(59, 130, 246, 0.10);
+}
+
+.dashboard-detail-row.sync-preview-card.is-neutral::before {
+    background: #3b82f6;
+}
+
+.dashboard-detail-row.sync-preview-card.is-neutral .dashboard-detail-value {
+    color: #1e3a8a;
+}
+/* PIGSTEP SYNC PREVIEW COLOR CARD END */
+
 .dashboard-detail-row:last-child {
     border-bottom: 0;
 }
@@ -537,9 +600,16 @@
                 <div class="dashboard-detail-note">Purchased pigs + purchased semen + breeding service cost only.</div>
             </div>
 
-            <div class="dashboard-detail-row">
+            @php
+                $projectedSyncPreview = $netPosition - $totalReferenceCost;
+                $projectedSyncPreviewClass = $projectedSyncPreview < 0
+                    ? 'is-negative'
+                    : ($projectedSyncPreview > 0 ? 'is-positive' : 'is-neutral');
+            @endphp
+
+            <div class="dashboard-detail-row sync-preview-card {{ $projectedSyncPreviewClass }}">
                 <div class="dashboard-detail-label">Projected Sync Preview</div>
-                <div class="dashboard-detail-value">₱ {{ number_format($netPosition - $totalReferenceCost, 2) }}</div>
+                <div class="dashboard-detail-value">₱ {{ number_format($projectedSyncPreview, 2) }}</div>
                 <div class="dashboard-detail-note">Preview only = Official Net - Total Reference Cost. This does not include medication, vaccination, feed, or health costs.</div>
             </div>
         </div>
