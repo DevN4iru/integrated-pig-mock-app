@@ -14,7 +14,7 @@ services:
     image: nginx:latest
     container_name: integrated_pig_web
     ports:
-      - "8000:80"
+      - "${PIGSTEP_WEB_BIND_IP:-127.0.0.1}:8000:80"
     volumes:
       - ./app/src:/var/www
       - ./app/docker/nginx:/etc/nginx/conf.d
@@ -31,7 +31,7 @@ services:
       MYSQL_USER: user
       MYSQL_PASSWORD: password
     ports:
-      - "3307:3306"
+      - "127.0.0.1:3307:3306"
     volumes:
       - dbdata:/var/lib/mysql
 
