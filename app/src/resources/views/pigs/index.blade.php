@@ -1137,7 +1137,7 @@ toggleBatchTransferOther();
 updateSelectedCount();
 
 
-<script id="pigstep-batch-sale-manual-total-patch">
+/* pigstep-batch-sale-manual-total-patch */
 (function () {
     function selectedBatchPigIds() {
         return Array.from(document.querySelectorAll('.batch-pig-checkbox:checked'))
@@ -1248,7 +1248,5 @@ updateSelectedCount();
 
     document.addEventListener('DOMContentLoaded', window.pigstepRefreshBatchSaleSelectedCount);
 })();
-</script>
-
 
 @endsection
