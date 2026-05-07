@@ -11,6 +11,7 @@ use App\Http\Controllers\MedicationController;
 use App\Http\Controllers\MortalityLogController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PenController;
+use App\Http\Controllers\PreFarrowChecklistStatusController;
 use App\Http\Controllers\PigController;
 use App\Http\Controllers\PigTransferController;
 use App\Http\Controllers\ProtocolExecutionController;
@@ -127,6 +128,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/reproduction-cycles/{reproductionCycle}', [ReproductionCycleController::class, 'show'])->name('reproduction-cycles.show');
     Route::post('/reproduction-cycles/{reproductionCycle}/updates', [ReproductionCycleUpdateController::class, 'store'])->name('reproduction-cycle-updates.store');
+    Route::post('/reproduction-cycles/{reproductionCycle}/pre-farrow-checklist/{checklistKey}/toggle', [PreFarrowChecklistStatusController::class, 'toggle'])->name('reproduction-cycles.pre-farrow-checklist.toggle');
     Route::get('/reproduction-cycles/{reproductionCycle}/attempts/create', [ReproductionCycleController::class, 'createNextAttempt'])->name('reproduction-cycles.attempts.create');
     Route::post('/reproduction-cycles/{reproductionCycle}/attempts', [ReproductionCycleController::class, 'storeNextAttempt'])->name('reproduction-cycles.attempts.store');
 

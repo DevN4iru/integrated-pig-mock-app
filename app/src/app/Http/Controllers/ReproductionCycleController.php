@@ -78,7 +78,7 @@ class ReproductionCycleController extends Controller
 
     public function show(ReproductionCycle $reproductionCycle)
     {
-        $relations = ['sow.pen', 'boar', 'updates'];
+        $relations = ['sow.pen', 'boar', 'updates', 'preFarrowChecklistStatuses'];
 
         if ($this->supportsAttemptMetadata()) {
             $relations[] = 'updates.donorBoar';
@@ -207,6 +207,13 @@ class ReproductionCycleController extends Controller
     public function edit(ReproductionCycle $reproductionCycle)
     {
         $reproductionCycle->load(['sow.pen', 'boar']);
+
+        if ($reproductionCycle->sow?->isOperationallyLocked()) {
+            return redirect()
+                ->route('reproduction-cycles.show', $reproductionCycle)
+                ->with('error', $reproductionCycle->sow->operationalLockMessage('breeding metadata edits'));
+        }
+
         $this->assertSowEligible($reproductionCycle->sow, $reproductionCycle);
 
         $boars = $this->availableBoars($reproductionCycle->sow);

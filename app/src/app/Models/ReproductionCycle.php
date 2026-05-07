@@ -87,6 +87,12 @@ class ReproductionCycle extends Model
         return $this->belongsTo(Pig::class, 'boar_id');
     }
 
+
+    public function preFarrowChecklistStatuses()
+    {
+        return $this->hasMany(PreFarrowChecklistStatus::class);
+    }
+
     public function updates()
     {
         return $this->hasMany(ReproductionCycleUpdate::class)

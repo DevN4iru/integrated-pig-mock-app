@@ -11,7 +11,9 @@
         <a href="{{ route('pigs.show', $cycle->sow) }}" class="btn">Open Sow Profile</a>
     @endif
 
-    <a href="{{ route('reproduction-cycles.edit', $cycle) }}" class="btn">Edit Metadata</a>
+    @if($cycle->sow && !$cycle->sow->isOperationallyLocked())
+        <a href="{{ route('reproduction-cycles.edit', $cycle) }}" class="btn">Edit Metadata</a>
+    @endif
 @endsection
 
 @section('styles')
@@ -231,6 +233,24 @@
     box-shadow: 0 8px 20px rgba(15, 23, 42, 0.035);
 }
 
+.prefarrow-checklist-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.prefarrow-checklist-actions form {
+    margin: 0;
+}
+
+.prefarrow-done-note {
+    color: #15803d;
+    font-size: 12px;
+    font-weight: 800;
+    margin-top: 8px;
+}
+
 .timeline-field {
     border-color: #dbe4f0;
     background: linear-gradient(180deg, #f8fbff 0%, #f6f9fd 100%);
@@ -299,15 +319,28 @@
             && $cycle->pregnancy_result_label !== $cycle->status_label;
 
         $preFarrowRows = collect();
+        $completedPreFarrowChecklist = $cycle->relationLoaded('preFarrowChecklistStatuses')
+            ? $cycle->preFarrowChecklistStatuses->keyBy('checklist_key')
+            : collect();
 
         if ($cycle->expected_farrow_date && !$cycle->actual_farrow_date && $cycle->pregnancy_result === \App\Models\ReproductionCycle::PREGNANCY_RESULT_PREGNANT) {
-            $preFarrowRows = collect(\App\Services\PreFarrowReminderSchedule::items())->map(function ($row) use ($cycle) {
+            $preFarrowRows = collect(\App\Services\PreFarrowReminderSchedule::items())->map(function ($row) use ($cycle, $completedPreFarrowChecklist) {
                 $dueDate = $cycle->expected_farrow_date->copy()->subDays((int) $row['days_before'])->startOfDay();
                 $today = now()->startOfDay();
+                $checklistKey = (string) ($row['code'] ?? $row['label']);
+                $completedStatus = $completedPreFarrowChecklist->get($checklistKey);
 
+                $row['code'] = $checklistKey;
                 $row['due_date'] = $dueDate;
-                $row['status'] = $dueDate->lt($today) ? 'Missed / Past Due' : ($dueDate->isSameDay($today) ? 'Due Today' : 'Upcoming');
-                $row['badge'] = $dueDate->lt($today) ? 'red' : ($dueDate->isSameDay($today) ? 'orange' : 'blue');
+                $row['completed_at'] = $completedStatus?->completed_at;
+
+                if ($completedStatus) {
+                    $row['status'] = 'Done';
+                    $row['badge'] = 'green';
+                } else {
+                    $row['status'] = $dueDate->lt($today) ? 'Missed / Past Due' : ($dueDate->isSameDay($today) ? 'Due Today' : 'Upcoming');
+                    $row['badge'] = $dueDate->lt($today) ? 'red' : ($dueDate->isSameDay($today) ? 'orange' : 'blue');
+                }
 
                 return $row;
             })->values();
@@ -513,10 +546,25 @@
                                             <span class="timeline-meta">{{ $row['due_date']->format('F j, Y') }} • {{ $row['days_before'] }} day(s) before farrow</span>
                                         </div>
 
-                                        <span class="badge {{ $row['badge'] }}">{{ $row['status'] }}</span>
+                                        <div class="prefarrow-checklist-actions">
+                                            <span class="badge {{ $row['badge'] }}">{{ $row['status'] }}</span>
+
+                                            <form method="POST" action="{{ route('reproduction-cycles.pre-farrow-checklist.toggle', ['reproductionCycle' => $cycle, 'checklistKey' => $row['code']]) }}">
+                                                @csrf
+                                                <button type="submit" class="btn {{ $row['completed_at'] ? '' : 'primary' }}">
+                                                    {{ $row['completed_at'] ? 'Undo' : 'Mark Done' }}
+                                                </button>
+                                            </form>
+                                        </div>
                                     </div>
 
                                     <div class="summary-note">{{ $row['note'] }}</div>
+
+                                    @if($row['completed_at'])
+                                        <div class="prefarrow-done-note">
+                                            Done on {{ $row['completed_at']->format('F j, Y g:i A') }}
+                                        </div>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>

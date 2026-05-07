@@ -271,6 +271,70 @@
     border-color: #e2e8f0;
 }
 
+.breeding-archive-toggle {
+    border: 1px solid #fecaca;
+    border-radius: 18px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 12px 28px rgba(185, 28, 28, 0.08);
+}
+
+.breeding-archive-toggle summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 16px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    font-weight: 900;
+    color: #991b1b;
+    background: linear-gradient(180deg, #fff1f2 0%, #ffffff 100%);
+}
+
+.breeding-archive-toggle summary::-webkit-details-marker {
+    display: none;
+}
+
+.breeding-archive-toggle summary small {
+    display: block;
+    color: #7f1d1d;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 3px;
+}
+
+.breeding-archive-toggle summary::after {
+    content: "View";
+    flex: 0 0 auto;
+    border: 1px solid #fecaca;
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 12px;
+    color: #b91c1c;
+    background: #fff;
+}
+
+.breeding-archive-toggle[open] summary::after {
+    content: "Hide";
+}
+
+.breeding-archive-body {
+    padding: 16px 18px 18px;
+    border-top: 1px solid #fecaca;
+    background: #fffafa;
+}
+
+.locked-record-reason {
+    display: grid;
+    gap: 4px;
+}
+
+.locked-record-reason small {
+    color: #7f1d1d;
+    line-height: 1.35;
+}
+
 .breeding-stack .table-wrap {
     border: 1px solid #dbe4f0;
     border-radius: 16px;
@@ -328,6 +392,16 @@
 @endsection
 
 @section('content')
+    @php
+        $archivedBreedingCycles = $cycles
+            ->filter(fn ($cycle) => !$cycle->sow || $cycle->sow->isOperationallyLocked())
+            ->values();
+
+        $clientBreedingCycles = $cycles
+            ->reject(fn ($cycle) => !$cycle->sow || $cycle->sow->isOperationallyLocked())
+            ->values();
+    @endphp
+
     <div class="breeding-stack">
         <div class="breeding-grid">
             <div class="stat-card breeding-card-total">
@@ -335,8 +409,8 @@
                     <span class="label">Total Records</span>
                     <span class="badge blue">All</span>
                 </div>
-                <div class="stat-value">{{ $cycles->count() }}</div>
-                <div class="stat-sub">All breeding records currently recorded in the farm.</div>
+                <div class="stat-value">{{ $clientBreedingCycles->count() }}</div>
+                <div class="stat-sub">Normal breeding records visible for daily farm workflow.</div>
             </div>
 
             <div class="stat-card breeding-card-active">
@@ -344,8 +418,8 @@
                     <span class="label">Active Records</span>
                     <span class="badge green">Live</span>
                 </div>
-                <div class="stat-value">{{ $activeCycles->count() }}</div>
-                <div class="stat-sub">Serviced, pregnant, or derived due-soon breeding records.</div>
+                <div class="stat-value">{{ $clientBreedingCycles->filter(fn ($cycle) => $cycle->is_active_cycle)->count() }}</div>
+                <div class="stat-sub">Visible serviced, pregnant, or due-soon breeding records.</div>
             </div>
 
             <div class="stat-card breeding-card-inactive">
@@ -353,8 +427,8 @@
                     <span class="label">Inactive Records</span>
                     <span class="badge orange">History</span>
                 </div>
-                <div class="stat-value">{{ $closedCycles->count() }}</div>
-                <div class="stat-sub">Not pregnant, returned-to-heat, farrowed, or closed breeding records.</div>
+                <div class="stat-value">{{ $clientBreedingCycles->reject(fn ($cycle) => $cycle->is_active_cycle)->count() }}</div>
+                <div class="stat-sub">Visible history records, excluding locked archive combinations.</div>
             </div>
 
             <div class="stat-card breeding-card-guide">
@@ -432,7 +506,7 @@
                 </div>
             </div>
 
-            @if($cycles->isEmpty())
+            @if($clientBreedingCycles->isEmpty())
                 <div class="empty-state">No breeding records recorded yet.</div>
             @else
                 <div class="table-wrap">
@@ -454,7 +528,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($cycles as $cycle)
+                            @foreach($clientBreedingCycles as $cycle)
                                 @php
                                     $displayStatus = $cycle->display_status;
 
@@ -532,7 +606,9 @@
                                     <td>
                                         <div class="breeding-table-actions">
                                             <a href="{{ route('reproduction-cycles.show', $cycle) }}" class="btn primary">Open Record</a>
-                                            <a href="{{ route('reproduction-cycles.edit', $cycle) }}" class="btn">Edit Metadata</a>
+                                            @if($cycle->sow && !$cycle->sow->isOperationallyLocked())
+                                                <a href="{{ route('reproduction-cycles.edit', $cycle) }}" class="btn">Edit Metadata</a>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
@@ -543,5 +619,93 @@
                 </div>
             @endif
         </div>
+        @if($archivedBreedingCycles->isNotEmpty())
+            <details class="breeding-archive-toggle">
+                <summary>
+                    <span>
+                        Archived / Locked Breeding Records
+                        <small>
+                            These are impossible or locked lifecycle combinations, such as sold/dead/archived pigs with breeding records. Kept for audit; hidden from normal daily workflow.
+                        </small>
+                    </span>
+                    <span class="badge red">{{ $archivedBreedingCycles->count() }}</span>
+                </summary>
+
+                <div class="breeding-archive-body">
+                    <div class="breeding-records-table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Sow</th>
+                                    <th>Archive Reason</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Pregnancy Result</th>
+                                    <th>Service Date</th>
+                                    <th>Expected Farrow</th>
+                                    <th>Registered Piglets</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($archivedBreedingCycles as $archivedCycle)
+                                    @php
+                                        $archiveDisplayStatus = $archivedCycle->display_status;
+
+                                        $archiveStatusBadgeClass = match($archiveDisplayStatus) {
+                                            \App\Models\ReproductionCycle::STATUS_PREGNANT => 'green',
+                                            \App\Models\ReproductionCycle::STATUS_DUE_SOON => 'blue',
+                                            \App\Models\ReproductionCycle::STATUS_FARROWED => 'blue',
+                                            \App\Models\ReproductionCycle::STATUS_NOT_PREGNANT => 'red',
+                                            \App\Models\ReproductionCycle::STATUS_RETURNED_TO_HEAT => 'orange',
+                                            \App\Models\ReproductionCycle::STATUS_CLOSED => 'orange',
+                                            default => 'orange',
+                                        };
+
+                                        $archivePregnancyBadgeClass = match($archivedCycle->pregnancy_result) {
+                                            \App\Models\ReproductionCycle::PREGNANCY_RESULT_PREGNANT => 'green',
+                                            \App\Models\ReproductionCycle::PREGNANCY_RESULT_NOT_PREGNANT => 'red',
+                                            default => 'blue',
+                                        };
+
+                                        $archiveReason = $archivedCycle->sow
+                                            ? $archivedCycle->sow->operationalLockMessage('breeding records')
+                                            : 'This breeding record has no active sow profile attached.';
+                                    @endphp
+
+                                    <tr>
+                                        <td>{{ $archivedCycle->sow?->ear_tag ?? 'Missing sow' }}</td>
+                                        <td>
+                                            <div class="locked-record-reason">
+                                                <span class="badge red">Archived</span>
+                                                <small>{{ $archiveReason }}</small>
+                                            </div>
+                                        </td>
+                                        <td>{{ $archivedCycle->breeding_type_label }}</td>
+                                        <td>
+                                            <span class="badge {{ $archiveStatusBadgeClass }}">
+                                                {{ $archivedCycle->status_label }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ $archivePregnancyBadgeClass }}">
+                                                {{ $archivedCycle->pregnancy_result_label }}
+                                            </span>
+                                        </td>
+                                        <td>{{ $archivedCycle->service_date?->format('Y-m-d') ?? '—' }}</td>
+                                        <td>{{ $archivedCycle->expected_farrow_date?->format('Y-m-d') ?? '—' }}</td>
+                                        <td>{{ (int) ($archivedCycle->born_piglets_count ?? 0) }}</td>
+                                        <td>
+                                            <a href="{{ route('reproduction-cycles.show', $archivedCycle) }}" class="btn primary">Open Audit Record</a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
+        @endif
+
     </div>
 @endsection
