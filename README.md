@@ -89,3 +89,45 @@ docker compose down -v
 
 ## 🧠 License
 This project is licensed under the MIT License.
+
+---
+
+## Client-Guided Handoff Notes
+
+This branch is the simplified client handoff branch.
+
+### Official dashboard rule
+
+Official Net Position = Sold Profit - Mortality Loss.
+
+Active pigs are not treated as official money. Reference costs are shown separately for visibility only.
+
+### Client simplifications completed
+
+- Batch Sell uses one actual total sale price.
+- Batch Sell no longer uses recommended value, current pig value, or pricing mode.
+- Register Born Piglets no longer asks for Farm Value.
+- Active born piglets are not counted as money until actual sale.
+- Archived pigs can be restored normally.
+- Permanent delete remains protected when linked records exist.
+
+### Conditional workflows
+
+- Breeding starts only from valid female pigs.
+- Not-ready female pigs are separated from ready breeding candidates.
+- Pregnancy check appears only when the breeding case is serviced.
+- Returned to Heat appears only after a not-pregnant result.
+- Start Next Attempt appears only after returned-to-heat status.
+- Register Born Piglets appears only after valid farrowing with born-alive piglets.
+- Medication program appears only for eligible piglets or lactating sows.
+- Sold, dead, and archived pigs are locked from normal active-farm actions.
+
+### Final smoke test before client submission
+
+1. Dashboard loads correctly.
+2. Pig List loads correctly.
+3. Batch Sell updates Sold Profit and Net Position.
+4. Register Born Piglets has no Farm Value field.
+5. Archive and Restore work.
+6. Permanent Delete stays blocked for pigs with linked records.
+
