@@ -221,6 +221,56 @@
     flex-wrap: wrap;
 }
 
+.breeding-date-pill {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 92px;
+    border-radius: 12px;
+    border: 1px solid #dbe4f0;
+    padding: 7px 9px;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.breeding-date-pill small {
+    font-size: 10px;
+    font-weight: 800;
+    opacity: 0.82;
+}
+
+.breeding-date-pill.blue {
+    color: #1d4ed8;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.breeding-date-pill.green {
+    color: #15803d;
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.breeding-date-pill.orange {
+    color: #c2410c;
+    background: #fff7ed;
+    border-color: #fed7aa;
+}
+
+.breeding-date-pill.red {
+    color: #b91c1c;
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.breeding-date-pill.gray {
+    color: #64748b;
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+
 .breeding-stack .table-wrap {
     border: 1px solid #dbe4f0;
     border-radius: 16px;
@@ -425,6 +475,30 @@
                                     };
 
                                     $registeredPiglets = (int) ($cycle->born_piglets_count ?? 0);
+
+                                    $serviceDateClass = $cycle->service_date ? 'blue' : 'gray';
+                                    $serviceDateLabel = $cycle->service_date ? 'Service' : 'No date';
+
+                                    $expectedFarrowClass = 'gray';
+                                    $expectedFarrowLabel = 'No date';
+
+                                    if ($cycle->expected_farrow_date) {
+                                        $daysUntilExpectedFarrow = now()->startOfDay()->diffInDays($cycle->expected_farrow_date->copy()->startOfDay(), false);
+
+                                        if ($daysUntilExpectedFarrow < 0) {
+                                            $expectedFarrowClass = 'red';
+                                            $expectedFarrowLabel = 'Overdue';
+                                        } elseif ($daysUntilExpectedFarrow === 0) {
+                                            $expectedFarrowClass = 'red';
+                                            $expectedFarrowLabel = 'Due today';
+                                        } elseif ($daysUntilExpectedFarrow <= 7) {
+                                            $expectedFarrowClass = 'orange';
+                                            $expectedFarrowLabel = 'Due soon';
+                                        } else {
+                                            $expectedFarrowClass = 'green';
+                                            $expectedFarrowLabel = 'Scheduled';
+                                        }
+                                    }
                                 @endphp
                                 <tr>
                                     <td>{{ $cycle->sow?->ear_tag ?? '—' }}</td>
@@ -440,8 +514,18 @@
                                             {{ $cycle->pregnancy_result_label }}
                                         </span>
                                     </td>
-                                    <td>{{ $cycle->service_date?->format('Y-m-d') ?? '—' }}</td>
-                                    <td>{{ $cycle->expected_farrow_date?->format('Y-m-d') ?? '—' }}</td>
+                                    <td>
+                                        <span class="breeding-date-pill {{ $serviceDateClass }}">
+                                            {{ $cycle->service_date?->format('Y-m-d') ?? '—' }}
+                                            <small>{{ $serviceDateLabel }}</small>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="breeding-date-pill {{ $expectedFarrowClass }}">
+                                            {{ $cycle->expected_farrow_date?->format('Y-m-d') ?? '—' }}
+                                            <small>{{ $expectedFarrowLabel }}</small>
+                                        </span>
+                                    </td>
                                     <td>{{ (int) ($cycle->updates_count ?? 0) }}</td>
                                     <td>{{ $registeredPiglets }}</td>
                                     <td>₱ {{ number_format((float) $cycle->breeding_cost, 2) }}</td>
