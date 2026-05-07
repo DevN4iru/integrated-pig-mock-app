@@ -86,10 +86,6 @@
             </div>
             <span class="badge blue">{{ $readySows->count() + $notReadySows->count() }} female pig(s)</span>
         </div>
-
-        <div class="flash" style="margin-bottom: 10px;">
-            Medication programs are health schedules and can appear for piglets or young pigs. Breeding records are separate and start only when the animal is ready to be bred.
-        </div>
     </div>
 
     <div class="panel-card" style="margin-bottom: 16px;">
