@@ -770,22 +770,25 @@
 
                 <div class="batch-grid">
                     <div class="form-grid">
-<div class="form-group">
-                            <label>Selected Pig Value Total</label>
-                            <input type="text" id="batchSaleRecommendedTotal" value="₱ 0.00" readonly>
+                        <div class="form-group">
+                            <label>Selected Pigs</label>
+                            <input type="text" id="batchSaleSelectedCount" value="0 pig(s) selected" readonly>
                         </div>
 
                         <div class="form-group">
-                            <label for="batch_sale_pricing_mode">Pricing Mode</label>
-                            <select id="batch_sale_pricing_mode" name="pricing_mode" required onchange="toggleBatchSalePricingMode()">
-                                <option value="recommended" {{ old('pricing_mode', 'recommended') === 'recommended' ? 'selected' : '' }}>Use current reference amount per pig</option>
-                                <option value="custom" {{ old('pricing_mode') === 'custom' ? 'selected' : '' }}>Use one custom price for every selected pig</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group" id="batchSaleCustomPriceGroup">
-                            <label for="batch_sale_custom_price">Custom Price per Pig</label>
-                            <input id="batch_sale_custom_price" type="number" step="0.01" min="0" name="custom_price" value="{{ old('custom_price') }}">
+                            <label for="batch_sale_total_price">Total Batch Sale Price</label>
+                            <input
+                                id="batch_sale_total_price"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                name="total_price"
+                                value="{{ old('total_price') }}"
+                                required
+                            >
+                            <div class="inline-note">
+                                Enter the actual total amount paid for all selected pigs. The system divides it across the selected sale records.
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -1132,6 +1135,120 @@ function confirmPigRemoveFromRecords(url) {
 toggleBatchTransferOther();
 
 updateSelectedCount();
+
+
+<script id="pigstep-batch-sale-manual-total-patch">
+(function () {
+    function selectedBatchPigIds() {
+        return Array.from(document.querySelectorAll('.batch-pig-checkbox:checked'))
+            .map(function (checkbox) {
+                return checkbox.value;
+            })
+            .filter(Boolean);
+    }
+
+    window.pigstepRefreshBatchSaleSelectedCount = function () {
+        const selectedIds = selectedBatchPigIds();
+        const selectedText = selectedIds.length + ' pig(s) selected';
+
+        const selectedCountInput = document.getElementById('batchSaleSelectedCount');
+        if (selectedCountInput) {
+            selectedCountInput.value = selectedText;
+        }
+
+        const selectedCountText = document.getElementById('selectedCountText');
+        if (selectedCountText) {
+            selectedCountText.textContent = selectedText;
+        }
+    };
+
+    window.toggleAllPigSelection = function (checked) {
+        document.querySelectorAll('.batch-pig-checkbox').forEach(function (checkbox) {
+            checkbox.checked = checked;
+        });
+
+        document.querySelectorAll('.batch-group-toggle').forEach(function (checkbox) {
+            checkbox.checked = checked;
+        });
+
+        window.pigstepRefreshBatchSaleSelectedCount();
+    };
+
+    window.hideBatchPanels = function () {
+        const transferPanel = document.getElementById('batchTransferPanel');
+        const salePanel = document.getElementById('batchSalePanel');
+
+        if (transferPanel) {
+            transferPanel.classList.add('batch-hidden');
+        }
+
+        if (salePanel) {
+            salePanel.classList.add('batch-hidden');
+        }
+    };
+
+    window.showBatchSale = function () {
+        window.hideBatchPanels();
+
+        const salePanel = document.getElementById('batchSalePanel');
+        if (salePanel) {
+            salePanel.classList.remove('batch-hidden');
+            salePanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        window.pigstepRefreshBatchSaleSelectedCount();
+    };
+
+    window.toggleBatchSalePricingMode = function () {
+        return true;
+    };
+
+    window.syncBatchSalePigIds = function () {
+        const selectedIds = selectedBatchPigIds();
+        const pigIdsInput = document.getElementById('batchSalePigIds');
+        const totalPriceInput = document.getElementById('batch_sale_total_price');
+
+        if (selectedIds.length === 0) {
+            alert('Select at least one active pig for batch sale.');
+            return false;
+        }
+
+        if (!pigIdsInput) {
+            alert('Batch sale pig ID field is missing.');
+            return false;
+        }
+
+        if (!totalPriceInput || totalPriceInput.value === '') {
+            alert('Enter the total batch sale price.');
+            return false;
+        }
+
+        const totalPrice = Number(totalPriceInput.value);
+
+        if (!Number.isFinite(totalPrice) || totalPrice < 0) {
+            alert('Total batch sale price must be zero or higher.');
+            return false;
+        }
+
+        pigIdsInput.value = selectedIds.join(',');
+        return true;
+    };
+
+    document.addEventListener('change', function (event) {
+        if (
+            event.target
+            && (
+                event.target.classList.contains('batch-pig-checkbox')
+                || event.target.classList.contains('batch-group-toggle')
+            )
+        ) {
+            window.setTimeout(window.pigstepRefreshBatchSaleSelectedCount, 0);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', window.pigstepRefreshBatchSaleSelectedCount);
+})();
+</script>
 
 
 @endsection

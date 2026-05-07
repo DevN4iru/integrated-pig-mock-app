@@ -102,12 +102,6 @@ class SaleController extends Controller
                 ->withInput();
         }
 
-        if ($validated['pricing_mode'] === 'custom' && !isset($validated['custom_price'])) {
-            return back()
-                ->withErrors(['custom_price' => 'Custom price is required when custom pricing mode is selected.'])
-                ->withInput();
-        }
-
         $pigs = Pig::with(['healthLogs', 'sales', 'mortalityLogs'])
             ->whereIn('id', $pigIds)
             ->get();
@@ -136,18 +130,17 @@ class SaleController extends Controller
         $notes = isset($validated['notes']) && trim((string) $validated['notes']) !== ''
             ? trim((string) $validated['notes'])
             : null;
-        $customPrice = isset($validated['custom_price'])
-            ? (float) $validated['custom_price']
-            : null;
+        $totalBatchPrice = round((float) $validated['total_price'], 2);
+        $selectedPigCount = max(1, $pigs->count());
+        $totalBatchCents = (int) round($totalBatchPrice * 100);
+        $basePriceCents = intdiv($totalBatchCents, $selectedPigCount);
+        $remainderCents = $totalBatchCents - ($basePriceCents * $selectedPigCount);
 
-        $totalBatchPrice = (float) $validated['total_price'];
-        $pricePerPig = $pigs->count() > 0
-            ? round($totalBatchPrice / $pigs->count(), 2)
-            : 0.0;
-
-        DB::transaction(function () use ($pigs, $validated, $buyer, $notes, $pricePerPig): void {
-            foreach ($pigs as $pig) {
+        DB::transaction(function () use ($pigs, $validated, $buyer, $notes, $basePriceCents, $remainderCents): void {
+            foreach ($pigs->values() as $index => $pig) {
                 $currentWeight = (float) ($pig->computed_weight ?? 0);
+                $priceCents = $basePriceCents + ($index < $remainderCents ? 1 : 0);
+                $pricePerPig = $priceCents / 100;
 
                 Sale::create([
                     'pig_id' => $pig->id,
