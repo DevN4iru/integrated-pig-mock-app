@@ -9,6 +9,60 @@
     <a href="{{ route('pigs.index') }}" class="btn">Open Pig List</a>
 @endsection
 
+@section('styles')
+.not-ready-sows-toggle {
+    padding: 0;
+    overflow: hidden;
+}
+
+.not-ready-sows-toggle summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%);
+}
+
+.not-ready-sows-toggle summary::-webkit-details-marker {
+    display: none;
+}
+
+.not-ready-sows-toggle summary h3 {
+    margin: 0 0 4px;
+    color: #7c2d12;
+}
+
+.not-ready-sows-toggle summary p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.not-ready-sows-toggle summary::after {
+    content: "View";
+    flex: 0 0 auto;
+    border: 1px solid #fed7aa;
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 800;
+    color: #c2410c;
+    background: #fff;
+}
+
+.not-ready-sows-toggle[open] summary::after {
+    content: "Hide";
+}
+
+.not-ready-sows-body {
+    padding: 16px 18px 18px;
+    border-top: 1px solid #fed7aa;
+    background: #fff;
+}
+@endsection
+
 @section('content')
     @php
         $readySows = $readySows ?? collect();
@@ -103,47 +157,49 @@
         @endif
     </div>
 
-    <div class="panel-card">
-        <div class="section-title">
+    <details class="panel-card not-ready-sows-toggle">
+        <summary>
             <div>
-                <h3>Female pigs not ready for breeding yet</h3>
-                <p>These are active female pigs, but current pen placement suggests they are still young or under non-breeding management.</p>
+                <h3>Hidden / Not Ready Females</h3>
+                <p>Reference only. These females are hidden from breeding actions until moved to a breeding-ready pen.</p>
             </div>
             <span class="badge orange">{{ $notReadySows->count() }}</span>
-        </div>
+        </summary>
 
-        @if($notReadySows->isEmpty())
-            <div class="empty-state">No not-ready female pigs right now.</div>
-        @else
-            <div class="table-wrap">
-                <table class="data-table">
-                    <thead>
-                    <tr>
-                        <th>Female Pig</th>
-                        <th>Current Pen</th>
-                        <th>Breeding History</th>
-                        <th>Readiness Note</th>
-                        <th>Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    @foreach($notReadySows as $pig)
+        <div class="not-ready-sows-body">
+            @if($notReadySows->isEmpty())
+                <div class="empty-state">No hidden or not-ready female pigs right now.</div>
+            @else
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
                         <tr>
-                            <td><strong>{{ $pig->ear_tag ?: 'Unnamed Pig' }}</strong><br><small>{{ $pig->breed ?: 'Breed not set' }}</small></td>
-                            <td>{{ $pig->pen?->name ?? 'No pen assigned' }}</td>
-                            <td>{{ number_format((int) $pig->reproduction_cycles_as_sow_count) }} breeding record(s)</td>
-                            <td>{{ $notReadyReason($pig) }}</td>
-                            <td>
-                                <div class="breeding-table-actions">
-                                    <span class="badge gray">Not ready yet</span>
-                                    <a href="{{ route('pigs.show', $pig) }}" class="btn">View Pig Profile</a>
-                                </div>
-                            </td>
+                            <th>Female Pig</th>
+                            <th>Current Pen</th>
+                            <th>Breeding History</th>
+                            <th>Readiness Note</th>
+                            <th>Actions</th>
                         </tr>
-                    @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
-    </div>
+                        </thead>
+                        <tbody>
+                        @foreach($notReadySows as $pig)
+                            <tr>
+                                <td><strong>{{ $pig->ear_tag ?: 'Unnamed Pig' }}</strong><br><small>{{ $pig->breed ?: 'Breed not set' }}</small></td>
+                                <td>{{ $pig->pen?->name ?? 'No pen assigned' }}</td>
+                                <td>{{ number_format((int) $pig->reproduction_cycles_as_sow_count) }} breeding record(s)</td>
+                                <td>{{ $notReadyReason($pig) }}</td>
+                                <td>
+                                    <div class="breeding-table-actions">
+                                        <span class="badge gray">Not ready yet</span>
+                                        <a href="{{ route('pigs.show', $pig) }}" class="btn">View Pig Profile</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+    </details>
 @endsection

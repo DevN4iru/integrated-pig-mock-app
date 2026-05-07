@@ -356,6 +356,16 @@
         width: 100%;
     }
 
+    #gridView .pen-simple-card {
+        border-color: #dbe4f0;
+        box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
+    }
+
+    #gridView .pen-simple-card > div:last-of-type {
+        display: grid !important;
+        grid-template-columns: 1fr;
+    }
+
     .pen-summary-card {
         padding: 14px;
     }
@@ -750,8 +760,18 @@ function togglePenDelete(id) {
     el.style.display = el.style.display === 'none' ? 'grid' : 'none';
 }
 
-(function restorePenView() {
+function preferredPenViewMode() {
+    const isPhoneWidth = window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
     const saved = localStorage.getItem('penViewMode');
-    setView(saved === 'grid' ? 'grid' : 'simple');
+
+    if (isPhoneWidth) {
+        return saved === 'simple' ? 'simple' : 'grid';
+    }
+
+    return saved === 'grid' ? 'grid' : 'simple';
+}
+
+(function restorePenView() {
+    setView(preferredPenViewMode());
 })();
 @endsection
