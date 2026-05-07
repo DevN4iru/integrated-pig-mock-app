@@ -71,6 +71,7 @@
 
         <div class="flash success" style="margin-top: 16px;">
             Every piglet created here will be linked back to this breeding case and the mother sow. Re-registering the same litter later will be blocked.
+            Active piglets are not counted as money until an actual sale is recorded.
         </div>
     </div>
 
@@ -95,7 +96,6 @@
                             <th>Sex</th>
                             <th>Assigned Pen</th>
                             <th>Birth Weight (kg)</th>
-                            <th>Farm Value</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -158,19 +158,6 @@
                                         required
                                     >
                                     @error("piglets.$i.latest_weight")
-                                        <div class="error-text">{{ $message }}</div>
-                                    @enderror
-                                </td>
-                                <td>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        name="piglets[{{ $i }}][asset_value]"
-                                        value="{{ old("piglets.$i.asset_value", 0) }}"
-                                        required
-                                    >
-                                    @error("piglets.$i.asset_value")
                                         <div class="error-text">{{ $message }}</div>
                                     @enderror
                                 </td>

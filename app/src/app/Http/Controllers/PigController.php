@@ -425,14 +425,6 @@ class PigController extends Controller
         $pig = Pig::withTrashed()->findOrFail($pig);
 
 
-        $protectedReasons = $this->protectedPigPermanentDeleteReasons($pig);
-
-        if (!empty($protectedReasons)) {
-            return redirect()
-                ->back()
-                ->with('error', 'Permanent delete blocked because this pig already has linked records: ' . implode(', ', $protectedReasons) . '. Use archive for normal hiding, or supervised maintenance for record removal.');
-        }
-
         if (!$pig->trashed()) {
             return redirect()->route('pigs.index')->with('error', 'Pig is already active.');
         }
